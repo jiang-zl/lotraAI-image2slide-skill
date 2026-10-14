@@ -7,7 +7,7 @@
 
 ## 下载并合并
 
-打开 [v1.31.0 完整包 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0)。三个 `.part001` / `.part002` / `.part003` 附件是同一个完整 ZIP 按顺序切出的字节分块。保存 Release 中的[下载合并程序](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/fetch_bundle.py)，执行：
+打开 [v1.31.0 完整包 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0)。18 个附件（`.part001` 至 `.part018`，每块不超过 128 MiB）是同一个完整 ZIP 按顺序切出的字节分块。保存 Release 中的[下载合并程序](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/fetch_bundle.py)，执行：
 
 ~~~sh
 python3 fetch_bundle.py --output-dir ./downloads

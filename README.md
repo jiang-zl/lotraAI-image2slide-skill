@@ -14,7 +14,7 @@ lotraAI combines the current agent's understanding of a reference image with pro
 
 Download `lotraAI-image2slide-v1.31.0-bundle.zip`. It includes both the skill and runtime resources (Python, dependencies, OCR, and Math). Place the ZIP in the current project where Codex can access it, or provide its absolute local path in the conversation. You can leave the ZIP unextracted.
 
-Get the complete bundle from the [runtime v1.31.0 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0). GitHub serves the single ZIP as three transport parts; Codex can download, reassemble, and verify them using the manifest. You can also provide an already assembled ZIP. See the [download guide](docs/download.md).
+Get the complete bundle from the [runtime v1.31.0 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0). GitHub serves the single ZIP as 18 transport parts; Codex can download, reassemble, and verify them using the manifest. You can also provide an already assembled ZIP. See the [download guide](docs/download.md).
 
 ### 2. Ask Codex to install it
 
