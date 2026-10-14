@@ -10,15 +10,28 @@ lotraAI combines the current agent's understanding of a reference image with pro
 
 ## Quick Start
 
-### 1. Give Codex the complete bundle
+### 1. Ask Codex to install the skill and download its runtime
 
-Download `lotraAI-image2slide-v1.31.0-bundle.zip`. It includes both the skill and runtime resources (Python, dependencies, OCR, and Math). Place the ZIP in the current project where Codex can access it, or provide its absolute local path in the conversation. You can leave the ZIP unextracted.
+Give Codex this repository URL and the prompt below. Codex can download the matching runtime resources, verify the complete bundle, and install it into the current project for you.
 
-Get the complete bundle from the [runtime v1.31.0 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0). GitHub serves the single ZIP as 18 transport parts; Codex can download, reassemble, and verify them using the manifest. You can also provide an already assembled ZIP. See the [download guide](docs/download.md).
+~~~bash
+Install lotraAI Image2Slide v1.31.0 in the current project from:
+https://github.com/jiang-zl/lotraAI-image2slide-skill
 
-### 2. Ask Codex to install it
+Automatically download its matching runtime resources from:
+https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime
+Read the v1.31.0 manifest and use the download helper to obtain,
+reassemble, and verify the complete bundle. Extract it and use its
+bundled installer to prepare Python, dependencies, OCR, and Math
+under .lotraAI-build before registering lotra-image2slide-skill.
+Report the skill entry and actual runtime readiness when finished.
+~~~
 
-Send this prompt to Codex:
+Codex handles downloading and installation; you do not need to fetch each runtime resource manually. The [version manifest](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/releases/v1.31.0.json) and [download helper](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/tools/fetch_bundle.py) are in the runtime repository.
+
+**Runtime availability:** the skill and runtime releases are published separately. Codex should check that the matching runtime assets are public before downloading. If the assets are still being uploaded, provide a local complete bundle or use a project with the matching runtime already prepared. The skill source alone does not prepare the runtime. See the [download guide](docs/download.md).
+
+Already have the complete ZIP? Place it in the current project or give Codex its absolute local path, then send:
 
 ~~~bash
 Please extract the complete lotraAI-image2slide-v1.31.0-bundle.zip I provided.
@@ -28,10 +41,9 @@ named lotra-image2slide-skill. Prepare the included runtime resources
 When finished, report the skill entry and runtime readiness.
 ~~~
 
-Codex uses the bundled installer for the current platform, prepares the project-local runtime, and then registers the single `lotra-image2slide-skill`. Runtime resources and private task state live in the project's `.lotraAI-build` directory.
+The complete ZIP includes both the skill and runtime resources. Installation registers the single `lotra-image2slide-skill`; runtime resources and private task state live in the project's `.lotraAI-build` directory.
 
-
-### 3. Attach a reference image and start reconstructing
+### 2. Attach a reference image and start reconstructing
 
 ~~~text
 Use $lotra-image2slide-skill to reconstruct this reference image as an editable

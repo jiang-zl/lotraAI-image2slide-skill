@@ -10,15 +10,27 @@ lotraAI 将当前 agent 对原图的理解与项目内的重建程序结合起�
 
 ## 快速开始
 
-### 1. 将完整 bundle 交给 Codex
+### 1. 让 Codex 安装 skill，并自动下载运行资源
 
-下载 `lotraAI-image2slide-v1.31.0-bundle.zip`。完整包已包含 skill 和 runtime 资源（Python、依赖、OCR 和 Math）。将 ZIP 放到 Codex 可访问的当前项目目录，或在对话中提供它的本地绝对路径，无需提前手动解压。
+把本仓库地址和下面的提示词交给 Codex。Codex 可以替你下载匹配的 runtime 资源、校验完整包，并安装到当前项目。
 
-完整包见 [runtime v1.31.0 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0)。GitHub 通过18 个传输分块提供同一个完整 ZIP；Codex 可按清单自动下载、合并并校验，也可直接使用你提供的完整 ZIP。详见[下载说明](docs/download.zh-CN.md)。
+~~~bash
+请从以下仓库为当前项目安装 lotraAI Image2Slide v1.31.0：
+https://github.com/jiang-zl/lotraAI-image2slide-skill
 
-### 2. 发送安装请求
+请自行从以下仓库下载匹配的 runtime 资源：
+https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime
+读取 v1.31.0 版本清单，使用下载程序获取全部分块、合并并校验完整 bundle。
+解压后调用包内安装器，先将 Python、依赖、OCR 和 Math 准备到 .lotraAI-build，
+再登记 skill，命名为 lotra-image2slide-skill。
+完成后报告 skill 入口和实际运行时准备情况。
+~~~
 
-把下面的提示词发送给 Codex：
+下载和安装可以交给 Codex 完成，无需逐项手动下载 runtime 资源。[版本清单](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/releases/v1.31.0.json)和[下载程序](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/tools/fetch_bundle.py)位于 runtime 仓库。
+
+**运行包可用性：** skill 与 runtime 分开发布。Codex 应先确认对应 runtime 附件已公开，再开始下载。若附件仍在上传，可以提供本地完整包，或使用已经准备好匹配 runtime 的项目。仅下载 skill 源码不会完成运行时准备。详见[下载说明](docs/download.zh-CN.md)。
+
+如果已有完整 ZIP，将它放到当前项目中，或提供本地绝对路径，再发送：
 
 ~~~bash
 帮我解压提供的完整包 lotraAI-image2slide-v1.31.0-bundle.zip，
@@ -27,10 +39,9 @@ lotraAI 将当前 agent 对原图的理解与项目内的重建程序结合起�
 完成后告诉我 skill 入口和运行时准备情况。
 ~~~
 
-Codex 按当前平台调用包内安装器，先准备项目内运行时，再登记唯一的 `lotra-image2slide-skill`。运行资源和私有任务状态位于项目 `.lotraAI-build`。
+完整 ZIP 包含 skill 和 runtime 资源。安装只登记一个 `lotra-image2slide-skill`；运行资源和私有任务状态位于项目 `.lotraAI-build`。
 
-
-### 3. 安装完成后，附上原图开始重建
+### 2. 附上原图开始重建
 
 ~~~text
 使用 $lotra-image2slide-skill，将这张参考图重建成可编辑 PowerPoint。

@@ -5,6 +5,10 @@
 
 The complete file is `lotraAI-image2slide-v1.31.0-bundle.zip` (2,414,649,382 bytes), including the skill and all supplied runtime resources. SHA-256: `200f65a42b96dca2a0143f43f1c3583d5150958ae1fc7ac8c6dea41969fbe657`.
 
+## Let Codex download the runtime
+
+Give Codex the [runtime repository](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime) and ask it to read the v1.31.0 manifest, download and verify the complete bundle, and run the bundled installer. Check that the matching release assets are publicly available first; while they are being uploaded, a local complete ZIP is an alternative. The skill release can be published before the runtime bundle.
+
 ## Download and assemble
 
 Open the [v1.31.0 bundle release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0). Its 18 transport assets (`.part001` through `.part018`, up to 128 MiB each) are ordered byte segments of the same complete ZIP. Save the release's [download helper](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/fetch_bundle.py), then run:

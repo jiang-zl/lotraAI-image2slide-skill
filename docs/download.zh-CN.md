@@ -5,6 +5,10 @@
 
 完整文件为 `lotraAI-image2slide-v1.31.0-bundle.zip`，大小 2,414,649,382 字节，包含 skill 与全部随包运行资源。SHA-256 为 `200f65a42b96dca2a0143f43f1c3583d5150958ae1fc7ac8c6dea41969fbe657`。
 
+## 让 Codex 自动下载 runtime
+
+把 [runtime 仓库](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime)交给 Codex，要求它读取 v1.31.0 清单，自动下载并校验完整 bundle，再调用包内安装器。下载前先检查对应 Release 附件已公开；附件仍在上传时，可使用本地完整 ZIP。skill 发布可以先于运行包。
+
 ## 下载并合并
 
 打开 [v1.31.0 完整包 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0)。18 个附件（`.part001` 至 `.part018`，每块不超过 128 MiB）是同一个完整 ZIP 按顺序切出的字节分块。保存 Release 中的[下载合并程序](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/fetch_bundle.py)，执行：

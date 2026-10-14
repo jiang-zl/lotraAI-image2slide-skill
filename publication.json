@@ -18,5 +18,7 @@
   "download_manifest_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/v1.31.0.json",
   "download_helper_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/fetch_bundle.py",
   "download_page_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0",
-  "transport_revision": "github-release-parts-128m"
+  "transport_revision": "github-release-parts-128m",
+  "runtime_acquisition": "agent_managed_download_or_local_bundle",
+  "runtime_availability_check_required": true
 }
