@@ -14,7 +14,7 @@ lotraAI 将当前 agent 对原图的理解与项目内的重建程序结合起�
 
 下载 `lotraAI-image2slide-v1.31.0-bundle.zip`。完整包已包含 skill 和 runtime 资源（Python、依赖、OCR 和 Math）。将 ZIP 放到 Codex 可访问的当前项目目录，或在对话中提供它的本地绝对路径，无需提前手动解压。
 
-完整包见 [runtime v1.31.0 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0)。GitHub 通过两个传输分块提供同一个完整 ZIP；Codex 可按清单自动下载、合并并校验，也可直接使用你提供的完整 ZIP。详见[下载说明](docs/download.zh-CN.md)。
+完整包见 [runtime v1.31.0 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0)。GitHub 通过三个传输分块提供同一个完整 ZIP；Codex 可按清单自动下载、合并并校验，也可直接使用你提供的完整 ZIP。详见[下载说明](docs/download.zh-CN.md)。
 
 ### 2. 发送安装请求
 
