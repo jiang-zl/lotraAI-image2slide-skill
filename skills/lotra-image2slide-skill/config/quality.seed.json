@@ -1,0 +1,154 @@
+{
+  "profile_id": "sci-rebuild-typed-seed-v0.2",
+  "status": "draft_requires_calibration",
+  "global_aesthetic": {
+    "weights": {
+      "layout": 0.25,
+      "visual_balance": 0.15,
+      "alignment_spacing": 0.2,
+      "layer_occlusion": 0.1,
+      "color_style": 0.1,
+      "readability": 0.2
+    },
+    "overall_threshold": null,
+    "dimension_floors": {
+      "layout": null,
+      "visual_balance": null,
+      "alignment_spacing": null,
+      "layer_occlusion": null,
+      "color_style": null,
+      "readability": null
+    }
+  },
+  "local_metric_profiles": {
+    "text": {
+      "contract": "T01",
+      "required_metrics": [
+        "text_content",
+        "layout",
+        "occlusion"
+      ],
+      "weights": null,
+      "thresholds": null,
+      "status": "raw_metrics_and_hard_checks_only"
+    },
+    "equation": {
+      "contract": "T02",
+      "required_metrics": [
+        "math_structure",
+        "layout",
+        "editability"
+      ],
+      "weights": null,
+      "thresholds": null,
+      "status": "raw_metrics_and_hard_checks_only"
+    },
+    "geometry": {
+      "contract": "T03",
+      "required_metrics": [
+        "mask_iou",
+        "boundary_f1",
+        "color",
+        "landmark"
+      ],
+      "weights": null,
+      "thresholds": null,
+      "status": "raw_metrics_and_hard_checks_only"
+    },
+    "line_connector_curve": {
+      "contract": "T04",
+      "required_metrics": [
+        "relations",
+        "landmark",
+        "continuity",
+        "stroke"
+      ],
+      "weights": null,
+      "thresholds": null,
+      "status": "raw_metrics_and_hard_checks_only"
+    },
+    "table": {
+      "contract": "T06",
+      "required_metrics": [
+        "table_structure",
+        "text_content",
+        "layout"
+      ],
+      "weights": null,
+      "thresholds": null,
+      "status": "raw_metrics_and_hard_checks_only"
+    },
+    "icon": {
+      "contract": "T07",
+      "required_metrics": [
+        "parts",
+        "relations",
+        "landmark",
+        "color",
+        "continuity",
+        "occlusion"
+      ],
+      "weights": null,
+      "thresholds": null,
+      "status": "raw_metrics_and_hard_checks_only"
+    },
+    "compound_background": {
+      "contract": "T08",
+      "required_metrics": [
+        "parts",
+        "relations",
+        "occlusion",
+        "continuity",
+        "regional_residual",
+        "ssim"
+      ],
+      "weights": null,
+      "thresholds": null,
+      "status": "raw_metrics_and_hard_checks_only"
+    },
+    "photo": {
+      "contract": "T09",
+      "required_metrics": [
+        "plot_fidelity",
+        "layout",
+        "native_integrity"
+      ],
+      "weights": null,
+      "thresholds": null,
+      "status": "raw_metrics_and_hard_checks_only"
+    },
+    "data_chart": {
+      "contract": "T10",
+      "required_metrics": [
+        "plot_fidelity",
+        "relations",
+        "text_content",
+        "boundary_f1"
+      ],
+      "weights": null,
+      "thresholds": null,
+      "status": "raw_metrics_and_hard_checks_only"
+    }
+  },
+  "grid": {
+    "coarse": 3,
+    "fine": 6,
+    "offset": 0.5,
+    "halo": 0.12
+  },
+  "required_checks": [
+    "structure",
+    "semantic_review",
+    "source_omission_review",
+    "local_metrics",
+    "scene_relations",
+    "grid_review",
+    "global_aesthetic",
+    "native_edit_roundtrip",
+    "target_render",
+    "deliverables"
+  ],
+  "null_threshold_policy": "UNVERIFIED",
+  "critical_errors_allowed": 0,
+  "max_file_bytes": 268435456
+}

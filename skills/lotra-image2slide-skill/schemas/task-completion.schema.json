@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Persistent task target and execution checkpoints",
+  "type": "object",
+  "required": ["schema", "kind", "criteria", "scope", "amendments", "backlog", "branches", "checkpoints", "status"],
+  "properties": {
+    "schema": {"const": "task-completion-1"},
+    "kind": {"enum": ["reconstruction", "local_edit", "skill_upgrade"]},
+    "criteria": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"type": "string"}},
+    "scope": {"type": "object"}, "amendments": {"type": "array"},
+    "backlog": {"type": "object"}, "branches": {"type": "object"}, "checkpoints": {"type": "array"},
+    "status": {"enum": ["ACTIVE", "EXPORT_REQUIRED", "COMPLETE", "PAUSED", "SCOPE_CHANGED", "EVIDENCED_EXTERNAL_BLOCK"]}
+  },
+  "description": "Criteria and exact artifact checks are additionally enforced by task_completion and the existing whole-quality gate. No draft/file-exists criterion can accept artwork."
+}

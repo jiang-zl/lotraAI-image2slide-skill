@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Original ordered prose and genuine mathematical fragments",
+  "type": "object", "required": ["schema", "source_hash", "source_view", "owners"],
+  "properties": {
+    "schema": {"const": "office-math-contract-1"}, "source_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "source_view": {"type": "object"}, "owners": {"type": "array", "items": {"type": "object", "required": ["object", "paragraphs", "source_evidence"],
+      "properties": {"object": {"type": "string"}, "paragraphs": {"type": "array", "minItems": 1, "items": {"type": "array", "minItems": 1, "items": {
+        "oneOf": [{"type": "object", "required": ["text"], "not": {"required": ["ast"]}}, {"type": "object", "required": ["ast", "source_roi"], "not": {"required": ["text"]}}]
+      }}}}
+    }}
+  },
+  "description": "Every actual text/table/math owner is classified from original evidence. Program validates AST, complete carrier sets, saved OMML and independent actual edit behavior."
+}

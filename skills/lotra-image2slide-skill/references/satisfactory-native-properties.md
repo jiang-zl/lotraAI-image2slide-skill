@@ -1,0 +1,10 @@
+# Satisfactory native properties
+
+The regular agent submit path automatically captures an exact native-geometry/structure lock after an actually viewed independent source part has matched content and geometry and meets its own geometry/presence floors. Paint debt does not erase satisfactory contours or pose. No additional validation task or render is scheduled.
+
+During future regular repairs, the programme rejects a changed bbox, contour, parent, semantic structure or owned native order before construction, including a broad grant over the same partly satisfied icon. Keep the good geometry and use the explicit leaf fill/line/material route. A genuine newly discovered geometry defect must be independently revisited for that exact source unit and recorded as an own content/geometry issue before the lock can be released. All old source masks/targets/history stay intact.
+
+The ledger stores hashes and native IDs instead of duplicating geometry or prompting the model with it. Unchanged own observations and geometry remain cached. This first native route covers native visual paths/shapes/groups; it does not treat text/math or opaque SVG/image content as separable geometry/paint, does not override user edit authority, and does not infer source satisfaction from metrics alone.
+
+
+After an eligible actual native repair, preserve_satisfaction can inherit a previously independently satisfied part without re-observing it. It requires the same complete source unit/protocol/targets, exact owned scene and ancestor state, real PPT shape subtree/reference-media/ancestor-transform equality, and exact RGB equality inside the fixed original evaluation domain (whole ROI if no domain). It reuses native_commit shape mapping and existing source crops; no fresh metric run or invented host observation. Relation units, new own findings and any changed/missing evidence stay open. Every inherited record keeps its original source views/diagnostic candidate and a hash-bound invariance proof; overlap of bounding rectangles alone does not erase an unchanged icon. This is narrow protected-result pruning, not a claim about an unchanged whole page.

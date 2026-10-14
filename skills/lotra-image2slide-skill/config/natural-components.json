@@ -1,0 +1,31 @@
+{
+  "schema": "natural-component-catalog-1",
+  "items": [
+    {
+      "id": "top-view-wireless-car-1",
+      "version": 1,
+      "family": "top_view_vehicle",
+      "recipe": "wireless_vehicle",
+      "path": "assets/natural-components/top-view-wireless-car-1.json",
+      "sha256": "1403ac7a7bebe229ca766731fb58c76cc0139249f6f715a8f8f4d105daf86937",
+      "roles": {
+        "vehicle_body": 1,
+        "front_window": 1,
+        "rear_window": 1,
+        "side_window": 2,
+        "mirror": 2,
+        "signal_band": 4
+      },
+      "properties": {
+        "view": "top",
+        "signal_layout": "paired_lateral",
+        "construction": "regular_closed_native_parts"
+      },
+      "purpose": [
+        "illustrative",
+        "decorative"
+      ],
+      "precedence": "Explicit current user preference and source-supported incompatible anatomy exclude this default."
+    }
+  ]
+}

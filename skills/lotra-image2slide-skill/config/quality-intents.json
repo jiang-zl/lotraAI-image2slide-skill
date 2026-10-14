@@ -1,0 +1,17 @@
+{
+  "schema": "quality-intent-profiles-1",
+  "calibration": "v1.13.0 preference anchor plus controlled-variant validation; engineering weights, not a universal aesthetic scale",
+  "profiles": {
+    "illustrative": {"source_ssim": 0.20, "source_boundary": 0.10, "approved_clarity": 0.30, "approved_style": 0.20, "native_construction": 0.20},
+    "decorative": {"source_ssim": 0.10, "source_color": 0.10, "approved_clarity": 0.30, "approved_style": 0.30, "native_construction": 0.20},
+    "scientific": {"source_ssim": 0.35, "source_boundary": 0.30, "source_color": 0.15, "native_construction": 0.20},
+    "photo_identity": {"source_ssim": 0.40, "source_boundary": 0.15, "source_color": 0.20, "source_texture": 0.05, "native_construction": 0.20},
+    "structure": {"source_ssim": 0.15, "source_boundary": 0.25, "layout_integrity": 0.25, "approved_style": 0.10, "native_construction": 0.25},
+    "text": {"source_ssim": 0.10, "content_fidelity": 0.50, "approved_clarity": 0.15, "native_construction": 0.25},
+    "formula": {"source_ssim": 0.10, "content_fidelity": 0.50, "approved_clarity": 0.15, "native_construction": 0.25},
+    "relation": {"source_ssim": 0.10, "relation_integrity": 0.60, "native_construction": 0.30}
+  },
+  "appearance_tolerances": {"clarity_ratio": [0.90, 1.15], "approved_style_ssim_min": 0.985},
+  "hard_gates": ["source_semantics", "source_text_and_math", "native_inventory", "frame_fill_alignment_containment", "physical_interfaces", "approved_properties", "actual_render_identity", "current_observations"],
+  "score_usage": "Ranking only after every hard gate passes. No weighted score may compensate a critical error. Source scores and legacy targets are always reported separately."
+}

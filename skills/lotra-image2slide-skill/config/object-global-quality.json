@@ -1,0 +1,32 @@
+{
+  "schema": "object-global-quality-policy-1",
+  "status": "engineering_acceptance_policy",
+  "limits": "Explicit engineering bounds and ordinal observation rubrics, not a calibrated prediction of human beauty or a universal accuracy percentage.",
+  "global": {
+    "weights": {"layout": 0.25, "visual_balance": 0.15, "alignment_spacing": 0.20, "layer_occlusion": 0.10, "color_style": 0.10, "readability": 0.20},
+    "overall_threshold": 0.72,
+    "dimension_floors": {"layout": 0.60, "visual_balance": 0.60, "alignment_spacing": 0.60, "layer_occlusion": 0.65, "color_style": 0.60, "readability": 0.65},
+    "normalization": "exp(-normalized error squared); ordinal rubric 0, 1, 2, 3 maps to 0, 0.33, 0.80, 1.00. Numeric and observation sub-scores are reported separately.",
+    "observation_levels": [0.0, 0.33, 0.8, 1.0],
+    "position_tolerance_canvas": 0.025,
+    "size_ratio_tolerance": 0.12,
+    "balance_center_tolerance": 0.06,
+    "density_distribution_tolerance": 0.15,
+    "color_histogram_tolerance": 0.35,
+    "alignment_tolerance_px": 3.0,
+    "spacing_tolerance_px": 3.0,
+    "maximum_translation_canvas": 0.03,
+    "maximum_scale_change": 0.08,
+    "solver_iterations": 128,
+    "branch_attempt_limit": 2
+  },
+  "objects": {
+    "ranking": "Purpose-specific normalized vectors after unit hard constraints; structural units use independently checked native/content/relation invariants, never fabricated pixel scores.",
+    "regression_tolerance": 0.002,
+    "gain_tolerance": 0.002,
+    "convergence": "Every unit meets its declared hard targets and has current measured evidence and an independently retained context best. A first adequate candidate may converge; no forced redundant retry. Exhausted failed branches never converge.",
+    "lock_facets": ["content", "structure", "paint"],
+    "global_mutable_facets": ["placement", "uniform_scale", "paint_order"],
+    "branch_attempt_limit": 2
+  }
+}

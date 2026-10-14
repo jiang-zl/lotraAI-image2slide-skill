@@ -1,0 +1,12 @@
+# Runtime provenance and dependency notices
+
+The v1.14.0 Skill ZIP contains project-authored reconstruction code, a conditional natural-component catalogue and runtime instructions. It does not include private input images, test histories, credentials, commercial fonts or OCR weights. The separate offline runtime companion contains pinned wheels and six PP-OCRv6 detection/recognition weights. Its manifest records original URLs, file hashes and environment requirements. Package integrity hashes are not publisher signatures.
+
+Python dependencies are installed separately and retain their own licenses. Consult the installed distribution metadata and their upstream license texts: python-pptx (MIT), lxml (BSD and included third-party notices), Pillow (HPND/Pillow license), NumPy (BSD and bundled notices), jsonschema (MIT), openpyxl (MIT). Transitive dependencies also retain their own licenses. The dependency declarations do not grant rights to user inputs or Microsoft Office/fonts. Office must be supplied by the user under their own license.
+
+No new open-source license is asserted over the user's input, archived baseline or third-party code. The project owner controls licensing of project-authored source and any public redistribution. Installation is project-local; it does not publish to an external service.
+
+Additional declared dependencies include SciPy, scikit-image, PyMuPDF and CairoSVG. They are installed separately; consult their distribution metadata and upstream license documents. Native Office, LibreOffice, Poppler and optional desktop/tool integrations have their own terms and are not bundled here.
+fontTools (MIT) provides a bounded used-glyph font-subset fallback for Office CFF data that the native MuPDF subsetter cannot compact. No font files or global font installations are bundled or performed.
+
+The offline companion retains wheel distribution metadata and included license files. Additional runtime components include ONNX Runtime (MIT), RapidOCR and PaddleOCR (consult their upstream Apache-2.0 license and model documentation), SymPy (BSD), and resvg-py (MIT, with its Rust dependencies' notices retained in the upstream distribution). resvg-py is the self-contained SVG raster backend; it avoids requiring users to install a system Cairo library. Native Office, LibreOffice and commercial fonts remain host resources governed by their respective terms. Platform wheel compatibility and a hash match are separate from physical-device execution evidence.

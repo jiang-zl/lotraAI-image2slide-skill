@@ -1,0 +1,434 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema",
+    "revision",
+    "source_hash",
+    "scope",
+    "coverage",
+    "frames"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "frame-plan-1"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "source_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "coverage": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "object",
+          "mode",
+          "reason"
+        ],
+        "properties": {
+          "object": {
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "frame",
+              "inherited",
+              "not_applicable"
+            ]
+          },
+          "frame": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8
+          },
+          "mechanism": {
+            "enum": [
+              "source_textbox_quality",
+              "source_part_quality",
+              "source_semantic_composition"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "bbox",
+          "authority",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+          },
+          "kind": {
+            "enum": [
+              "container",
+              "grid",
+              "content",
+              "native_table"
+            ]
+          },
+          "bbox": {
+            "$ref": "#/$defs/box"
+          },
+          "authority": {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source",
+                  "user_request"
+                ]
+              },
+              "request": {
+                "$ref": "#/$defs/resource"
+              }
+            },
+            "additionalProperties": false
+          },
+          "evidence": {
+            "$ref": "#/$defs/evidence"
+          },
+          "body": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256
+          },
+          "columns": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256
+          },
+          "row_weights": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "column_weights": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "gap": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "tolerance_px": {
+            "type": "number",
+            "minimum": 1e-05,
+            "maximum": 0.05
+          },
+          "clip_precision_px": {
+            "type": "number",
+            "minimum": 0.001,
+            "maximum": 0.025
+          },
+          "clip_inset_px": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 0.05
+          },
+          "palette": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Fa-f0-9]{6}$"
+              }
+            }
+          },
+          "members": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "object"
+              ],
+              "properties": {
+                "object": {
+                  "type": "string"
+                },
+                "row": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "column": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "operation": {
+                  "enum": [
+                    "check_inside",
+                    "clip_fill",
+                    "cover",
+                    "frame_only"
+                  ]
+                },
+                "content_window": {
+                  "$ref": "#/$defs/window"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "content_window": {
+            "$ref": "#/$defs/window"
+          },
+          "table": {
+            "type": "string"
+          },
+          "table_geometry_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "table_geometry": {
+            "type": "object",
+            "required": [
+              "columns",
+              "rows",
+              "merges"
+            ],
+            "properties": {
+              "columns": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "rows": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "merges": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "cell_roles": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "row",
+                "column",
+                "role"
+              ],
+              "properties": {
+                "row": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "column": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "role": {
+                  "enum": [
+                    "image",
+                    "text",
+                    "empty",
+                    "ellipsis"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "amendment": {
+      "type": "object",
+      "required": [
+        "previous_sha256",
+        "reason",
+        "changed_frames"
+      ],
+      "properties": {
+        "previous_sha256": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 12
+        },
+          "changed_frames": {
+            "type": "array",
+            "minItems": 0,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "box": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number"
+      }
+    },
+    "resource": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "source_hash",
+        "roi",
+        "status",
+        "note"
+      ],
+      "properties": {
+        "source_hash": {
+          "type": "string"
+        },
+        "roi": {
+          "$ref": "#/$defs/box"
+        },
+        "status": {
+          "enum": [
+            "observed",
+            "inferred",
+            "unresolved"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 12
+        },
+        "constraints": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "window": {
+      "type": "object",
+      "required": [
+        "asset",
+        "asset_sha256",
+        "render_type",
+        "window",
+        "evidence"
+      ],
+      "properties": {
+        "asset": {
+          "$ref": "#/$defs/resource"
+        },
+        "asset_sha256": {
+          "type": "string"
+        },
+        "render_type": {
+          "enum": [
+            "svg",
+            "photo"
+          ]
+        },
+        "window": {
+          "$ref": "#/$defs/box"
+        },
+        "preserve_regions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/box"
+          }
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "source_preview": {
+          "$ref": "#/$defs/resource"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

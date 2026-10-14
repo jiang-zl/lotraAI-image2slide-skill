@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "revision", "canvas", "source", "evidence", "profile", "objects", "relations", "prototypes"],
+  "properties": {
+    "schema_version": {"const": "0.1"}, "revision": {"type": "integer", "minimum": 0},
+    "canvas": {"type": "object", "required": ["width", "height", "unit", "target_width_inches"], "properties": {"width": {"type": "integer", "minimum": 6}, "height": {"type": "integer", "minimum": 6}, "unit": {"const": "px"}, "target_width_inches": {"type": "number", "exclusiveMinimum": 0}}},
+    "source": {"$ref": "#/$defs/resource"}, "evidence": {"$ref": "#/$defs/resource"}, "profile": {"$ref": "#/$defs/resource"},
+    "objects": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["id", "semantic_type", "render_type", "bbox", "content", "style", "versions", "locks", "evidence_status"], "properties": {
+      "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"}, "semantic_type": {"type": "string"}, "render_type": {"type": "string"},
+      "bbox": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number"}}, "parent": {"type": ["string", "null"]},
+      "content": {"type": "object"}, "style": {"type": "object"},
+      "versions": {"$ref": "#/$defs/versions"}, "locks": {"type": "object", "required": ["content", "structure", "style", "placement"], "additionalProperties": {"type": "boolean"}},
+      "evidence_status": {"enum": ["observed", "inferred", "unresolved"]}
+    }}}, "relations": {"type": "array"}, "prototypes": {"type": "array"}
+  },
+  "$defs": {
+    "resource": {"type": "object", "required": ["path", "sha256"], "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}},
+    "versions": {"type": "object", "required": ["content", "structure", "style", "placement"], "additionalProperties": {"type": "integer", "minimum": 0}}
+  }
+}

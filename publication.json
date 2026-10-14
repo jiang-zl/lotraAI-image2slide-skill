@@ -1,0 +1,21 @@
+{
+  "product": "lotraAI",
+  "version": "1.31.0",
+  "github_owner": "jiang-zl",
+  "distribution_repository_name": "lotraAI-image2slide-skill-runtime",
+  "distribution_repository_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime",
+  "skill_source_path": "skills/lotra-image2slide-skill",
+  "skill_payload_sha256": "1545afddb053a3295a2bc7f39112eb189b465d7cf9333c6c16b925dcf2217efc",
+  "bundle_sha256": "200f65a42b96dca2a0143f43f1c3583d5150958ae1fc7ac8c6dea41969fbe657",
+  "download_url": null,
+  "functional_validation": "NOT_RUN_PER_USER_REQUEST",
+  "repository_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill",
+  "version_branch": "1.31.0",
+  "release_branch": "release",
+  "release_tag": "v1.31.0",
+  "release_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.31.0",
+  "download_mode": "github-release-parts",
+  "download_manifest_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/v1.31.0.json",
+  "download_helper_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/fetch_bundle.py",
+  "download_page_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0"
+}

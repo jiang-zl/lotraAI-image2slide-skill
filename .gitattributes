@@ -1,0 +1,7 @@
+# Preserve frozen release payload bytes, including original line endings.
+* -text
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.zip binary
+*.md linguist-documentation

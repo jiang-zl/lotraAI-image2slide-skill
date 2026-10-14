@@ -1,0 +1,436 @@
+{
+  "family": "top_view_vehicle",
+  "frame": [
+    0,
+    0,
+    40,
+    34
+  ],
+  "observed_parts": [
+    "radio_left_0",
+    "radio_left_1",
+    "radio_right_0",
+    "radio_right_1",
+    "body",
+    "front_window",
+    "rear_window",
+    "left_window",
+    "right_window",
+    "mirror_left",
+    "mirror_right"
+  ],
+  "parts": [
+    {
+      "geometry": {
+        "center": [
+          19.9,
+          19.1
+        ],
+        "end_degrees": 217.5,
+        "kind": "elliptical_band",
+        "radii": [
+          14.28,
+          14.28
+        ],
+        "start_degrees": 142.5,
+        "thickness": 3.0
+      },
+      "id": "radio_left_0",
+      "role": "signal_band",
+      "source_note": "Conditional regular reference for signal_band; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "00B3A2",
+        "line_width": 0.7,
+        "stroke": "4B5551"
+      }
+    },
+    {
+      "geometry": {
+        "center": [
+          19.9,
+          19.1
+        ],
+        "end_degrees": 217.5,
+        "kind": "elliptical_band",
+        "radii": [
+          18.28,
+          18.28
+        ],
+        "start_degrees": 142.5,
+        "thickness": 3.0
+      },
+      "id": "radio_left_1",
+      "role": "signal_band",
+      "source_note": "Conditional regular reference for signal_band; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "F78636",
+        "line_width": 0.7,
+        "stroke": "4B5551"
+      }
+    },
+    {
+      "geometry": {
+        "center": [
+          19.9,
+          19.1
+        ],
+        "end_degrees": 37.5,
+        "kind": "elliptical_band",
+        "radii": [
+          14.28,
+          14.28
+        ],
+        "start_degrees": -37.5,
+        "thickness": 3.0
+      },
+      "id": "radio_right_0",
+      "role": "signal_band",
+      "source_note": "Conditional regular reference for signal_band; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "00B3A2",
+        "line_width": 0.7,
+        "stroke": "4B5551"
+      }
+    },
+    {
+      "geometry": {
+        "center": [
+          19.9,
+          19.1
+        ],
+        "end_degrees": 37.5,
+        "kind": "elliptical_band",
+        "radii": [
+          18.28,
+          18.28
+        ],
+        "start_degrees": -37.5,
+        "thickness": 3.0
+      },
+      "id": "radio_right_1",
+      "role": "signal_band",
+      "source_note": "Conditional regular reference for signal_band; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "F78636",
+        "line_width": 0.7,
+        "stroke": "4B5551"
+      }
+    },
+    {
+      "geometry": {
+        "bbox": [
+          12.189583444926512,
+          1.2147258155231384,
+          15.395942173894928,
+          30.766044713160856
+        ],
+        "kind": "round_rect",
+        "radius": 4.834519494586971
+      },
+      "id": "body",
+      "role": "vehicle_body",
+      "source_note": "Conditional regular reference for vehicle_body; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "089998",
+        "line_width": 1.05,
+        "stroke": "263C3E"
+      }
+    },
+    {
+      "geometry": {
+        "corner_indices": [
+          0,
+          10
+        ],
+        "kind": "smooth_path",
+        "points": [
+          [
+            13.19365,
+            10.18036
+          ],
+          [
+            15.20178,
+            8.74572
+          ],
+          [
+            17.20998,
+            8.33922
+          ],
+          [
+            19.88752,
+            8.17148
+          ],
+          [
+            22.56505,
+            8.33922
+          ],
+          [
+            24.57325,
+            8.74572
+          ],
+          [
+            26.58138,
+            10.18036
+          ],
+          [
+            25.24266,
+            12.5241
+          ],
+          [
+            21.89572,
+            11.18487
+          ],
+          [
+            17.87939,
+            11.18487
+          ],
+          [
+            14.53245,
+            12.5241
+          ]
+        ]
+      },
+      "id": "front_window",
+      "role": "front_window",
+      "source_note": "Conditional regular reference for front_window; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "082A34",
+        "line_width": 0.6,
+        "stroke": "263C3E"
+      }
+    },
+    {
+      "geometry": {
+        "corner_indices": [
+          0,
+          4,
+          5,
+          8
+        ],
+        "kind": "smooth_path",
+        "points": [
+          [
+            13.30525,
+            21.45262
+          ],
+          [
+            15.31338,
+            22.79192
+          ],
+          [
+            19.32972,
+            23.46149
+          ],
+          [
+            23.34606,
+            22.79192
+          ],
+          [
+            25.35426,
+            21.45262
+          ],
+          [
+            25.35426,
+            24.80079
+          ],
+          [
+            21.33793,
+            26.1401
+          ],
+          [
+            17.32159,
+            26.1401
+          ],
+          [
+            13.30525,
+            24.80079
+          ]
+        ]
+      },
+      "id": "rear_window",
+      "role": "rear_window",
+      "source_note": "Conditional regular reference for rear_window; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "082A34",
+        "line_width": 0.6,
+        "stroke": "263C3E"
+      }
+    },
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            13.04487,
+            10.21763
+          ],
+          [
+            15.7224,
+            11.55693
+          ],
+          [
+            15.7224,
+            22.94068
+          ],
+          [
+            13.04487,
+            24.27998
+          ]
+        ]
+      },
+      "id": "left_window",
+      "role": "side_window",
+      "source_note": "Conditional regular reference for side_window; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "082A34",
+        "line_width": 0.6,
+        "stroke": "263C3E"
+      }
+    },
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            26.69299,
+            10.85009
+          ],
+          [
+            24.01546,
+            12.18939
+          ],
+          [
+            24.01546,
+            23.57314
+          ],
+          [
+            26.69299,
+            24.91244
+          ]
+        ]
+      },
+      "id": "right_window",
+      "role": "side_window",
+      "source_note": "Conditional regular reference for side_window; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "082A34",
+        "line_width": 0.6,
+        "stroke": "263C3E"
+      }
+    },
+    {
+      "geometry": {
+        "bbox": [
+          9.697932996470684,
+          10.403652980877496,
+          3.235405098172252,
+          1.6368979190101238
+        ],
+        "kind": "round_rect",
+        "radius": 0.8184489595050619
+      },
+      "id": "mirror_left",
+      "role": "mirror",
+      "source_note": "Conditional regular reference for mirror; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "089998",
+        "line_width": 0.6,
+        "stroke": "263C3E"
+      }
+    },
+    {
+      "geometry": {
+        "bbox": [
+          26.655813261437544,
+          10.403652980877496,
+          3.6815969432392377,
+          1.6368979190101238
+        ],
+        "kind": "round_rect",
+        "radius": 0.8184489595050619
+      },
+      "id": "mirror_right",
+      "role": "mirror",
+      "source_note": "Conditional regular reference for mirror; validate current source anatomy before reuse.",
+      "status": "inferred_from_raster",
+      "style": {
+        "fill": "089998",
+        "line_width": 0.6,
+        "stroke": "263C3E"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "kind": "inside_body_frame",
+      "parts": [
+        "front_window",
+        "body"
+      ],
+      "source_note": "Windows are inside the continuous car body.",
+      "tolerance": 0.15
+    },
+    {
+      "kind": "inside_body_frame",
+      "parts": [
+        "rear_window",
+        "body"
+      ],
+      "source_note": "Windows are inside the continuous car body.",
+      "tolerance": 0.15
+    },
+    {
+      "kind": "inside_body_frame",
+      "parts": [
+        "left_window",
+        "body"
+      ],
+      "source_note": "Windows are inside the continuous car body.",
+      "tolerance": 0.15
+    },
+    {
+      "kind": "inside_body_frame",
+      "parts": [
+        "right_window",
+        "body"
+      ],
+      "source_note": "Windows are inside the continuous car body.",
+      "tolerance": 0.15
+    },
+    {
+      "kind": "concentric_bands",
+      "parts": [
+        "radio_left_0",
+        "radio_left_1",
+        "radio_right_0",
+        "radio_right_1"
+      ],
+      "source_note": "Source regular paired signal arcs share the car lateral centre."
+    },
+    {
+      "kind": "equal_stroke",
+      "parts": [
+        "radio_left_0",
+        "radio_left_1",
+        "radio_right_0",
+        "radio_right_1"
+      ],
+      "source_note": "Same-family signal outlines share a stable stroke width."
+    }
+  ],
+  "source_evidence": {
+    "basis": "Versioned regular natural-part construction reference. Instantiate only after a current source-bound anatomy and pose classification; the reference is not evidence about a new image.",
+    "uncertainty": "Blur does not fix exact radii; preserve current source part inventory, pose, palette and container."
+  },
+  "version": "semantic-icons-1"
+}

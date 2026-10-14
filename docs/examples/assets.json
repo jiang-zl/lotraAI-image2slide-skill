@@ -1,0 +1,89 @@
+{
+  "schema": "lotraai-case-assets-1",
+  "source": "Author-supplied reference and PowerPoint screenshot assets",
+  "case_generation_version": null,
+  "native_pptx_included": false,
+  "assets": [
+    {
+      "case": "01-edge-federated-learning",
+      "role": "original",
+      "path": "docs/assets/examples/01-edge-federated-learning/original.jpg",
+      "width": 1764,
+      "height": 1120,
+      "bytes": 298017,
+      "sha256": "0fe812b98fb9fef7f852f482e3e48d8c3dd79d69bca8dc727ce6153792580f2d"
+    },
+    {
+      "case": "01-edge-federated-learning",
+      "role": "reconstruction",
+      "path": "docs/assets/examples/01-edge-federated-learning/reconstruction.jpg",
+      "width": 2335,
+      "height": 1279,
+      "bytes": 439516,
+      "sha256": "576e1421b028a673333878bccd099b8c29d5fca39da27197bdc16c3e99c03175"
+    },
+    {
+      "case": "01-edge-federated-learning",
+      "role": "highlights",
+      "path": "docs/assets/examples/01-edge-federated-learning/highlights.jpg",
+      "width": 1305,
+      "height": 915,
+      "bytes": 129379,
+      "sha256": "9454b08b20ba34ce0779538e680e49fa0cf3d31a2eefa0d413120e8f36fd7afa"
+    },
+    {
+      "case": "02-sensing-communication",
+      "role": "original",
+      "path": "docs/assets/examples/02-sensing-communication/original.jpg",
+      "width": 2142,
+      "height": 947,
+      "bytes": 321615,
+      "sha256": "5c2d41a078e5d51e8f814d632247bcc9928c5428432750b77282f862192824db"
+    },
+    {
+      "case": "02-sensing-communication",
+      "role": "reconstruction",
+      "path": "docs/assets/examples/02-sensing-communication/reconstruction.jpg",
+      "width": 2423,
+      "height": 1280,
+      "bytes": 423427,
+      "sha256": "605a26ec712bf1ea571985c06ef8dbc9aa0e13535a4a0212c4b571e1235fc7b3"
+    },
+    {
+      "case": "02-sensing-communication",
+      "role": "highlights",
+      "path": "docs/assets/examples/02-sensing-communication/highlights.jpg",
+      "width": 1496,
+      "height": 936,
+      "bytes": 115760,
+      "sha256": "0e40740017e76fef3cd1cc8334d31ab440135e6a37b3b3b83b09717d79a11a81"
+    },
+    {
+      "case": "03-signal-reconstruction",
+      "role": "original",
+      "path": "docs/assets/examples/03-signal-reconstruction/original.jpg",
+      "width": 1672,
+      "height": 941,
+      "bytes": 246067,
+      "sha256": "c2f90bc6ba9d25aa3907ac26461258d30641067f398a854691a24220fd097cc8"
+    },
+    {
+      "case": "03-signal-reconstruction",
+      "role": "reconstruction",
+      "path": "docs/assets/examples/03-signal-reconstruction/reconstruction.jpg",
+      "width": 2444,
+      "height": 1234,
+      "bytes": 396464,
+      "sha256": "7bccc94819888ee2cba262c87918f1ed064361ea971ec74f09dc98c444385094"
+    },
+    {
+      "case": "03-signal-reconstruction",
+      "role": "highlights",
+      "path": "docs/assets/examples/03-signal-reconstruction/highlights.jpg",
+      "width": 2455,
+      "height": 1263,
+      "bytes": 499363,
+      "sha256": "d631dd9a9918995339d8045fdbb8d48d27027c552bb5b9757380f369717c6ae3"
+    }
+  ]
+}

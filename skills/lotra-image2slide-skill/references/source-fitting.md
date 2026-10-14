@@ -1,0 +1,2 @@
+
+For an independently observed hollow right-arrow on a uniform original ground, `primitive_family: native_hollow_right_arrow` fits source box, shaft/head adjustments and contour width to one native rightArrow preset. Require explicit original ink/ground palettes and family evidence (`semantic_shape`, `direction`, `head_count`, `source_evidence`). Source blur is only a forward-fit nuisance. Do not substitute multiple strips or approval from a proxy residual: save the actual Office part and independently compare its own fixed source targets and protected neighbours.

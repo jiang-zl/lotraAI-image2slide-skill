@@ -1,0 +1,64 @@
+# Source-bound part loop
+
+The program owns storage, fixed measurements, native write scope and adoption. The host reads the original, declares semantic facts and observes the actual saved result. A numeric pass does not establish semantics; a confident sentence does not establish a numeric pass. Preserve legacy evidence without calling an older ACCEPTED artifact accepted by the new contract.
+
+## Original guide
+
+For a source classified as an image matrix (`image_grid`, `photo_grid`, `scientific_image_grid`, `experimental_image_grid`), count the original rows/columns and declare `source_grid:{rows,columns,cells:[part IDs in row-major order],roi,source_note}`. Each cell has its own visual source part and one distinct photo/SVG binding. The source compiler rejects missing or duplicate cells and a one-picture collage substituting for several cells. The frame compiler then requires one matching grid with equal shared tracks, compact gaps (0–2 source pixels), and semantic content-window `cover` for every cell. Native shared cell boundaries determine placement and clipping; blank source gutters are outside those content windows. This declaration can also be used inside another semantic owner. Count/layout judgment comes from original observation; execution, binding reconciliation and cell fill come from programs.
+
+For source_spec, return version:source-quality-1, owner, source_hash, coverage_statement, parts, relations, coverage_bindings and unassigned_features. Each natural icon and important leaf has id, original ROI [x,y,w,h], profile, output objects/source_bindings, quality_intent, protocol, target_basis and features. Features name a concrete expected property, category, status:observed|inferred|unresolved and evidence:{source_hash,roi,description}; inference also needs constraints. Use the packet's required_categories_by_profile, generated from the actual compiler, for the chosen profile.
+
+`protocol` is a JSON object: omit it or use `{}` for fixed defaults. A name such as `fixed_canvas_no_alignment` is not a protocol object. `features`, `parts`, `relations`, `coverage_bindings` and `unassigned_features` are lists of objects. An observed text content feature includes `literal: "EXACT ORIGINAL STRING"`; its `expected` description does not substitute for that literal. An independently read formula content feature uses `ast`. New parts require the pre-construction `quality_intent` described in [the whole-result loop](whole-quality-loop.md), including its purpose, target, basis, reliability and applicable fixed bounds. The live packet states whether that declaration is required; valid inherited native imports retain their existing source contract.
+
+Read thin marks, pen tips, tier separators, signals, lens/support/face structure, roads and shorelines separately when meaningful. Repeated instances share appropriate family code while keeping original pose, subtype, palette and scale. Unknown names retain visible geometry. Recurse until both construction and local evaluation are definite; never invent source facts from a recipe or an output. Enhanced references assist understanding without replacing the original. Generic caption/equation types are not literal evidence. Source text and formula literals must come from the original.
+
+Every declared component.parts entry needs coverage_bindings:{source_part,role:visual|text|formula|relation,quality_units:[owner:part],status,evidence,constraints?}. Visual icons cannot be covered by word scores. Unbound, inferred without constraints, unresolved or omitted parts remain debt. This covers the declared guide, not perfect source understanding; continue independent unknown-region observation. Future leaf IDs are planning data until instantiated. Preserve actual IDs, bind the current semantic root when necessary, keep independent ROIs/masks/targets, then bind the actual created leaves.
+
+## Fixed independent targets
+
+Profiles provide initial targets, not measured results. Clear simple geometry should approach exact reconstruction (initial IoU .98, boundary F1 .99, important-edge F1 .98); actual compulsory floors are supplied in the packet. Freeze source-supported tolerance, ownership, palette and type-specific targets before drawing. Blurred sources can justify an uncertainty band, never blurred output, missing content or candidate-driven lower floors.
+
+Each required attribute passes independently. Whole scores, a successful peer or one strong metric cannot compensate another failure. Text weight/presence need ink mass/area beside edges. Ratios use their interval, not monotonic rewards. Source-defined holes/components, native scientific topology and arrow endpoints retain their own appropriate objectives. Never apply topology to unidentified texture. Missing/nonfinite values stay unmeasured. Distinguish foreground material from neighboring ground, signal gaps, hidden opaque body and negative space.
+
+All versions use the same original canvas mapping; never register a candidate to conceal position errors. Pixel cells occupy [i,i+1], centres i+.5; padded iso-contours subtract .5. Actual ink determines text spacing; PDF advance boxes and native bbox gaps are different evidence. Scientific relations separately observe continuity, containment, paint order, directed topology and actual visible gaps.
+
+## Observe, locate, repair
+
+View the actual hash-bound source/current crops, answer every named requirement ID and expected text, and locate unexpected defects. A tiny leaf below24 displayed pixels requires its own enlarged view. review-batch observes at most8 independently enlarged requirements without drawing. Keep whole overview/grid searches as discovery debt; a hotspot proposes observation, not a cause or pass.
+
+Trace earliest failure through original -> frozen guide -> method/binding -> instance -> saved PPTX -> actual render. Return structured cause evidence bound to that exact quality unit/artifact, then the smallest allowed native fields/subtree. Retain satisfactory size/weight/material/position separately; preserve all non-target native IDs/resources and user content. Group existing contiguous siblings only with explicit group-add/member-reparent authority and unchanged coordinate axes. JSON key order must not determine dependency order.
+
+Source mistakes use source_correction:{kind:source_reading|measurement_domain|additional_detail,prior_spec_hash,source_view_hash,reason,specification}. Retain prior units, properties, objective bounds and reading history. Original-only masks/domains can separate a neighbor; candidate-derived masks cannot. Recompute old/new with one corrected definition; definition corrections are not drawing gains. Empty original foreground means an invalid source domain, not a request to keep redrawing.
+
+Apply proposals through normal scoped repair, save/render once, and compare only the changed units plus real dependencies/relations. Cache unchanged source-bound evidence and retrieve short action summaries. Every actually changed peer independently passes its effect/adoption gate. A below-floor deficit improvement may be retained with existing satisfied intervals intact; it does not close debt. Any newly crossed floor, below-floor regression, missing required measure or harmful semantic outcome blocks that route. Freeze only actually satisfactory properties. Preserve rejected programs/renders and change a specific causal hypothesis; repeated ineffective work retains progress and stops its route.
+
+## Tools and exit
+
+Use the packet's operator_route and read only the applicable section of [source operators](source-operators.md). Native/SVG generation, original OCR/glyph fitting, source materials and projected surfaces are proposals, never quality evidence. Keep text/math/relations independent. All cutouts require clear, complete source-consistent content at reuse size; generated scientific facts are forbidden. Use the actual available renderer, including WSL-to-Windows Office, and install missing required fonts in its controlled host environment.
+
+ACCEPTED requires resolved source coverage, all required independent properties/metrics, satisfactory relations and no substantive open issues. Continue valuable source-important improvement toward stretch without gratuitous retries. A resource/stalled/uncertain exit remains explicitly incomplete; never rename it full success. Deliver actual per-unit values, editing levels, substantial inferred content, export evidence and limitations. Sync a user-edited PPTX before further work; stale methods cannot overwrite it.
+
+
+For an observed occluded natural layer, source understanding must distinguish visible owned material, upper occluders, legitimate exterior context and constrained hidden completion. Declare the layering record and use source-layer-domain before scoring/fitting that layer. Keep all original feature IDs and fixed floors. Inspect the source/domain overlay once, then reuse the stored masks. A colour/crop binding alone is insufficient where neighbouring material shares the colour. Never attribute an entire composite-ROI residual to the lower layer or hide an omitted endpoint by narrowing the domain.
+
+Incremental scopes include the declared source-layer visibility dependencies:
+editing an upper silhouette can change the apparent lower road although its
+native path is unchanged. Measure the independently owned lower unit and related
+placement/topology requirements in the same small repair; never average its
+regression into the repaired icon's gain. Unchanged saved dependent pixels can
+prove protection of a previously unmeasured context, but cannot establish its
+semantic quality or erase its original coverage debt. Work packets expose shared
+source-correction and cause-stage enums; use these executable fields rather than
+inventing new stage names.
+
+
+Independent review batches use compact adaptive columns. Small natural parts aim for a300source-window-pixel long side, bounded to720x420display pixels including original exterior; both original and actual share the identical window/scale. Large parts are bounded and long thin parts still require meaningful detail/endpoint decomposition. This improves visibility of small source leaves rather than leaving them at3x beside huge blank columns. Individual part_views remain available when a many-row board is reduced on screen. No metric ROI/protocol/target/native artwork changes, and an enlarged low-resolution source does not acquire new evidence.
+
+Keep output clarity separate from original RGB fidelity. An original-sample compatibility display can meet colour targets yet expose pixel/chip edges and inherit blur. A source-style issue remains open when the actual natural part gets noisier; do not select it merely because the colour floor passes or the file is smaller. Reconstruct continuous semantic contours/materials from the source-supported family and masks, preserve true gaps and poses, and evaluate the smallest actual repair. Frozen satisfactory fields and existing local native/SVG mothers remain protected.
+
+
+## Usable-result convergence
+
+For actually observed substantive repair gains, `cosmetic_limits` can disclose a measured non-scientific colour residual independently per changed natural part. Bind original/actual preview, describe the substantive gain, and provide each part's exact content/geometry observations plus an explicit limitation. All other fixed metrics must already meet their own minima; missing measures and frozen material cannot be released. An explicit native_typography limit may retain only measured glyph-edge/foreground/ink-mass residuals when exact saved content, required mathematical AST/cell format and every actually observed original property are satisfied, readable and protected. It cannot excuse wrong words/symbols, unknown source properties, missing measures or illegible output. Original targets and residuals stay recorded. Scores/targets/status stay unchanged. Unmasked context-ROI changes belonging to another authorised foreground owner do not veto an unchanged native context subtree after actual content/layout/clarity/protection/reuse observation. A limitation is not a perfect score or permission for future changes: native/source/actual-pixel invariance is required for inheritance. This supports stopping cosmetic work while retaining independent major-defect gates.
+
+Natural icon model leaves carry stable role/output bindings. Each observed body/window/mirror/band requires its own source unit; the existing coverage debt returns a missing leaf to source_spec, never a parent-quality substitute. Contour regularity, stroke thickness, part proportion and source-supported negative spaces are separate visible properties. Construction relations are diagnostics; accept only actual rendered local observations.

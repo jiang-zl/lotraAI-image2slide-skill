@@ -1,0 +1,23 @@
+# Private tasks, runtimes, and local publication artifacts
+.lotraAI-build/
+**/.lotraAI-build/
+.agents/
+.claude/
+.codex/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+~$*
+*.tmp
+*.log
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz

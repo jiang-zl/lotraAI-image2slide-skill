@@ -1,0 +1,22 @@
+{
+  "version": "icon-hd-profiles-4",
+  "clarity_improvement_operator": "paired_original_world_edge_spread_at_maximum_vector_pdf_scale",
+  "scales": [1, 2, 4],
+  "minimum_edge_probes": 3,
+  "minimum_probe_contrast": 0.08,
+  "edge_width_limits_px": [2.2, 1.3, 0.8],
+  "maximum_overshoot": 0.08,
+  "maximum_reversal": 0.20,
+  "styles": {
+    "flat": {"material_residual_max": 0.018, "preservation": {"ssim": 0.015, "psnr": 0.50, "boundary_f1": 0.02, "color_histogram_tv": 0.02, "mean_absolute_rgb_error": 0.005, "deltae_mean": 2.0}},
+    "outlined": {"material_residual_max": 0.018, "preservation": {"ssim": 0.015, "psnr": 0.50, "boundary_f1": 0.02, "color_histogram_tv": 0.02, "mean_absolute_rgb_error": 0.005, "deltae_mean": 2.0}},
+    "shaded": {"material_residual_max": 0.025, "preservation": {"ssim": 0.025, "psnr": 0.75, "boundary_f1": 0.03, "color_histogram_tv": 0.03, "mean_absolute_rgb_error": 0.010, "deltae_mean": 2.5}}
+  },
+  "color_distribution": {"membership": "trilinear", "bins": 8, "basis": "Reuse the existing fixed continuous histogram operator: a one-level RGB movement across a hard bin boundary must not masquerade as a large style regression. Raw hard-bin TV remains separately reported; DeltaE and RGB error are additional independent checks."},
+  "material_preservation": {"informative_amplitude": 0.03, "amplitude_ratio": [0.65, 1.55], "gradient_cosine_min": 0.5, "mean_color_distance_max": 0.08},
+  "basis": "Engineering defaults for displayed editable illustrations, frozen before construction and validated with vector, blurred, ringing and granular independent controls. Edge-spread methodology is inspired by ESF; this is not ISO 12233 certification. Material residual applies only to explicitly smooth original regions, not texture/noise/data.",
+  "research": [
+    "https://www.imatest.com/imaging/sharpness/",
+    "https://openaccess.thecvf.com/content_cvpr_2018/html/Blau_The_Perception-Distortion_Tradeoff_CVPR_2018_paper.html"
+  ]
+}

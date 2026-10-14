@@ -1,0 +1,24 @@
+{
+  "schema": "recursive-granularity-1",
+  "version": "1.15.0",
+  "survey_tile_px": 512,
+  "work_batch": 4,
+  "leaf_types": ["primitive", "continuous_curve", "text", "formula", "table_cell", "complete_media", "verified_assembly", "background"],
+  "actions": ["split_semantic", "split_drawing", "reobserve", "repair", "propose_leaf", "review_partition"],
+  "evidence_roles": ["shape", "line", "fill_region", "text", "formula", "image", "texture", "relationship"],
+  "structural_diagnostics": {
+    "colour_step": 32,
+    "edge_delta_rgb": 24,
+    "uniform_range_rgb": 5,
+    "meaning": "Source-only attention cues, never a proof of semantic atomicity. Small source details remain eligible."
+  },
+  "acceptance": {
+    "all_source_regions_processed": true,
+    "all_critical_features_mapped": true,
+    "parent_review_required": true,
+    "generic_root_match_closes_child": false,
+    "resource_stop_is_complete": false,
+    "small_area_is_background": false,
+    "semantics_and_drawing_granularity_distinct": true
+  }
+}

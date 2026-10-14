@@ -1,0 +1,115 @@
+{
+  "schema": "workflow-policy-1",
+  "phase_order": [
+    "measurement",
+    "source",
+    "capability",
+    "text",
+    "geometry",
+    "appearance",
+    "evidence",
+    "global",
+    "unclassified"
+  ],
+  "phases": {
+    "source": {
+      "purpose": "Current original understanding, child coverage and source facts",
+      "reference": "references/source-recursion.md"
+    },
+    "capability": {
+      "purpose": "Actual host/font/native parsing limitations",
+      "reference": "references/runtime-readiness.md"
+    },
+    "text": {
+      "purpose": "Batch source-bound typography/content/math calibration; independent owner checks",
+      "reference": "references/distance-inline-quality.md"
+    },
+    "geometry": {
+      "purpose": "Source-supported physical relations, cells and all neighbors",
+      "reference": "references/connection-geometry.md"
+    },
+    "appearance": {
+      "purpose": "Independent icon anatomy/fidelity/material/convergence",
+      "reference": "references/hd-icons.md"
+    },
+    "evidence": {
+      "purpose": "Exact current files, dependencies and executed history; no drawing change from a bookkeeping error",
+      "reference": "references/execution-integrity.md"
+    },
+    "global": {
+      "purpose": "Complete current local/global gates and accepted export",
+      "reference": "references/whole-quality-loop.md"
+    },
+    "unclassified": {
+      "purpose": "Agent inspects the exact contract before deciding a cause",
+      "reference": "references/workflow-optimization.md"
+    },
+    "measurement": {
+      "purpose": "Validate actual measurements and original probes before inferring a drawing defect",
+      "reference": "references/workflow-optimization.md"
+    }
+  },
+  "gate_phases": {
+    "source_recursion": "source",
+    "source_semantics": "source",
+    "source_measurement_coverage": "source",
+    "original_adaptive_detail": "source",
+    "original_content_predicates": "source",
+    "original_requirements": "source",
+    "signal_semantics": "source",
+    "fonts": "capability",
+    "actual_render": "capability",
+    "text_math": "text",
+    "source_typography": "text",
+    "composition": "geometry",
+    "connection_geometry": "geometry",
+    "layout": "geometry",
+    "frame": "geometry",
+    "original_feature_geometry": "geometry",
+    "appearance": "appearance",
+    "object_convergence": "appearance",
+    "original_repeat_families": "appearance",
+    "executable_process": "evidence",
+    "recursive_result_closure": "evidence",
+    "whole_inventory": "evidence",
+    "global_aesthetic": "global",
+    "external_user_intent": "global",
+    "all_neighbor_closure": "geometry",
+    "coherent_paper_geometry": "geometry",
+    "recursive_containment": "geometry",
+    "structured_office_math": "text",
+    "icon_clarity": "appearance"
+  },
+  "failure_statuses": [
+    "WORK_REQUIRED",
+    "minimum_not_met",
+    "below_targets",
+    "failed",
+    "FAIL",
+    "BLOCKED",
+    "unsupported",
+    "unknown",
+    "MEASUREMENT_INVALID",
+    "MEASURED_FAIL",
+    "required_unmeasured",
+    "SOURCE_BINDING_REQUIRED"
+  ],
+  "authority": "Diagnostic grouping grants no writes. Advance uses existing source-owned math or registered guarded repair plans; original semantics, complete coverage and independent acceptance remain mandatory.",
+  "missing_evidence_statuses": [
+    "required_unmeasured",
+    "SOURCE_BINDING_REQUIRED",
+    "SOURCE_WINDOW_REVIEW_REQUIRED",
+    "HD_SOURCE_REBIND_REQUIRED"
+  ],
+  "gate_routes": {
+    "structured_office_math": "office-math repair / edit-probe; workflow-control advance for current source-bound AST/representation repairs",
+    "recursive_containment": "containment-check capture / repair",
+    "icon_clarity": "icon-clarity probe-review / rebind-probes for invalid original probes; otherwise source-child/native reconstruction",
+    "text_math": "source-reading / source-text-repair execute",
+    "source_typography": "source-text-repair / native-text-fit",
+    "connection_geometry": "connection-geometry repair",
+    "all_neighbor_closure": "neighbor-check repair",
+    "recursive_result_closure": "recursive-check plan / execute; workflow-control advance for a current registered plan",
+    "executable_process": "recursive-check report / current registered plan"
+  }
+}

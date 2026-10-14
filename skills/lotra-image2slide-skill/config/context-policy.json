@@ -1,0 +1,74 @@
+{
+  "schema": "context-policy-1",
+  "cache": {
+    "max_bytes": 134217728,
+    "max_entries": 4096,
+    "decoded_image_bytes": 134217728,
+    "native_snapshots": 4
+  },
+  "managed_scope": "current_task_or_explicit_same_original_lineage_or_promoted_source_free_constructor",
+  "reference_routes": {
+    "observation": [
+      "references/agent-runtime.md"
+    ],
+    "source_inventory": [
+      "references/execution-interface.md",
+      "references/source-recursion.md"
+    ],
+    "source_region": [
+      "references/source-recursion.md"
+    ],
+    "source_spec": [
+      "references/source-part-loop.md"
+    ],
+    "quality_semantic_observation": [
+      "references/object-global-quality.md"
+    ],
+    "source_repeat_observation": [
+      "references/repeated-source-parts.md"
+    ],
+    "adaptive_source_detail": [
+      "references/adaptive-detail.md"
+    ],
+    "icon_detail": [
+      "references/hd-icons.md"
+    ],
+    "source_connections": [
+      "references/connection-geometry.md"
+    ],
+    "construction": [
+      "references/scene-authoring.md",
+      "references/quality-representation.md",
+      "references/workflow-optimization.md"
+    ],
+    "method": [
+      "references/quality-representation.md",
+      "references/workflow-optimization.md"
+    ],
+    "repair": [
+      "references/execution-integrity.md",
+      "references/workflow-optimization.md"
+    ],
+    "review": [
+      "references/whole-quality-loop.md",
+      "references/workflow-optimization.md"
+    ],
+    "font_binding": [
+      "references/runtime-readiness.md",
+      "references/workflow-optimization.md"
+    ],
+    "global_aesthetic_source": [
+      "references/object-global-quality.md"
+    ],
+    "global_aesthetic_observation": [
+      "references/object-global-quality.md"
+    ],
+    "whole_quality_repair": [
+      "references/execution-interface.md",
+      "references/workflow-optimization.md"
+    ]
+  },
+  "fallback_reference": "references/execution-interface.md",
+  "quality": "No budget or cache can close a missing child, failed hard gate or stale final receipt.",
+  "host_controls": "Host transcript compaction, tool permissions and provider caching are capability-dependent; no extra model/API key is required."
+}

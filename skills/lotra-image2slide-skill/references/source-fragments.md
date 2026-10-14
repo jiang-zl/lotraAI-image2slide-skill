@@ -1,0 +1,9 @@
+# Original material ownership fragments
+
+Use this route when a masked natural icon/material is fragmented, missing, or aliases nearby background. It makes the source-mask disagreement explicit before another trace. It is not a source truth oracle.
+
+`source-fragments TASK REQUEST --out INVENTORY` binds source_hash, one existing masked unit, source_palette_evidence{path,sha256}, source_reading, colors_rgb and background_colors_rgb. The bounded original contrast class accepts distance_rgb_255 <=100 and foreground_margin_rgb_255 <=32. Read the returned source_view and original component coordinates. Colour-connected dark chassis can contain valid roof/frame pixels far from coloured panes; a fixed seed-distance cutoff can delete them. The same connectivity may admit a foreign oval border. Never adopt both blindly or globally fill holes.
+
+`source-fragment-plan TASK REQUEST --out PLAN` binds inventory{path,sha256}, source_view_hash and one decision per named fragment. Each decision supplies fragment, action own/exclude/uncertain, semantic_part and an original reason. Own must name this unit's natural part; foreign borders/text/peers retain their different owners. Uncertainty keeps the plan unresolved. A resolved plan saves a proposed reference_mask in spec_fields and an immutable decision record; it changes no live task, mask, target or drawing.
+
+Submit mask amendments with the ordinary source_correction and source-view evidence, preserving prior masks/guide/floors/history and propagating declared original occlusion dependencies. Measure before/after actual drawings with the same amended original definition. The amendment itself earns no drawing improvement. Keep satisfactory exterior/style/pose properties; repair only missing material when a broader field replacement changes successful peers. Source class inventory is cached on original ROI/mask/palette/program, so an unrelated native edit does not trigger new source perception.

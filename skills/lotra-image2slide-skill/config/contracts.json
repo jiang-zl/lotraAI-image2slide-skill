@@ -1,0 +1,2402 @@
+{
+  "version": "runtime-contracts-1",
+  "cards": [
+    {
+      "id": "T01",
+      "axis": "object_type",
+      "title": "text",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "text"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "exact_text",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "font": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "font_size": {
+          "unit": "pt",
+          "range": [
+            0.1,
+            500
+          ]
+        },
+        "bold": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "char_spacing_pt": {
+          "unit": "pt",
+          "range": [
+            -100,
+            100
+          ]
+        },
+        "baseline_offset_pt": {
+          "unit": "pt",
+          "range": [
+            -100,
+            100
+          ]
+        }
+      },
+      "metric_refs": [
+        "text_content",
+        "layout",
+        "occlusion"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [
+          "edit_text"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX06"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T02",
+      "axis": "object_type",
+      "title": "equation",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "equation"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "exact_math",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "font_size": {
+          "unit": "pt",
+          "range": [
+            0.1,
+            500
+          ]
+        },
+        "baseline_offset_pt": {
+          "unit": "pt",
+          "range": [
+            -100,
+            100
+          ]
+        }
+      },
+      "metric_refs": [
+        "math_structure",
+        "layout",
+        "editability"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [
+          "edit_math"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX06"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T03",
+      "axis": "object_type",
+      "title": "geometry",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "shape"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "fill": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "gradient": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "gradient_angle": {
+          "unit": "native_parameter",
+          "range": [
+            -180,
+            180
+          ]
+        },
+        "line_width": {
+          "unit": "pt",
+          "range": [
+            0.1,
+            500
+          ]
+        },
+        "adjustments": {
+          "unit": "native_parameter",
+          "range": null
+        }
+      },
+      "metric_refs": [
+        "mask_iou",
+        "boundary_f1",
+        "color",
+        "landmark"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [
+          "move",
+          "resize",
+          "change_style"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX03"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T04",
+      "axis": "object_type",
+      "title": "connection",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "connector"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "directed_connections",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "line_width": {
+          "unit": "pt",
+          "range": [
+            0.1,
+            500
+          ]
+        },
+        "arrow_width": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "arrow_length": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "route_points": {
+          "unit": "source_px",
+          "range": null
+        }
+      },
+      "metric_refs": [
+        "relations",
+        "landmark",
+        "continuity",
+        "stroke"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [
+          "move_endpoint"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX08"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T05",
+      "axis": "object_type",
+      "title": "curve",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "bezier",
+          "path"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "path_points": {
+          "unit": "source_px",
+          "range": null
+        },
+        "line_width": {
+          "unit": "pt",
+          "range": [
+            0.1,
+            500
+          ]
+        },
+        "fill": {
+          "unit": "native_parameter",
+          "range": null
+        }
+      },
+      "metric_refs": [
+        "boundary_f1",
+        "chamfer",
+        "hausdorff",
+        "landmark"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [
+          "edit_nodes"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX03"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T06",
+      "axis": "object_type",
+      "title": "table",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "table"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "exact_table",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "row_heights": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "column_widths": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "merges": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "font_size": {
+          "unit": "pt",
+          "range": [
+            0.1,
+            500
+          ]
+        },
+        "padding": {
+          "unit": "native_parameter",
+          "range": null
+        }
+      },
+      "metric_refs": [
+        "table_structure",
+        "text_content",
+        "layout"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [
+          "edit_cell"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX07"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T07",
+      "axis": "object_type",
+      "title": "natural_object",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "group"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "critical_parts",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "part_bbox": {
+          "unit": "source_px",
+          "range": null
+        },
+        "fill": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "line_width": {
+          "unit": "pt",
+          "range": [
+            0.1,
+            500
+          ]
+        }
+      },
+      "metric_refs": [
+        "parts",
+        "relations",
+        "landmark",
+        "color",
+        "continuity",
+        "occlusion"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": true
+      },
+      "outputs": {
+        "native_operations": [
+          "move",
+          "resize",
+          "ungroup",
+          "edit_part"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX01",
+        "EX02",
+        "EX11"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T08",
+      "axis": "object_type",
+      "title": "compound_region",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "group"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "critical_parts",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "part_bbox": {
+          "unit": "source_px",
+          "range": null
+        },
+        "z_order": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "fill": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "gradient": {
+          "unit": "native_parameter",
+          "range": null
+        }
+      },
+      "metric_refs": [
+        "parts",
+        "relations",
+        "occlusion",
+        "continuity",
+        "regional_residual",
+        "ssim"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": true
+      },
+      "outputs": {
+        "native_operations": [
+          "move",
+          "ungroup",
+          "edit_part"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX04",
+        "EX05",
+        "EX13"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T09",
+      "axis": "object_type",
+      "title": "data_image",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "photo"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "data_identity",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "raster_permission",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "bbox": {
+          "unit": "source_px",
+          "range": null
+        },
+        "crop": {
+          "unit": "native_parameter",
+          "range": null
+        }
+      },
+      "metric_refs": [
+        "plot_fidelity",
+        "layout",
+        "native_integrity"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [
+          "replace_image"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX09"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T10",
+      "axis": "object_type",
+      "title": "data_chart",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "group",
+          "trace"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "trace_points": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "part_bbox": {
+          "unit": "source_px",
+          "range": null
+        },
+        "line_width": {
+          "unit": "pt",
+          "range": [
+            0.1,
+            500
+          ]
+        }
+      },
+      "metric_refs": [
+        "plot_fidelity",
+        "relations",
+        "text_content",
+        "boundary_f1"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": true
+      },
+      "outputs": {
+        "native_operations": [
+          "edit_nodes",
+          "edit_text"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX10"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "T11",
+      "axis": "object_type",
+      "title": "texture",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": [
+          "path",
+          "group"
+        ]
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {
+        "pattern_spacing": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "fill": {
+          "unit": "native_parameter",
+          "range": null
+        },
+        "path_points": {
+          "unit": "source_px",
+          "range": null
+        }
+      },
+      "metric_refs": [
+        "texture",
+        "color",
+        "regional_residual"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [
+          "edit_part"
+        ],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [
+        "EX05"
+      ],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "S0",
+      "axis": "semantic_level",
+      "title": "figure",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "critical_parts",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "coverage",
+        "relations",
+        "layout"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": true
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "S1",
+      "axis": "semantic_level",
+      "title": "region",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "critical_parts",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "coverage",
+        "relations",
+        "layout"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": true
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "S2",
+      "axis": "semantic_level",
+      "title": "object",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "critical_parts",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "coverage",
+        "relations",
+        "layout"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": true
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "S3",
+      "axis": "semantic_level",
+      "title": "natural_part",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "critical_parts",
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "coverage",
+        "relations",
+        "layout"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": true
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "S4",
+      "axis": "semantic_level",
+      "title": "primitive",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "native_integrity"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "R0",
+      "axis": "drawing_role",
+      "title": "base",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "occlusion_order",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "regional_residual",
+        "color"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "R1",
+      "axis": "drawing_role",
+      "title": "background_structure",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "occlusion_order",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "occlusion",
+        "continuity"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "R2",
+      "axis": "drawing_role",
+      "title": "semantic_foreground",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "occlusion_order",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "parts",
+        "occlusion"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "R3",
+      "axis": "drawing_role",
+      "title": "annotation",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "occlusion_order",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "text_content",
+        "occlusion"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "R4",
+      "axis": "drawing_role",
+      "title": "relations_overlay",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "occlusion_order",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "relations",
+        "occlusion",
+        "continuity"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M01",
+      "axis": "module",
+      "title": "source_analysis",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "host_observation",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "source_uncertainty"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "host_observation"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M02",
+      "axis": "module",
+      "title": "knowledge_proposal",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "host_knowledge",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "knowledge_utility"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "host_knowledge"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M03",
+      "axis": "module",
+      "title": "instruction_compilation",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "compile_object",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "coverage"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "compile_object"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M04",
+      "axis": "module",
+      "title": "native_leaf",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "build",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "native_integrity"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "build"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M05",
+      "axis": "module",
+      "title": "parent_assembly",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "check_hierarchy",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "parts",
+        "relations",
+        "occlusion",
+        "continuity"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "check_hierarchy"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M06",
+      "axis": "module",
+      "title": "typed_evaluation",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "evaluate_images",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "regional_residual"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "evaluate_images"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M07",
+      "axis": "module",
+      "title": "parameter_repair",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "repair_parameters",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "knowledge_utility"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "repair_parameters"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M08",
+      "axis": "module",
+      "title": "global_review",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "prepare_review",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "coverage",
+        "layout"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "prepare_review"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M09",
+      "axis": "module",
+      "title": "native_operations",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "native_plan",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "editability"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "native_plan"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    },
+    {
+      "id": "M10",
+      "axis": "module",
+      "title": "delivery",
+      "implementation_status": "wired_with_declared_limits",
+      "applies": {
+        "render_types": []
+      },
+      "input_evidence": [
+        "source_identity",
+        "located_observation",
+        "observed_status",
+        "editing_requirements"
+      ],
+      "decomposition": {
+        "required_stop_record": true,
+        "allow_skipped_levels": true,
+        "stop_on": [
+          "native_unit",
+          "no_independent_edit_value"
+        ],
+        "unverified_on": [
+          "unresolved",
+          "resource_stop"
+        ]
+      },
+      "method": "finalize",
+      "hard_constraints": [
+        "no_compensated_hard_failure",
+        "no_unobserved_parts",
+        "required_native_editing",
+        "source_consistency"
+      ],
+      "parameters": {},
+      "metric_refs": [
+        "native_integrity"
+      ],
+      "iteration": {
+        "priority": "hard_defect_then_primary_vector",
+        "repair_route": "repair_parameters",
+        "no_fixed_round_success": true
+      },
+      "optimization": {
+        "selection": "measured_noncompensating_vector",
+        "require_changed_decision": true
+      },
+      "interfaces": {
+        "semantic_owner_required": true,
+        "separate_scientific_relations": true,
+        "parent_checks": false
+      },
+      "outputs": {
+        "native_operations": [],
+        "route": "finalize"
+      },
+      "failure_and_stop": {
+        "missing_required": "UNVERIFIED",
+        "conflict": "BLOCKED",
+        "resource_limit": "PAUSED_RESOURCE_LIMIT"
+      },
+      "example_refs": [],
+      "counterexample_checks": [
+        "source_consistency",
+        "required_native_editing"
+      ]
+    }
+  ]
+}

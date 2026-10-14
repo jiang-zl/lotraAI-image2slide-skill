@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Original semantic containment DAG",
+  "type": "object",
+  "required": ["schema", "source_hash", "canvas", "source_view", "source_units", "elements", "containers", "owner_decisions", "hierarchy_decisions"],
+  "properties": {
+    "schema": {"const": "recursive-containment-1"},
+    "source_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "canvas": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number", "exclusiveMinimum": 0}},
+    "source_view": {"type": "object"}, "source_units": {"type": "array"}, "elements": {"type": "array"},
+    "owner_decisions": {"type": "array"}, "hierarchy_decisions": {"type": "array"},
+    "containers": {"type": "array", "items": {"type": "object", "required": ["id", "members", "source_bbox", "source_evidence", "domain", "target"],
+      "properties": {"id": {"type": "string"}, "members": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "domain": {"type": "object", "required": ["kind"], "properties": {"kind": {"enum": ["native_body", "native_table", "native_cell", "logical_polygon"]}}},
+        "target": {"type": "object", "required": ["axes", "center", "measurement_basis", "authorization", "source_uncertainty_px"],
+          "properties": {"axes": {"const": ["x", "y"]}, "measurement_basis": {"const": "direct_member_paint_union"}, "source_uncertainty_px": {"type": "number", "minimum": 0}}}
+      }}}
+  },
+  "description": "Program validation also enforces exact original pixels, source/native/cell equality, unique direct ownership, acyclicity, every potential nested pair and independently frozen tolerances."
+}

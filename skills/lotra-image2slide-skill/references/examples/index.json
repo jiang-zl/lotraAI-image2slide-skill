@@ -1,0 +1,477 @@
+{
+  "version": "case-selector-1",
+  "examples": [
+    {
+      "id": "EX01",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T07"
+        ],
+        "classes": [
+          "car"
+        ],
+        "views": [
+          "side"
+        ],
+        "required_parts": [
+          "body",
+          "glass",
+          "wheel"
+        ],
+        "exclude_styles": [
+          "photographic",
+          "perspective"
+        ]
+      },
+      "style_tags": [
+        "car",
+        "side_view",
+        "flat_icon",
+        "natural_parts"
+      ],
+      "defects": [
+        "wheel_center",
+        "part_contact",
+        "missing_part"
+      ],
+      "metric_refs": [
+        "parts",
+        "landmark",
+        "mask_iou",
+        "color",
+        "continuity",
+        "occlusion",
+        "editability",
+        "semantic_recognizability"
+      ],
+      "method": "车身用匹配的多边形或原生路径，玻璃用适合形状，轮子优先原生圆；真实组合，保留部件 ID。",
+      "counterexample": "“汽车通常有四轮，所以在侧视图补画四轮”应拒绝；“车轮用圆表达”是可试的方法，但源轮形明显透视椭圆时应改表示。",
+      "path": "references/examples/ex01.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX02",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T07"
+        ],
+        "classes": [
+          "server"
+        ],
+        "views": [
+          "front"
+        ],
+        "exclude_styles": [
+          "photographic"
+        ]
+      },
+      "style_tags": [
+        "server",
+        "front_view",
+        "panel",
+        "repeated_parts"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "parts",
+        "layout",
+        "color",
+        "text_content",
+        "editability",
+        "semantic_recognizability"
+      ],
+      "method": "外壳面板用原生矩形或圆角形，灯孔用规则图元，重复结构共享参数原型。",
+      "counterexample": "把整块面板截图作为一张“可编辑 icon”；或因模板有 6 个灯就强画 6 个。",
+      "path": "references/examples/ex02.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX03",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T03",
+          "T05"
+        ],
+        "classes": [
+          "cloud"
+        ],
+        "exclude_styles": [
+          "photographic"
+        ]
+      },
+      "style_tags": [
+        "cloud",
+        "outline",
+        "curved_boundary",
+        "landmarks"
+      ],
+      "defects": [
+        "missing_arc"
+      ],
+      "metric_refs": [
+        "boundary_f1",
+        "chamfer",
+        "hausdorff",
+        "landmark",
+        "stroke",
+        "complexity"
+      ],
+      "method": "试用匹配的原生 cloud 预设；不匹配则以少量 Bézier 段构成闭合轮廓。",
+      "counterexample": "整体 IoU 高就接受丢失的凹口；使用很多小圆拼出未经验证的外轮廓且难以编辑。",
+      "path": "references/examples/ex03.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX04",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T08"
+        ],
+        "classes": [
+          "city_schematic"
+        ],
+        "exclude_styles": [
+          "photographic"
+        ]
+      },
+      "style_tags": [
+        "city",
+        "compound_background",
+        "recursive",
+        "multi_type"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "parts",
+        "relations",
+        "layout",
+        "occlusion",
+        "continuity",
+        "color",
+        "ssim",
+        "psnr",
+        "perceptual",
+        "regional_residual",
+        "editability",
+        "semantic_recognizability"
+      ],
+      "method": "底色原生形状，道路路径/形状，建筑和车各自重建，标注原生；叶子完成后逐层组装。",
+      "counterexample": "整张背景放为大位图；所有子项都按 icon 指标；仅凭各裁片最高分宣布整个城市通过。",
+      "path": "references/examples/ex04.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX05",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T08",
+          "T11"
+        ],
+        "classes": [
+          "landscape_schematic"
+        ],
+        "exclude_styles": [
+          "photographic",
+          "data_map"
+        ]
+      },
+      "style_tags": [
+        "mountain",
+        "compound_background",
+        "contour",
+        "texture"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "boundary_f1",
+        "landmark",
+        "color",
+        "texture",
+        "occlusion",
+        "regional_residual",
+        "semantic_recognizability"
+      ],
+      "method": "大面与山脊原生路径，规则对象独立；纹理采用受控重复图元或任务允许的局部表示。",
+      "counterexample": "平滑消除科学上重要峰谷；只追求纹理 SSIM；把等值线看成可删装饰。",
+      "path": "references/examples/ex05.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX06",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T01",
+          "T02"
+        ]
+      },
+      "style_tags": [
+        "text",
+        "equation",
+        "scientific_symbols",
+        "native_edit"
+      ],
+      "defects": [
+        "font_width",
+        "baseline",
+        "math_symbol"
+      ],
+      "metric_refs": [
+        "text_content",
+        "math_structure",
+        "layout",
+        "occlusion",
+        "native_integrity",
+        "editability"
+      ],
+      "method": "普通字用原生文本，结构公式用可由目标编辑器修改的原生数学对象。",
+      "counterexample": "负号漏掉但整体 SSIM 高而通过；用公式 SVG 或文字上下标冒充原生公式编辑。",
+      "path": "references/examples/ex06.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX07",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T06"
+        ]
+      },
+      "style_tags": [
+        "table",
+        "merged_cells",
+        "native_structure"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "table_structure",
+        "text_content",
+        "layout",
+        "editability"
+      ],
+      "method": "原生表格与真实合并结构优先，复杂内容按目标能力验证。",
+      "counterexample": "规则字符串矩阵冒充合并表格；用一组线条看起来像表格就声称具备原生表格编辑。",
+      "path": "references/examples/ex07.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX08",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T04"
+        ]
+      },
+      "style_tags": [
+        "connector",
+        "cross_group",
+        "attachment",
+        "direction"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "relations",
+        "landmark",
+        "continuity",
+        "stroke",
+        "occlusion",
+        "editability"
+      ],
+      "method": "支持时使用真实 Connector 和端口；曲线几何与逻辑关系分别维护。",
+      "counterexample": "把线贴到框边就算附着；移动父组后连线不动；把箭头头部删掉但中心线分数仍高。",
+      "path": "references/examples/ex08.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX09",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T09"
+        ],
+        "raster_permission": true
+      },
+      "style_tags": [
+        "photo",
+        "microscopy",
+        "data_image",
+        "raster_exception"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "plot_fidelity",
+        "layout",
+        "color",
+        "native_integrity",
+        "editability"
+      ],
+      "method": "保持影像内容，原生重建标注；记录可替换影像的明确范围。",
+      "counterexample": "为追求矢量率生成相似纹理替换实验图；或以“复杂背景”为名保留整页截图。",
+      "path": "references/examples/ex09.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX10",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T10"
+        ]
+      },
+      "style_tags": [
+        "chart",
+        "axes",
+        "legend",
+        "data_fidelity"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "plot_fidelity",
+        "text_content",
+        "relations",
+        "boundary_f1",
+        "landmark",
+        "editability"
+      ],
+      "method": "有可信数据时原生图表优先；仅截图时可见轨迹与标注重建，说明精度范围。",
+      "counterexample": "重画一条看着合理的趋势线；把缺失误差棒当噪声去掉；声称可精确编辑原始实验数据。",
+      "path": "references/examples/ex10.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX11",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T07"
+        ],
+        "classes": [
+          "repeated_device"
+        ]
+      },
+      "style_tags": [
+        "repeated_instances",
+        "prototype",
+        "variation",
+        "labels"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "parts",
+        "text_content",
+        "relations",
+        "layout",
+        "editability",
+        "complexity"
+      ],
+      "method": "复用已验证原生构建配方，各实例按原图参数化。",
+      "counterexample": "把标签一起复制；修 A 的填充后意外改变 B；重复对象被当成纹理丢掉独立编辑。",
+      "path": "references/examples/ex11.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX12",
+      "status": "verified_probe",
+      "conditions": {
+        "types": [
+          "T03",
+          "T08"
+        ],
+        "required_defects_any": [
+          "wrong_color",
+          "missing_internal_line"
+        ]
+      },
+      "style_tags": [
+        "metric_counterexample",
+        "wrong_color",
+        "missing_arrow",
+        "colored_background"
+      ],
+      "defects": [
+        "wrong_color",
+        "missing_internal_line"
+      ],
+      "metric_refs": [
+        "mask_iou",
+        "color",
+        "boundary_f1",
+        "relations",
+        "regional_residual"
+      ],
+      "method": "保留原候选结果作基线，加入颜色、边缘/中心线和关系检查。",
+      "counterexample": "两例 foreground IoU 都为 1，仍存在可见错误；单一轮廓分不能作为完整质量依据。",
+      "path": "references/examples/ex12.md",
+      "validation_scope": "limited historical/probe evidence; not current reconstruction acceptance"
+    },
+    {
+      "id": "EX13",
+      "status": "design_example",
+      "conditions": {
+        "types": [
+          "T08"
+        ],
+        "classes": [
+          "interleaved_region"
+        ]
+      },
+      "style_tags": [
+        "occlusion",
+        "interleaving",
+        "semantic_render_mapping"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "occlusion",
+        "relations",
+        "continuity",
+        "native_integrity",
+        "editability"
+      ],
+      "method": "先检查简单原生分组能否表达，不能时显式分片并维护映射与操作行为。",
+      "counterexample": "规定所有连线永远在对象下方；把渲染分片误记成多个科学对象；只验收语义树而不看实际合成。",
+      "path": "references/examples/ex13.md",
+      "validation_scope": "design method"
+    },
+    {
+      "id": "EX14",
+      "status": "historical_evidence",
+      "conditions": {
+        "types": [
+          "T08"
+        ],
+        "classes": [
+          "scientific_panel"
+        ],
+        "requires_context": {
+          "baseline_available": true
+        }
+      },
+      "style_tags": [
+        "jxy_01",
+        "baseline",
+        "full_scene",
+        "integration"
+      ],
+      "defects": [],
+      "metric_refs": [
+        "coverage",
+        "relations",
+        "layout",
+        "native_integrity",
+        "editability",
+        "regional_residual",
+        "runtime"
+      ],
+      "method": "保留原 PPT 和 ZIP，建立新候选；先跑一条完整的语义—知识—绘制—检查链路。",
+      "counterexample": "引用历史 228 项测试或 88 项原生检查就宣布视觉完成；将 319/381 的部分覆盖说成全通过。",
+      "path": "references/examples/ex14.md",
+      "validation_scope": "limited historical/probe evidence; not current reconstruction acceptance"
+    }
+  ]
+}
