@@ -179,8 +179,8 @@ def _winding_geometry(contours):
     return unary_union(faces) if faces else Polygon()
 
 
-def native_geometry(nodes, name, content_geometry=None):
-    from .neighbor_geometry import _paths,_stroke
+def native_geometry(nodes, name, content_geometry=None,theme_lines=None):
+    from .neighbor_geometry import _paths,_stroke,_stroke_ends
     out=[]
     for n in closure(nodes,[name]):
         row=nodes[n]
@@ -196,6 +196,7 @@ def native_geometry(nodes, name, content_geometry=None):
         if any(len(e) for e in props.findall('a:effectLst',NS)+props.findall('a:effectDag',NS)):
             raise ValueError('HD icon cannot silently use blur/soft-edge effects')
         width=_stroke(row,props);fill=any(props.find('a:'+k,NS) is not None for k in ('solidFill','gradFill','pattFill'))
+        cap,join,miter=_stroke_ends(row,props,theme_lines) if width else (2,1,8.)
         if fill:
             from .native_paint import opaque_fill
             opaque_fill(props,gradient=True)
@@ -216,15 +217,15 @@ def native_geometry(nodes, name, content_geometry=None):
                 region=_winding_geometry([points for points,closed,paintfill in group if closed and paintfill])
                 if not region.is_empty:out.append(region)
         for points,closed,paintfill in paths:
-            if width and len(points)>1: out.append(LineString(points+[points[0]] if closed else points).buffer(width/2))
+            if width and len(points)>1: out.append(LineString(points+[points[0]] if closed else points).buffer(width/2,cap_style=cap,join_style=join,mitre_limit=miter))
     if not out: raise ValueError('Empty native icon paint')
     return unary_union(out)
 
-def measure_relations(nodes,relations,content_geometry=None):
+def measure_relations(nodes,relations,content_geometry=None,theme_lines=None):
     rows=[];cache={}
     for rel in relations:
         for name in rel['parts']:
-            if name not in cache:cache[name]=native_geometry(nodes,name,content_geometry)
+            if name not in cache:cache[name]=native_geometry(nodes,name,content_geometry,theme_lines)
         a,b=(cache[n] for n in rel['parts']);kind=rel['kind']
         if kind=='distance': value=float(a.distance(b))
         elif kind=='overlap': value=float(a.intersection(b).area/max(min(a.area,b.area),1e-12))
@@ -238,12 +239,32 @@ def measure_relations(nodes,relations,content_geometry=None):
                      **({'point':rel['point']} if kind=='source_contact' else {})})
     return rows
 
+def verified_paint_leaves(task,state,candidate,names,nodes):
+    """Separate fully verified nonpainted ports from source artwork leaves.
+
+    A name alone cannot exempt a native object. The immutable port metadata,
+    exact no-fill/no-outline encoding, current connector endpoint, semantic
+    ancestry and unchanged original-graph lineage must all verify. Physical
+    boundary/gap and actual native binding stay in connection_geometry.
+    """
+    from .native_connection_transaction import PREFIX,derived_receipt
+    artifacts=[];excluded=set()
+    for name in sorted(names):
+        if not name.startswith(PREFIX):continue
+        proof=derived_receipt(task,state,candidate,name,nodes)
+        if not proof['passed']:
+            raise ValueError('HD program port failed its independent artifact proof: '+name+' '+proof.get('reason',''))
+        excluded.add(name);artifacts.append({'object':name,'proof':proof})
+    return sorted(n for n in names if nodes[n]['tag']!='grpSp' and n not in excluded),artifacts
+
 def measure(task,state,candidate,unit,row,nodes=None):
     from .boundary_geometry import saved_nodes
     from .execution_contract import resource
     validate_target(row,unit);pdf,evidence=pdf_evidence(task,state,candidate)
     nodes=nodes or saved_nodes(resource(task,candidate['pptx']),state['source_size'])
-    names=closure(nodes,unit['objects']);leaves=sorted(n for n in names if nodes[n]['tag']!='grpSp')
+    from .neighbor_geometry import package_theme_lines
+    theme_lines=package_theme_lines(resource(task,candidate['pptx']))
+    names=closure(nodes,unit['objects']);leaves,program_artifacts=verified_paint_leaves(task,state,candidate,names,nodes)
     typed_content={};delegated=[]
     text_names=[n for n in leaves if nodes[n]['node'].findall('.//a:t',NS) or nodes[n]['node'].findall('.//m:oMath',NS)]
     if text_names:
@@ -256,9 +277,9 @@ def measure(task,state,candidate,unit,row,nodes=None):
                 raise ValueError('Mixed icon content requires independent '+kind+' source registration and current actual glyph paint: '+name)
             typed_content[name]=paint[name]['geometry'];delegated.append({'object':name,'profile':kind,'units':[u['id'] for u in own],
                 'geometry':'current actual owner glyph matte','content_checks':'Independent whole-result text/Office Math gates remain mandatory'})
-    native_geometry(nodes,unit['objects'][0],typed_content)
+    native_geometry(nodes,unit['objects'][0],typed_content,theme_lines)
     # Every bound owner and descendant, not merely the first semantic root.
-    for name in unit['objects'][1:]: native_geometry(nodes,name,typed_content)
+    for name in unit['objects'][1:]: native_geometry(nodes,name,typed_content,theme_lines)
     target=row['target'];p=profile();scales=[];x,y,w,h=unit['roi']
     context=[max(0,x-8),max(0,y-8),min(state['source_size'][0],x+w+8)-max(0,x-8),min(state['source_size'][1],y+h+8)-max(0,y-8)]
     for scale,limit in zip(p['scales'],p['edge_width_limits_px']):
@@ -298,7 +319,7 @@ def measure(task,state,candidate,unit,row,nodes=None):
         material=image[window[1]:window[3],window[0]:window[2]]
         residual=material_residual(material);patches.append({'id':patch['id'],'residual':residual,'max':p['styles'][target['profile']]['material_residual_max'],
             'actual_pixel_window':window,'passed':residual<=p['styles'][target['profile']]['material_residual_max']})
-    relations=measure_relations(nodes,row['relations'],typed_content)
+    relations=measure_relations(nodes,row['relations'],typed_content,theme_lines)
     # Prevent omitting assembly checks while registering several native parts.
     if len(leaves)>1 and not relations: raise ValueError('Multi-part icon needs executable relationship closure')
     covered={n for r in row['relations'] for owner in r['parts'] if owner not in unit['objects'] or nodes[owner]['tag']!='grpSp' for n in closure(nodes,[owner])}
@@ -311,5 +332,6 @@ def measure(task,state,candidate,unit,row,nodes=None):
                               'source_scale':1,'actual_scale':p['scales'][-1],'probes':paired,
                               'basis':'Same original-world RGB boundary, width in source pixels; whole-window gradient/curvature energy remains diagnostic, not a monotonic clarity oracle'},
             'scales':scales,'materials':patches,'relations':relations,'native_parts':leaves,
+            'program_artifacts':program_artifacts,
             'native_editable_vector':True,'delegated_typed_content':delegated,'configuration_hash':identity(p),'evidence':evidence,
             'scope':'Current native descendants, current vector PDF; no interpolated preview or sharpness-only waiver'}

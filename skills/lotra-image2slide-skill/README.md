@@ -1,43 +1,53 @@
-# lotraAI Image2Slide v1.31.0
+# lotraAI Image2Slide v1.33.0
 
-本版状态：**IMPLEMENTED_PUBLISHED_UNTESTED**。按用户最新指示，不运行发布测试。
-仅独立文字、基础形状和公式新增源参数/原生属性验收，详见
-[v1.31 说明](references/native-core-v131.md)。复杂 icon、子部件、母件及重复
-实例复用保持 v1.30；其他部件与旧任务流程不改。集成离线 runtime，额外提供
-LibreOffice Math 公式编辑器。下文 v1.30 的测试记录属于历史基线，不证明本版。
+将科研图片重建成分层、可编辑的 PowerPoint。支持原图＋一次性半成品 PPT 导入。
+本版接入函数曲线、同一原图问题的共享收敛预算、个人知识库闭环和增量安装。
+当前发布状态：IMPLEMENTED_STATICALLY_REVIEWED_NOT_TESTED_PER_USER_REQUEST。
 
-将科研参考图重建为忠实、清晰、分层可编辑的 PPTX。Agent 理解原图并判断语义，程序负责执行、测量、保护、回滚和验收。当前版本减少重复上下文与重复执行，保留完整递归、原生编辑能力和所有质量硬约束。
+## Quick start：让 Agent 安装
 
-使用入口为 [SKILL.md](SKILL.md)。按当前程序工作包执行，不需要把历史对话、整个数据库或全部参考文档交给模型。完整原图合同、测量和最佳版本存入项目 `.lotraAI-build`；显示包只提供当前行动需要的内容及可核验引用。
+把下面一段交给当前项目中的 Agent 即可。只需读取本 README 的当前入口，程序
+自行下载、续传、校验和准备环境；不需要让模型逐段下载或通读 runtime 清单。
 
-本版包含任务隔离、按字段分页读取、累计读取索引、恢复检查点、增量工作包、依赖范围计算、共享原生/图像事实、解码前数值缓存、同任务批量检查和重复失败抑制。缓存有容量与设备内存边界；失效或缺证据会重新执行。最终验收仍完整检查原图单元、保存对象和表格单元格。平台历史压缩和提示缓存由宿主决定，本 skill 不假定有该控制权。
+首次安装提示词：
 
-随包提供运行程序、分类评价配置、通用构造资产、必要参考和许可证。离线 OCR/依赖资源使用独立校验的 runtime companion；由项目内 bootstrap 选择实际可运行的资源，不联网下载、不修改全局 Python、不要求额外模型密钥。详见 [运行准备](references/runtime-readiness.md)。客户包不包含私人任务、案例输出、历史数据库或开发日志。用于升级验收的可执行合同检查是运行依赖，保留在包内。
+> 将 lotraAI Image2Slide v1.33.0 安装到当前项目。使用官方 install-lotra.ps1（Windows）或 install-lotra.sh（Linux）一键入口，自动准备匹配的 Python、OCR 和 Math runtime。安装完成后只报告 skill 入口、实际就绪状态和详细日志位置，不展开安装日志，不创建 Setup skill，不修改全局环境。
 
-交付给重建用户的文件只有 `Final_editable.pptx` 和 `Report.md`。报告列出各部件的实际指标与 ↑/↓。PDF 仅用于真实导出验证，全部依赖完成后清理；组件与详细过程留在项目 runtime。
+已安装旧版的增量更新提示词：
 
-安装到新的版本目录，旧版和用户文件保留。`scripts/package_skill.py` 校验文件清单与 SHA-256；这些哈希是完整性校验，不是发布者签名。实际服务 token 未提供时标为未知，不能从字符减少或缓存命中推算节省比例。
+> 将当前项目的 lotraAI Image2Slide 增量更新到 v1.33.0。使用官方相同的一键入口，优先复用经哈希与资源兼容性确认的现有 runtime，只下载技能更新包和缺失资源；保留个人知识库、字体、任务、原图、旧版本和项目其他指令。完成后只报告版本、skill 入口、runtime 实际状态和日志位置。
 
-## v1.30.0 reliable measurement and guarded repair scheduling
+官方固定版本发布入口：[v1.33.0 release](https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.33.0)。
+下载该 release 的 `install-lotra.ps1` 或 `install-lotra.sh`，在已有项目目录运行：
 
-Current-task failure agendas, early saved-native capability diagnosis, complete
-batch prevalidation and command spans with exclusive timing organize the
-existing executors. Read references/workflow-optimization.md for finite routes
-and evidence limits. Invalid edge crossings supply no width or gain; original
-probe diagnosis precedes reconstruction. Mathematical digit styles retain
-the same value and AST scope, while actual typography/OMML remain independent.
-Pending fonts, saved renders and user intent precede an older quality loop.
-`workflow-control advance` executes current source-bound math corrections or
-registered finite repair plans, then returns the next real contract.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install-lotra.ps1 -Project "C:\path\to\project"
+# 已安装旧版时，执行相同命令；程序自动走增量更新。
+```
 
-The release runs production regressions and an isolated actual Office
-edit/save/reopen/render control. These controls verify the addressed mechanisms;
-each new reconstruction still needs complete current whole-result acceptance.
-Actual end-to-end performance and service-token savings remain unknown.
+```sh
+sh install-lotra.sh /path/to/project
+```
 
-Shared task resource scopes reuse image decodes, common transformation prefixes,
-ZIP/XML and PDF documents/windows. Small exact pixel payloads are found before
-decode/rasterization and use the private bounded cache. Independent final gates
-bypass persistent pixel and measurement-result hits. Read
-[resource locality](references/resource-locality.md) for ownership, sampling and
-remaining repeated paths. Resource counters describe actual operations only.
+Windows AMD64 和 Linux x86_64 提供完整 runtime 路线。其他平台未提供完整 Math
+资源时会明确停止，不会注册一个缺少环境的 skill。首次安装需下载对应平台资源；
+同 runtime 的更新主要下载小体积 update ZIP。断点和已校验文件保存在项目私有目录，
+失败后重跑同一命令。网络资源需要所在 Agent/宿主允许访问 GitHub。
+
+离线方式：下载完整 `lotraAI-image2slide-v1.33.0-bundle.zip` 解压，运行其中
+`installer/install.ps1 -Project PROJECT` 或 `sh installer/install.sh PROJECT`。
+`lotraAI-image2slide-v1.33.0-update.zip` 是源代码/安装器增量包，首次安装时会联网补齐
+所需 runtime；它不是完整离线包。不要单独安装内层技能 ZIP 后把环境准备留给模型。
+
+## 重建
+
+> 使用 $lotra-image2slide-skill 将这张原图重建为原生可编辑 PPT。按正常工作包完成部件、母件复用、排版和最终一次字体及整图复核。优先使用与当前原图兼容的个人方法；曲线按语义函数化，未知曲线使用分段低阶拟合，语义不变且差异在冻结的可接受范围内即可。
+
+已存在任务先恢复，不重新从头生成。新旧任务状态与源图证据保持独立；旧任务只有
+显式迁移后才使用 v1.33 新合同。个人库首次为空，使用后逐步建立自己的可复用方法，
+不附带开发者的小车模型或私人历史。中文、英文按对应语言字体集合选择。
+
+使用 [SKILL.md](SKILL.md)，完整当前数据约定见 [v1.33 工作流](references/workflow-v133.md)。
+模型只处理当前源图语义与必要决策，程序处理几何、有限搜索、状态、引用和资源准备。
+默认工具回执简短，完整证据保留在项目 .lotraAI-build。发布时未运行测试、验证、
+重建、渲染或性能/效果测量；代码接入和静态审查不能证明实际节省百分比。

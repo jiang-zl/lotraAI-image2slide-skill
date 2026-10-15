@@ -1,3 +1,7 @@
+## 1.33.0
+
+Functional source-bound curves, shared problem budgets, private knowledge lifecycle, compact one-click incremental install. Static source review only; tests/validation/measurements not run per user request.
+
 # Changelog
 
 ## v1.31.0

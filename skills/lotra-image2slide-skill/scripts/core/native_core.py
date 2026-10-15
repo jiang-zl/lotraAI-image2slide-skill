@@ -8,7 +8,7 @@ from decimal import Decimal, ROUND_HALF_UP
 import copy
 from .common import read_json, write_json, digest, identity, safe_path
 
-VERSION='native-core-1.31.0'
+VERSION='native-core-1.32.0'
 KINDS={'text','shape','equation'}
 
 
@@ -56,8 +56,10 @@ def bind(task,request):
     if not owners or len(set(owners))!=len(owners):raise ValueError('Unique explicit native core owners required')
     for owner in owners:
         obj=objects[owner]
-        if obj['render_type'] not in KINDS or obj.get('parent') is not None:
-            raise ValueError('Only standalone text, primitive shapes and equations; grouped/icon descendants stay v1.30: '+owner)
+        if obj['render_type'] not in KINDS:
+            raise ValueError('Only source-bound text, primitive shapes and equations: '+owner)
+        if obj.get('parent') and (obj['parent'] not in objects or objects[obj['parent']]['render_type']!='group'):
+            raise ValueError('Grouped primitive requires an explicit valid Scene transform parent: '+owner)
         if obj.get('semantic_type') in ('icon','photo','chart','table','scene','curve','connector'):
             raise ValueError('Other component types remain unchanged')
         if obj['render_type'] in ('text','equation') and not {'font','font_size','color'}<=set(obj.get('style',{})):

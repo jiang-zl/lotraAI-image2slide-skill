@@ -35,7 +35,6 @@ class Facts:
             'pdf_opens', 'pdf_clip_rasters', 'compat_full_image_copies', 'evictions')}
         self.dependencies = {'resource_code': digest(__file__),
                              'common_code': digest(Path(__file__).with_name('common.py')),
-                             'context_policy': digest(ROOT / 'config/context-policy.json'),
                              'python': platform.python_version()}
 
     def close(self):

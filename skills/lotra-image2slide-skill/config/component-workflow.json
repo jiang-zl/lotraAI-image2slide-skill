@@ -1,0 +1,97 @@
+{
+  "schema": "component-workflow-1.32.0",
+  "enabled_for_new_tasks": true,
+  "fixed_parameter_route": "constructor_contract",
+  "grouped_primitives": true,
+  "whole_audit_timing": "components_and_layout_ready",
+  "office_behavior_checks": false,
+  "final_visual_required": true,
+  "max_actions_per_advance": 8,
+  "default_actions_per_advance": 4,
+  "parameter_search": {
+    "max_evaluations": 96,
+    "shrink_factor": 0.5,
+    "protected_regression_tolerance": 0,
+    "max_rounds": 24,
+    "max_active_variables": 6,
+    "coupled_update": true,
+    "damping": 0.001
+  },
+  "stage_order": [
+    "recovery",
+    "measurement",
+    "source",
+    "structure",
+    "fit",
+    "assembly",
+    "instance",
+    "layout",
+    "final"
+  ],
+  "calibration_role": "source_reobservation_only",
+  "calibration_models": {
+    "source_boundary": {
+      "unit": "source_px",
+      "coefficients": {
+        "uncertainty_weight": 1.0,
+        "quantization_weight": 1.0,
+        "lower": 0.35,
+        "upper": 1.5
+      },
+      "basis": "Initial engineering policy for original boundary uncertainty plus constructor sampling; not a statistical confidence interval"
+    },
+    "source_keypoint": {
+      "unit": "source_px",
+      "coefficients": {
+        "uncertainty_weight": 1.0,
+        "quantization_weight": 1.0,
+        "lower": 0.25,
+        "upper": 1.0
+      },
+      "basis": "Initial engineering policy for independently located original keypoints"
+    },
+    "source_curve_sampling": {
+      "unit": "source_px",
+      "coefficients": {
+        "uncertainty_weight": 1.0,
+        "quantization_weight": 1.0,
+        "lower": 0.1,
+        "upper": 1.0
+      },
+      "basis": "Initial engineering policy for original curve uncertainty plus declared finite flattening error"
+    }
+  },
+  "missing_target": "SOURCE_DECISION_REQUIRED",
+  "locking": "intrinsic_facets_only; instance pose and final layout remain separate",
+  "authority": "Source-bound constructor inputs, noncompensating part/assembly targets and final actual visual review; omitted behavior checks are excluded, never PASS.",
+  "design_revision": 8,
+  "performance_telemetry": false,
+  "fixed_owner_types": [
+    "bezier",
+    "connector",
+    "equation",
+    "path",
+    "photo",
+    "shape",
+    "table",
+    "text",
+    "trace"
+  ],
+  "instance_policy": {
+    "default": "similarity",
+    "scale_policy_required": true,
+    "variants": "source_bound_field_overrides"
+  },
+  "recovery_attempt_limit": 3,
+  "font_policy": "config/font-collections.json",
+  "final_order": [
+    "qualified_components",
+    "layout_ready",
+    "single_language_font_review",
+    "current_whole_visual",
+    "final_audit",
+    "accepted_export"
+  ],
+  "field_addresses": "Shared dictionary/list paths; scalar bbox indices; scoped typed native operations",
+  "recovery_postconditions": "Immutable planned post-save ledger transitions before Ready; idempotent replay"
+}

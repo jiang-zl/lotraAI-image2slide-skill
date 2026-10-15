@@ -29,7 +29,15 @@ def verify_anchor(entry):
     if meta.get('object') is None or meta.get('end') not in (0,1) or node.find('p:nvSpPr/p:cNvPr',NS).get('name')!=anchor_name(meta['connection'],meta):return False
     site=props.find('a:custGeom/a:cxnLst/a:cxn/a:pos',NS)
     if props.find('a:noFill',NS) is None or props.find('a:ln/a:noFill',NS) is None or node.find('.//a:t',NS) is not None or site is None:return False
-    return site.get('x')=='50000' and site.get('y')=='50000' and max(entry['frame'][2:])<=.101
+    extent=props.find('a:xfrm/a:ext',NS)
+    if extent is None:return False
+    try:
+        error=max(abs(float(site.get(k))-float(extent.get(e))/2) for k,e in (('x','cx'),('y','cy')))
+    except (ValueError,TypeError):return False
+    # a:cxn/a:pos uses shape transform coordinates (EMU), not the
+    # independently scaled path w/h coordinate system. Half an EMU is only
+    # integer serialization precision; an out-of-bounds legacy site fails.
+    return error<=.5 and max(entry['frame'][2:])<=.101
 
 def same_original_connection_facts(before,after):
     """Only recursion/coverage bookkeeping can change an existing port basis.
@@ -161,7 +169,7 @@ def _set_polyline(node,entry,points):
         if not -2147483647<=value<=2147483647:raise ValueError('Elbow adjustment exceeds Office guide range')
         E.SubElement(av,'{'+NS['a']+'}gd',name=key,fmla='val '+str(round(value)))
 
-def _new_anchor(name,native_id,center,target_entry,meta):
+def _new_anchor(name,native_id,center,target_entry,meta,construction_version=5):
     node=E.Element('{'+NS['p']+'}sp')
     nv=E.SubElement(node,'{'+NS['p']+'}nvSpPr')
     E.SubElement(nv,'{'+NS['p']+'}cNvPr',id=str(native_id),name=name,descr=json.dumps(meta,sort_keys=True,separators=(',',':')))
@@ -170,12 +178,13 @@ def _new_anchor(name,native_id,center,target_entry,meta):
     parent=target_entry['parent_matrix'];local=np.linalg.inv(parent)@np.array([*center,1])
     delta=np.linalg.inv(parent)@np.array([.1,.1,0]);w,h=np.abs(delta[:2])
     E.SubElement(xf,'{'+NS['a']+'}off',x=str(round(local[0]-w/2)),y=str(round(local[1]-h/2)))
-    E.SubElement(xf,'{'+NS['a']+'}ext',cx=str(max(1,round(w))),cy=str(max(1,round(h))))
+    cx,cy=max(1,round(w)),max(1,round(h))
+    E.SubElement(xf,'{'+NS['a']+'}ext',cx=str(cx),cy=str(cy))
     geom=E.SubElement(props,'{'+NS['a']+'}custGeom')
     for key in ('avLst','gdLst','ahLst'):E.SubElement(geom,'{'+NS['a']+'}'+key)
     lst=E.SubElement(geom,'{'+NS['a']+'}cxnLst');site=E.SubElement(lst,'{'+NS['a']+'}cxn',ang='0')
-    E.SubElement(site,'{'+NS['a']+'}pos',x='50000',y='50000')
-    E.SubElement(geom,'{'+NS['a']+'}rect',l='0',t='0',r='100000',b='100000')
+    E.SubElement(site,'{'+NS['a']+'}pos',x=str(round(cx/2)) if construction_version>=6 else '50000',y=str(round(cy/2)) if construction_version>=6 else '50000')
+    E.SubElement(geom,'{'+NS['a']+'}rect',l='0',t='0',r=str(cx) if construction_version>=6 else '100000',b=str(cy) if construction_version>=6 else '100000')
     paths=E.SubElement(geom,'{'+NS['a']+'}pathLst');path=E.SubElement(paths,'{'+NS['a']+'}path',w='100000',h='100000')
     move=E.SubElement(path,'{'+NS['a']+'}moveTo');E.SubElement(move,'{'+NS['a']+'}pt',x='0',y='0')
     for x,y in [('100000','0'),('100000','100000'),('0','100000')]:
@@ -287,7 +296,7 @@ def construct(task,state,baseline,contract,rows,output,construction_version=5):
             if name_anchor in native:
                 prior=native[name_anchor]['node'];prior.getparent().remove(prior);native_id=int(native[name_anchor]['id'])
             else:native_id=next_id;next_id+=1
-            node=_new_anchor(name_anchor,native_id,dock,nodes[target],meta)
+            node=_new_anchor(name_anchor,native_id,dock,nodes[target],meta,construction_version)
             parent=native[parent_name]['node'] if parent_name else tree.find('p:cSld/p:spTree',NS)
             parent.append(node)
             nv=native[name]['node'].find('p:nvCxnSpPr/p:cNvCxnSpPr',NS);key='stCxn' if index==0 else 'endCxn'
@@ -340,8 +349,8 @@ def execute(task,request):
     from .connection_geometry import _load_contract
     contract=_load_contract(task,state);wanted=set(request.get('connections',[]));rows=[r for r in contract['items'] if r['id'] in wanted]
     if not rows or len(rows)!=len(wanted):raise ValueError('Bounded known logical connection set required')
-    directory=task/'versions'/('connection-'+identity([baseline['pptx'],state['connection_contract'],sorted(wanted),5])[:18])
-    output=directory/'drawing.pptx';proof=construct(task,state,baseline,contract,rows,output)
+    directory=task/'versions'/('connection-'+identity([baseline['pptx'],state['connection_contract'],sorted(wanted),6])[:18])
+    output=directory/'drawing.pptx';proof=construct(task,state,baseline,contract,rows,output,construction_version=6)
     from .boundary_geometry import saved_nodes
     saved=saved_nodes(output,state['source_size'])
     scene=read_json(safe_path(task,baseline['scene']['path']));by_id={o['id']:o for o in scene['objects']}
@@ -380,7 +389,7 @@ def execute(task,request):
     from .neighbor_capture import transport
     prior_mattes=copy.deepcopy(state.get('neighbor_mattes',{}))
     owner_transport=transport(task,state,candidate,baseline,prior_mattes)
-    record={'candidate':candidate['pptx']['sha256'],'baseline':copy.deepcopy(baseline),'contract':state['connection_contract'],'construction_version':5,
+    record={'candidate':candidate['pptx']['sha256'],'baseline':copy.deepcopy(baseline),'contract':state['connection_contract'],'construction_version':6,
             'baseline_mattes':prior_mattes,'owner_transport':owner_transport,
             'source_graph':state['source_connection_graph'],'connections':sorted(wanted),'proof':proof,'allowed':candidate['allowed']}
     with writer(task):

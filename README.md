@@ -1,139 +1,53 @@
-# lotraAI
+# lotraAI Image2Slide v1.33.0
 
-**Reconstruct scientific figures as layered, editable PowerPoint slides.**
+将科研图片重建成分层、可编辑的 PowerPoint。支持原图＋一次性半成品 PPT 导入。
+本版接入函数曲线、同一原图问题的共享收敛预算、个人知识库闭环和增量安装。
+当前发布状态：IMPLEMENTED_STATICALLY_REVIEWED_NOT_TESTED_PER_USER_REQUEST。
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+## Quick start：让 Agent 安装
 
-lotraAI combines the current agent's understanding of a reference image with project-local reconstruction programs. It is designed for scientific system diagrams, method overviews, and technical workflows. Text, shapes, connections, and semantic groups use native slide objects; mathematical expressions use structured Office Math; photographic content remains appropriately scoped image content.
+把下面一段交给当前项目中的 Agent 即可。只需读取本 README 的当前入口，程序
+自行下载、续传、校验和准备环境；不需要让模型逐段下载或通读 runtime 清单。
 
-[Quick Start](#quick-start) · [Examples](#examples) · [Usage](docs/usage.md) · [Installation](docs/installation.md) · [Get the complete bundle](docs/download.md)
+首次安装提示词：
 
-## Quick Start
+> 将 lotraAI Image2Slide v1.33.0 安装到当前项目。使用官方 install-lotra.ps1（Windows）或 install-lotra.sh（Linux）一键入口，自动准备匹配的 Python、OCR 和 Math runtime。安装完成后只报告 skill 入口、实际就绪状态和详细日志位置，不展开安装日志，不创建 Setup skill，不修改全局环境。
 
-### 1. Ask Codex to install the skill and download its runtime
+已安装旧版的增量更新提示词：
 
-Give Codex this repository URL and the prompt below. Codex can download the matching runtime resources, verify the complete bundle, and install it into the current project for you.
+> 将当前项目的 lotraAI Image2Slide 增量更新到 v1.33.0。使用官方相同的一键入口，优先复用经哈希与资源兼容性确认的现有 runtime，只下载技能更新包和缺失资源；保留个人知识库、字体、任务、原图、旧版本和项目其他指令。完成后只报告版本、skill 入口、runtime 实际状态和日志位置。
 
-~~~bash
-Install lotraAI Image2Slide v1.31.0 in the current project from:
-https://github.com/jiang-zl/lotraAI-image2slide-skill
+官方固定版本发布入口：[v1.33.0 release](https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.33.0)。
+下载该 release 的 `install-lotra.ps1` 或 `install-lotra.sh`，在已有项目目录运行：
 
-Automatically download its matching runtime resources from:
-https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime
-Read the v1.31.0 manifest and use the download helper to obtain,
-reassemble, and verify the complete bundle. Extract it and use its
-bundled installer to prepare Python, dependencies, OCR, and Math
-under .lotraAI-build before registering lotra-image2slide-skill.
-Report the skill entry and actual runtime readiness when finished.
-~~~
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install-lotra.ps1 -Project "C:\path\to\project"
+# 已安装旧版时，执行相同命令；程序自动走增量更新。
+```
 
-Codex handles downloading and installation; you do not need to fetch each runtime resource manually. The [version manifest](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/releases/v1.31.0.json) and [download helper](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/tools/fetch_bundle.py) are in the runtime repository.
+```sh
+sh install-lotra.sh /path/to/project
+```
 
-**Runtime availability:** the skill and runtime releases are published separately. Codex should check that the matching runtime assets are public before downloading. If the assets are still being uploaded, provide a local complete bundle or use a project with the matching runtime already prepared. The skill source alone does not prepare the runtime. See the [download guide](docs/download.md).
+Windows AMD64 和 Linux x86_64 提供完整 runtime 路线。其他平台未提供完整 Math
+资源时会明确停止，不会注册一个缺少环境的 skill。首次安装需下载对应平台资源；
+同 runtime 的更新主要下载小体积 update ZIP。断点和已校验文件保存在项目私有目录，
+失败后重跑同一命令。网络资源需要所在 Agent/宿主允许访问 GitHub。
 
-Already have the complete ZIP? Place it in the current project or give Codex its absolute local path, then send:
+离线方式：下载完整 `lotraAI-image2slide-v1.33.0-bundle.zip` 解压，运行其中
+`installer/install.ps1 -Project PROJECT` 或 `sh installer/install.sh PROJECT`。
+`lotraAI-image2slide-v1.33.0-update.zip` 是源代码/安装器增量包，首次安装时会联网补齐
+所需 runtime；它不是完整离线包。不要单独安装内层技能 ZIP 后把环境准备留给模型。
 
-~~~bash
-Please extract the complete lotraAI-image2slide-v1.31.0-bundle.zip I provided.
-Use its bundled installer to install the skill into the current project,
-named lotra-image2slide-skill. Prepare the included runtime resources
-(Python, dependencies, OCR, and Math) before registering the main skill.
-When finished, report the skill entry and runtime readiness.
-~~~
+## 重建
 
-The complete ZIP includes both the skill and runtime resources. Installation registers the single `lotra-image2slide-skill`; runtime resources and private task state live in the project's `.lotraAI-build` directory.
+> 使用 $lotra-image2slide-skill 将这张原图重建为原生可编辑 PPT。按正常工作包完成部件、母件复用、排版和最终一次字体及整图复核。优先使用与当前原图兼容的个人方法；曲线按语义函数化，未知曲线使用分段低阶拟合，语义不变且差异在冻结的可接受范围内即可。
 
-### 2. Attach a reference image and start reconstructing
+已存在任务先恢复，不重新从头生成。新旧任务状态与源图证据保持独立；旧任务只有
+显式迁移后才使用 v1.33 新合同。个人库首次为空，使用后逐步建立自己的可复用方法，
+不附带开发者的小车模型或私人历史。中文、英文按对应语言字体集合选择。
 
-~~~text
-Use $lotra-image2slide-skill to reconstruct this reference image as an editable
-PowerPoint slide. Preserve the original text, equations, hierarchy, connections,
-and semantic grouping.
-~~~
-
-The current agent interprets the image; the programs execute, check, and export the reconstruction. The workflow delivers `Final_editable.pptx` and a `Report.md` containing measured component results.
-
-For manual installation commands, see the [installation guide](docs/installation.md).
-
-## What it does
-
-- **Organizes objects by meaning.** Native text, shapes, paths, connections, and groups represent the diagram's structure for subsequent editing.
-- **Keeps mathematics structured.** Expressions use source structure and genuine Office Math. The added Math rendering route and Microsoft Office editing checks are separate capabilities.
-- **Handles component detail.** Icons and their descendants retain the existing recursive identification, construction, and verification workflow.
-- **Protects scoped changes.** Task contracts identify what to preserve and which objects and relations need checking after a local revision.
-- **Prepares dependencies locally.** The complete bundle prepares Python, OCR, and supporting resources inside the project, without an additional model API key. The host controls how the current agent service runs.
-
-## Examples
-
-These three author-supplied case studies each include a reference image, a PowerPoint screenshot, and a detail view. Click any image for its original size. Screenshots illustrate the reconstruction structure; native PPTX files and the generating version of each case were not supplied with these images.
-
-
-### 1. Edge federated learning
-
-A server–client–device diagram with long-tail data volumes, heterogeneous classes, and noisy observations.
-
-| Original | Reconstructed PowerPoint | Reconstruction highlights |
-|:---:|:---:|:---:|
-| <a href="docs/assets/examples/01-edge-federated-learning/original.jpg"><img src="docs/assets/examples/01-edge-federated-learning/original.jpg" alt="Edge federated learning — Original" width="100%"></a> | <a href="docs/assets/examples/01-edge-federated-learning/reconstruction.jpg"><img src="docs/assets/examples/01-edge-federated-learning/reconstruction.jpg" alt="Edge federated learning — Reconstructed PowerPoint" width="100%"></a> | <a href="docs/assets/examples/01-edge-federated-learning/highlights.jpg"><img src="docs/assets/examples/01-edge-federated-learning/highlights.jpg" alt="Edge federated learning — Reconstruction highlights" width="100%"></a> |
-
-- The PowerPoint screenshot shows separately selected labels, bars, data-class markers, client computers, and communication arrows.
-- The detail image separates vehicle bodies, windows, mirrors, radio arcs, and map layers into visible component groups.
-
-[Read the case study](docs/examples/01-edge-federated-learning.md)
-
-### 2. Sensing and communication system
-
-A three-layer system overview combining sensing images, a data-valuation table, mathematical labels, resource allocation, and model training.
-
-| Original | Reconstructed PowerPoint | Reconstruction highlights |
-|:---:|:---:|:---:|
-| <a href="docs/assets/examples/02-sensing-communication/original.jpg"><img src="docs/assets/examples/02-sensing-communication/original.jpg" alt="Sensing and communication system — Original" width="100%"></a> | <a href="docs/assets/examples/02-sensing-communication/reconstruction.jpg"><img src="docs/assets/examples/02-sensing-communication/reconstruction.jpg" alt="Sensing and communication system — Reconstructed PowerPoint" width="100%"></a> | <a href="docs/assets/examples/02-sensing-communication/highlights.jpg"><img src="docs/assets/examples/02-sensing-communication/highlights.jpg" alt="Sensing and communication system — Reconstruction highlights" width="100%"></a> |
-
-- The reconstruction screenshot exposes the layer panels, table layout, labels, arrows, and training-network elements as separate selections.
-- The detail image shows camera housings, lenses, supports, and wireless symbols separately, alongside individual photo tiles. Photographs remain image content.
-
-[Read the case study](docs/examples/02-sensing-communication.md)
-
-### 3. Signal reconstruction workflow
-
-A training-and-inference pipeline with SPGA, STFT, CTFR, time–frequency masks, and a hybrid guidance loss.
-
-| Original | Reconstructed PowerPoint | Reconstruction highlights |
-|:---:|:---:|:---:|
-| <a href="docs/assets/examples/03-signal-reconstruction/original.jpg"><img src="docs/assets/examples/03-signal-reconstruction/original.jpg" alt="Signal reconstruction workflow — Original" width="100%"></a> | <a href="docs/assets/examples/03-signal-reconstruction/reconstruction.jpg"><img src="docs/assets/examples/03-signal-reconstruction/reconstruction.jpg" alt="Signal reconstruction workflow — Reconstructed PowerPoint" width="100%"></a> | <a href="docs/assets/examples/03-signal-reconstruction/highlights.jpg"><img src="docs/assets/examples/03-signal-reconstruction/highlights.jpg" alt="Signal reconstruction workflow — Reconstruction highlights" width="100%"></a> |
-
-- The reconstruction shows the training/inference split and nested guidance-loss panels around the waveform and spectrogram content.
-- The selection screenshot exposes module boxes, labels, arrows, mathematical annotations, and feedback paths as separate objects.
-
-[Read the case study](docs/examples/03-signal-reconstruction.md)
-
-
-## Using it in practice
-
-For a local revision, state the change and the attributes to preserve:
-
-~~~text
-Adjust only the spacing between the right-hand modules and their arrows.
-Preserve the text, equations, icon anatomy, and all other regions.
-~~~
-
-After an interruption, ask the agent to resume the registered task in the same working project. The project retains the original and workflow state. See the [usage guide](docs/usage.md).
-
-## v1.31.0
-
-This release adds source-parameter and native-property contracts for explicitly bound standalone text, primitive shapes, and equations. Complex icons, icon descendants, repeated instances, and other component types retain the existing workflow. The added LibreOffice Math resources cover Windows/Linux x86-64; Python resources for other platforms do not imply availability of this Math installation route.
-
-The release retains its `NOT_RUN_PER_USER_REQUEST` functional-validation status. Installation readiness, actual document rendering, native editing, and whole-reconstruction acceptance are recorded separately; the supplied screenshots do not change this release status. See the [changelog](CHANGELOG.md) and [validation notes](docs/validation.md).
-
-## Documentation and source
-
-| Entry | Contents |
-| --- | --- |
-| [Installation](docs/installation.md) | Complete-bundle setup, platform requirements, and receipts |
-| [Usage](docs/usage.md) | Reconstruction, scoped revisions, and resuming work |
-| [Troubleshooting](docs/troubleshooting.md) | Installation, fonts, rendering, and runtime diagnostics |
-| [Publication](docs/publication.md) | Repository responsibilities and public-download configuration |
-| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.31.0 main-skill payload |
-| [Provenance and licensing](NOTICE.md) | Project source, third-party components, and example assets |
-
-For feedback, include the operating system, product version, attempted operation, and relevant diagnostic. Share a reviewed reference image or excerpt when needed. Private task data remains under your control in the working project.
+使用 [SKILL.md](skills/lotra-image2slide-skill/SKILL.md)，完整当前数据约定见 [v1.33 工作流](skills/lotra-image2slide-skill/references/workflow-v133.md)。
+模型只处理当前源图语义与必要决策，程序处理几何、有限搜索、状态、引用和资源准备。
+默认工具回执简短，完整证据保留在项目 .lotraAI-build。发布时未运行测试、验证、
+重建、渲染或性能/效果测量；代码接入和静态审查不能证明实际节省百分比。

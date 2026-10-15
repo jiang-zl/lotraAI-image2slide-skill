@@ -1,3 +1,5 @@
+For new v1.33 contracts, [functional curves and the current normal route](workflow-v133.md) supersede the legacy scientific-polyline exclusions below. Old tasks are retained until explicit migration.
+
 # Smooth semantic geometry without smoothing scientific data
 
 Use for illustration arc/rounded-outline methods only. Source blur is measurement uncertainty, not permission for polygonal output. Infer only source-supported geometric structure; retain projection, true corners, openings, width/color/radius and layer order.

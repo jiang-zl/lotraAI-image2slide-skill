@@ -9,6 +9,7 @@ import platform
 import shutil
 import subprocess
 import time
+import threading
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -44,7 +45,8 @@ def digest(path):
 
 
 def canonical(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    from .state_repository import plain
+    return json.dumps(plain(value), ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
 
 
 def identity(value):
@@ -52,11 +54,20 @@ def identity(value):
 
 
 def read_json(path):
-    return json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    value = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    if isinstance(value,dict) and value.get('schema')=='lotra-indexed-document-1':
+        from .state_repository import load_document
+        return load_document(path,value)
+    return value
 
 
 def write_json(path, value):
     path = Path(path)
+    repository=getattr(value,'_store_repository',None)
+    if repository and path.resolve()==(repository.task/value._store_document).resolve():
+        from .state_repository import store_document
+        store_document(path,value)
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + f".{os.getpid()}.tmp")
     tmp.write_bytes(canonical(value) + b"\n")
@@ -95,9 +106,31 @@ def writer(directory):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     lock = directory / ".writer.lock"
+    if lock.exists():
+        recorded=read_json(lock)
+        if recorded.get('pid')==os.getpid() and recorded.get('thread',threading.get_ident())==threading.get_ident():
+            yield
+            return
+        if recorded.get('owner')=='lotra-task-writer-1':
+            pid=recorded.get('pid');alive=True
+            if type(pid) is int and pid>0:
+                if os.name=='nt':
+                    import csv,io
+                    result=subprocess.run(['tasklist','/FI','PID eq '+str(pid),'/FO','CSV','/NH'],capture_output=True,text=True,timeout=10)
+                    if result.returncode==0:
+                        alive=any(len(row)>1 and row[1]==str(pid) for row in csv.reader(io.StringIO(result.stdout)))
+                else:
+                    try:os.kill(pid,0)
+                    except ProcessLookupError:alive=False
+                    except PermissionError:alive=True
+            if not alive:
+                archive=directory/'transactions'/'stale-locks';archive.mkdir(parents=True,exist_ok=True)
+                saved=archive/(str(pid)+'-'+str(time.time_ns())+'.json')
+                os.replace(lock,saved)
     fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     try:
-        os.write(fd, canonical({"pid": os.getpid(), "started": time.time()}))
+        os.write(fd, canonical({"pid": os.getpid(), "thread":threading.get_ident(),
+                               "owner":"lotra-task-writer-1","started": time.time()}))
         os.close(fd)
         yield
     finally:

@@ -49,6 +49,57 @@ def _flags(stat):
     return {'few_samples':min(stat['samples'])<32,'low_contrast':stat['contrast']<.20,
             'diffuse_edges':stat['edge_sharpness']<1.0 and stat['edge_support_fraction']>.01}
 
+def source_scope_exclusions(task,state,request):
+    """Validate a located cropped application stripe, retaining raw pixels.
+
+    This source-purpose decision is explicit and frozen. It cannot intersect
+    any registered figure unit, expand past the first 24 source rows, declare
+    an edge-bearing diagram window empty, or exempt candidate defects.
+    """
+    from .recursive_containment import source_view
+    from .source_recursion import load
+    rows=request.get('source_scope_exclusions',[])
+    if not rows:return []
+    if len(rows)!=1:raise ValueError('Only one explicit top application stripe is supported')
+    tree=load(task,state);root=tree['nodes']['source_root'] if tree else {}
+    original_views={a.get('view',{}).get('sha256') for a in root.get('attempts',[])}
+    for row in rows:
+        roi=row.get('roi',[])
+        if (row.get('kind')!='cropped_application_ui' or not row.get('source_evidence') or
+                len(roi)!=4 or roi[:2]!=[0,0] or roi[2]!=state['source_size'][0] or not 0<roi[3]<=24):
+            raise ValueError('Explicit original top-stripe purpose and bounded source extent required')
+        if row.get('whole_original_review_sha256') not in original_views:
+            raise ValueError('Top-stripe purpose must retain a reviewed unchanged whole original')
+        source_view(task,state,row.get('source_view'))
+        if row['source_view']['roi']!=roi:raise ValueError('Top-stripe original view mismatch')
+        x,y,w,h=roi
+        for unit in eligible(state).values():
+            a,b,c,d=unit['roi']
+            if min(a+c,x+w)>max(a,x) and min(b+d,y+h)>max(b,y):
+                raise ValueError('Source-purpose exclusion intersects a registered figure unit: '+unit['id'])
+    return rows
+
+def source_window_scope_probe(task,state,window,decision,exclusions):
+    """Require every residual original edge to remain within figure scope."""
+    ids=decision.get('exclusions',[]);by={r['id']:r for r in exclusions}
+    if not ids or len(set(ids))!=len(ids) or not set(ids)<=set(by) or decision.get('units'):
+        raise ValueError('Excluded source window requires exact explicit stripe references')
+    image=_crop(task,state,window['roi']).copy();pixels=np.asarray(image).copy()
+    x,y,w,h=window['roi'];covered=0
+    for key in ids:
+        a,b,c,d=by[key]['roi'];left=max(x,a);top=max(y,b);right=min(x+w,a+c);bottom=min(y+h,b+d)
+        if left>=right or top>=bottom:raise ValueError('Source stripe does not intersect its declared window')
+        pixels[round(top-y):round(bottom-y),round(left-x):round(right-x)]=255
+        covered+=(right-left)*(bottom-top)
+    # Only a private diagnostic array changes. Original file, raw window hash
+    # and all non-stripe pixels remain exact; use the existing empty-edge limit.
+    residual=statistics(Image.fromarray(pixels))
+    if residual['edge_support_fraction']>.005:
+        raise ValueError('Excluded source window still contains figure edges outside the stripe')
+    return {'passed':True,'exclusions':ids,'source_excluded_pixels':covered,
+            'outside_stripe_edge_support':residual['edge_support_fraction'],'maximum':.005,
+            'raw_original_window_hash':window['pixel_hash']}
+
 def discover(task,state,candidate):
     from .icon_hd import source_survey,profile
     rows=[]
@@ -90,15 +141,17 @@ def bind(task,state,candidate,request):
     rows=request.get('items',[]);units=eligible(state)
     if len({r['unit'] for r in rows})!=len(rows) or {r['unit'] for r in rows}!=set(units):raise ValueError('Classify every source icon candidate, not only reported defects')
     windows=source_survey(task,state);survey=request.get('source_survey',[])
+    exclusions=source_scope_exclusions(task,state,request)
     if len({r.get('id') for r in survey})!=len(survey) or {r.get('id') for r in survey}!={r['id'] for r in windows}:
         raise ValueError('Every fixed original window requires a semantic coverage decision')
     for r,w in zip(sorted(survey,key=lambda v:v['id']),sorted(windows,key=lambda v:v['id'])):
-        if r.get('pixel_hash')!=w['pixel_hash'] or not r.get('source_evidence') or r.get('decision') not in ('covered','empty','unresolved'):
+        if r.get('pixel_hash')!=w['pixel_hash'] or not r.get('source_evidence') or r.get('decision') not in ('covered','empty','unresolved','excluded'):
             raise ValueError('Original window review must retain exact pixels and uncertainty')
         if r['decision']=='covered' and (not r.get('units') or not set(r['units'])<=set(units)):
             raise ValueError('Missing source objects must be registered before coverage can close')
         if r['decision']=='empty' and w['edge_support']>.005:
             raise ValueError('A source window containing edges cannot be declared empty')
+        if r['decision']=='excluded':r['scope_probe']=source_window_scope_probe(task,state,w,r,exclusions)
         for uid in r.get('units',[]):
             a,b,c,d=units[uid]['roi'];x,y,wid,hei=w['roi']
             if min(a+c,x+wid)<=max(a,x) or min(b+d,y+hei)<=max(b,y): raise ValueError('Window coverage refers to an unrelated source position')
@@ -197,8 +250,16 @@ def report(task,state,candidate,context=None):
             except (ValueError,KeyError,TypeError,FileNotFoundError) as exc:row['reason']=str(exc)
         rows.append(row)
     windows=source_survey(task,state);survey=c.get('source_survey',[])
+    exclusions=source_scope_exclusions(task,state,c)
     survey_pass={r['id']:r['pixel_hash'] for r in survey}=={r['id']:r['pixel_hash'] for r in windows} and all(r['decision']!='unresolved' for r in survey)
-    rows.append({'id':'whole-source-windows','passed':survey_pass,'status':'PASS' if survey_pass else 'SOURCE_WINDOW_REVIEW_REQUIRED'})
+    by_window={r['id']:r for r in windows};scope_probes=[]
+    for row in survey:
+        if row['decision']=='excluded':
+            try:scope_probes.append(source_window_scope_probe(task,state,by_window[row['id']],row,exclusions))
+            except (ValueError,KeyError) as error:
+                scope_probes.append({'passed':False,'reason':str(error)})
+    survey_pass &= all(r['passed'] for r in scope_probes)
+    rows.append({'id':'whole-source-windows','passed':bool(survey_pass),'status':'PASS' if survey_pass else 'SOURCE_WINDOW_REVIEW_REQUIRED','source_scope_probes':scope_probes})
     if not original_children['passed']:
         rows.append({'id':'mandatory-original-icon-children','passed':False,'status':'SOURCE_CHILD_OR_RESULT_CHECK_REQUIRED','detail':original_children})
     return {'schema':VERSION,'passed':all(r['passed'] for r in rows),'status':'PASS' if all(r['passed'] for r in rows) else 'WORK_REQUIRED','items':rows,

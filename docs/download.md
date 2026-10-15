@@ -1,24 +1,5 @@
-# Download the complete bundle
+# v1.33 安装与增量更新
 
-[中文](download.zh-CN.md) · [Installation](installation.md)
+使用 [当前 README Quick start](../README.md) 的官方一键入口。程序按匹配哈希复用 runtime，只下载更新包和缺失的平台资源，完成后返回短回执。无需 Agent 手工下载、组合全部离线分片，也不要加载全部安装清单。
 
-
-The complete file is `lotraAI-image2slide-v1.31.0-bundle.zip` (2,414,649,382 bytes), including the skill and all supplied runtime resources. SHA-256: `200f65a42b96dca2a0143f43f1c3583d5150958ae1fc7ac8c6dea41969fbe657`.
-
-## Let Codex download the runtime
-
-Give Codex the [runtime repository](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime) and ask it to read the v1.31.0 manifest, download and verify the complete bundle, and run the bundled installer. Check that the matching release assets are publicly available first; while they are being uploaded, a local complete ZIP is an alternative. The skill release can be published before the runtime bundle.
-
-## Download and assemble
-
-Open the [v1.31.0 bundle release](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0). Its 18 transport assets (`.part001` through `.part018`, up to 128 MiB each) are ordered byte segments of the same complete ZIP. Save the release's [download helper](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/fetch_bundle.py), then run:
-
-~~~sh
-python3 fetch_bundle.py --output-dir ./downloads
-~~~
-
-On Windows, use `py fetch_bundle.py --output-dir .\downloads`. The helper reads the [version manifest](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.31.0/v1.31.0.json), checks every part, reassembles the ZIP, and verifies the complete SHA-256 before publishing the output file. Existing different files are preserved.
-
-You can give Codex the [release URL](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/tag/v1.31.0) and ask it to use the manifest and helper to obtain the complete bundle, then extract and install it. An already assembled ZIP can be handed directly to Codex.
-
-The only assembled delivery archive is `lotraAI-image2slide-v1.31.0-bundle.zip`. Transport preserves every archived file and payload. Part sizes follow [GitHub's per-asset limit](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#storage-and-bandwidth-quotas).
+历史 v1.31 文件仍在对应发布中保留；它们不代表 v1.33 运行验收。

@@ -116,9 +116,13 @@ def compile_scene(scene,allowed=None):
                 ancestor=objects[ancestor].get('parent')
             if not editable:continue  # Observation/read dependency is not a write grant.
         content=obj['content'];semantic=obj['semantic_type'];model=content.get('curve_model')
-        if semantic in SCIENTIFIC:
-            if model:raise ValueError('Scientific curves cannot use an illustration smoothing model')
+        if content.get('function_spec'):
+            if content.get('curve_compilation',{}).get('version')!='functional-curves-1':
+                raise ValueError('Compile source-bound function_spec through the normal v1.33 contract before building')
             continue
+        if semantic in SCIENTIFIC:
+            if model:raise ValueError('Use source-bound function_spec, not an illustration curve model, for scientific curves')
+            continue  # Retained legacy tasks are not silently redrawn.
         contours=content.get('contours',[])
         if not model and semantic not in ARC_TYPES|SMOOTH_OUTLINES:continue
         if content.get('curve_compilation',{}).get('version')==VERSION:continue

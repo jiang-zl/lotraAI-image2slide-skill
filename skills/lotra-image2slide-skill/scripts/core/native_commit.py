@@ -26,7 +26,7 @@ def donor_scene(scene,allowed):
     if not selected:
         selected={next(o['id'] for o in scene['objects'] if not o.get('parent'))}
     for name in list(selected):
-        if allowed.get(name) in (['add'],['replace_component']) and objects[name]['render_type']=='group':
+        if allowed.get(name) in (['add'],['replace_component']) and objects[name]['render_type'] in ('group','trace'):
             pending=[name]
             while pending:
                 parent=pending.pop();children=[o['id'] for o in scene['objects'] if o.get('parent')==parent]
@@ -105,7 +105,7 @@ NATIVE_LEAF_FIELDS=frozenset(('group_translate','style.math_font_policy','style.
     'style.char_spacing_pt','style.line_spacing','style.line_spacing_pt','style.align','style.valign','fill_color','line_color','style.line_width','style.stroke',
     'style.line_cap','style.dash','style.gradient','style.gradient_angle','geometry','fill','line',
     'effects','style.fill','rotation','style.rotation','bbox.left','bbox.top','bbox.width',
-    'bbox.height','text_content','text_body','equation','connector','replace_native'))
+    'bbox.height','text_content','text_body','equation','connector','replace_native','table_text','style.fill_alpha','style.stroke_alpha','style.gradient_positions'))
 
 def _table_cell_field(field):
     import re
@@ -117,6 +117,26 @@ def _field(target, donor, field):
     selected=_table_cell_field(field)
     if field not in NATIVE_LEAF_FIELDS and selected is None:
         raise ValueError('Unsupported or overly broad property grant: '+str(field))
+    if field in ('style.fill_alpha','style.stroke_alpha'):
+        a,b=_sp(target),_sp(donor)
+        if field=='style.stroke_alpha':a,b=a.find('a:ln',NS),b.find('a:ln',NS)
+        if a is None or b is None:raise ValueError('Existing native opacity domain missing')
+        old=a.findall('a:solidFill/*',NS);new=b.findall('a:solidFill/*',NS)
+        if len(old)!=1 or len(new)!=1:raise ValueError('Scoped opacity requires an existing solid fill')
+        for alpha in old[0].findall('a:alpha',NS):old[0].remove(alpha)
+        alpha=new[0].find('a:alpha',NS)
+        if alpha is not None:old[0].append(copy.deepcopy(alpha))
+        return
+    if field=='style.gradient_positions':
+        a=_sp(target).findall('a:gradFill/a:gsLst/a:gs',NS);b=_sp(donor).findall('a:gradFill/a:gsLst/a:gs',NS)
+        if len(a)!=len(b) or not a:raise ValueError('Gradient stops must retain topology')
+        for old,new in zip(a,b):old.set('pos',new.get('pos'))
+        return
+    if field=='table_text':
+        old,new=target.findall('.//a:tbl//a:t',NS),donor.findall('.//a:tbl//a:t',NS)
+        if len(old)!=len(new):raise ValueError('Changed table topology requires whole-component authority')
+        for a,b in zip(old,new):a.text=b.text
+        return
     if field in ('style.align','style.valign'):
         bodies=[n.find('p:txBody',NS) for n in (target,donor)]
         if any(body is None for body in bodies):
@@ -311,8 +331,9 @@ def _field(target, donor, field):
     if field in aliases:
         _field(target,donor,aliases[field]); return
     if field == 'rotation' or field == 'style.rotation' or field.startswith('bbox.'):
-        a, b = _sp(target).find('a:xfrm',NS), _sp(donor).find('a:xfrm',NS)
-        if a is None or b is None or _tag(target)=='grpSp' and field.startswith('bbox.'):
+        a=target.find('p:xfrm',NS) if _tag(target)=='graphicFrame' else _sp(target).find('a:xfrm',NS)
+        b=donor.find('p:xfrm',NS) if _tag(donor)=='graphicFrame' else _sp(donor).find('a:xfrm',NS)
+        if a is None or b is None:
             raise ValueError('Explicit group transform operation required')
         if field in ('rotation','style.rotation'):
             if b.get('rot') is None:
@@ -395,11 +416,10 @@ def merge_native(baseline, donor, allowed, output):
         raise FileExistsError(output)
     with ZipFile(baseline) as base, ZipFile(donor) as incoming:
         parts={i.filename:base.read(i.filename) for i in base.infolist()}
-        if parts['ppt/presentation.xml'] != incoming.read('ppt/presentation.xml'):
-            a=E.fromstring(parts['ppt/presentation.xml']).find('p:sldSz',NS)
-            b=E.fromstring(incoming.read('ppt/presentation.xml')).find('p:sldSz',NS)
-            if dict(a.attrib) != dict(b.attrib):
-                raise ValueError('Native donor canvas differs')
+        from .native_input import physical_canvas,same_canvas
+        if not same_canvas(physical_canvas(parts['ppt/presentation.xml']),
+                           physical_canvas(incoming.read('ppt/presentation.xml'))):
+            raise ValueError('Native donor canvas differs')
         slide_part='ppt/slides/slide1.xml'
         tree=E.fromstring(parts[slide_part]); fresh=E.fromstring(incoming.read(slide_part))
         old_nodes,new_nodes=_nodes(tree),_nodes(fresh)
@@ -409,7 +429,7 @@ def merge_native(baseline, donor, allowed, output):
         # only explicitly granted parent rotation is adopted from the donor.
         for key,old in old_nodes.items():
             new=new_nodes.get(key)
-            if new is None or _tag(old)!='grpSp' or _tag(new)!='grpSp':continue
+            if new is None or _tag(old)!='grpSp' or _tag(new)!='grpSp' or allowed.get(key)==['replace_component']:continue
             a,b=_sp(old).find('a:xfrm',NS),_sp(new).find('a:xfrm',NS)
             if a is None or b is None:raise ValueError('Group coordinate frame missing')
             if set(allowed.get(key,[])) & {'rotation','style.rotation'}:
@@ -417,21 +437,31 @@ def merge_native(baseline, donor, allowed, output):
                 else:a.set('rot',b.get('rot'))
             staged=copy.deepcopy(a)
             if 'group_translate' in allowed.get(key,[]):
-                off=staged.find('a:off',NS);incoming=b.find('a:off',NS)
-                for k in ('x','y'):off.set(k,incoming.get(k))
+                off=staged.find('a:off',NS);incoming_offset=b.find('a:off',NS)
+                for k in ('x','y'):off.set(k,incoming_offset.get(k))
+            for field in allowed.get(key,[]):
+                if field.startswith('bbox.'):
+                    tag,attr={'bbox.left':('off','x'),'bbox.top':('off','y'),'bbox.width':('ext','cx'),'bbox.height':('ext','cy')}[field]
+                    staged.find('a:'+tag,NS).set(attr,b.find('a:'+tag,NS).get(attr))
             b.getparent().replace(b,staged)
         existing_ids={int(_props(n).get('id')) for n in old_nodes.values()}
-        next_id=max(existing_ids,default=1)+1
+        # Reserve space for donor subtree replacements before subsequent additions.
+        next_id=max(existing_ids,default=1)+len(new_nodes)+1
         changes=[]; added_names=set(); removed_names=set(); regrouped_names=set()
         # Structured JSON can reorder grants alphabetically. Create a new
         # semantic envelope before its explicit existing-member reparent
         # fields; mutations depend on native structure, never dict ordering.
         regroup_roots={name for name,fields in allowed.items() if fields==['add']
                        and name in new_nodes and _tag(new_nodes[name])=='grpSp'
-                       and any(member in old_nodes and 'reparent' in allowed.get(member,[])
+                       and any(member in old_nodes and ('reparent' in allowed.get(member,[]) or allowed.get(member)==['replace_component'])
                                for member in _nodes(new_nodes[name]))}
         ordered=list(allowed.items())
-        ordered.sort(key=lambda item:0 if item[0] in regroup_roots else 1)
+        def mutation_order(item):
+            name,fields=item
+            node=new_nodes.get(name) if fields==['add'] else old_nodes.get(name)
+            depth=len(list(node.iterancestors())) if node is not None else 0
+            return (0 if name in regroup_roots else 1 if fields==['add'] else 2 if fields==['replace_component'] else 3 if fields==['remove'] else 4,depth,name)
+        ordered.sort(key=mutation_order)
         for target,fields in ordered:
             if not isinstance(fields,list) or not fields:
                 raise ValueError('Leaf field list required')
@@ -455,7 +485,7 @@ def merge_native(baseline, donor, allowed, output):
                 if members:
                     # Wrap explicitly named flat siblings, inheriting their real
                     # native subtrees/IDs/resources. This is not a donor redraw.
-                    if _tag(clone)!='grpSp' or any('reparent' not in allowed.get(name,[]) for name in members):
+                    if _tag(clone)!='grpSp' or any('reparent' not in allowed.get(name,[]) and allowed.get(name)!=['replace_component'] for name in members):
                         raise ValueError('Every existing grouped member needs explicit reparent authority')
                     if any(node.getparent() is not destination or _tag(node)=='grpSp' for node in members.values()):
                         raise ValueError('Regroup only declared flat siblings in their retained parent')
@@ -467,10 +497,16 @@ def merge_native(baseline, donor, allowed, output):
                         raise ValueError('Every new grouped node needs explicit add authority')
                     for name,node in members.items():
                         donor_node=subtree[name];retained=copy.deepcopy(node)
-                        for field in allowed[name]:
-                            if field=='reparent':continue
-                            if field=='paint_order':raise ValueError('Regroup preserves internal sibling paint order')
-                            _field(retained,donor_node,field)
+                        if allowed[name]==['replace_component']:
+                            retained=copy.deepcopy(donor_node)
+                            _props(retained).set('id',_props(node).get('id'))
+                            from .native_scope import resources
+                            resources(retained,incoming,parts)
+                        else:
+                            for field in allowed[name]:
+                                if field=='reparent':continue
+                                if field=='paint_order':raise ValueError('Regroup preserves internal sibling paint order')
+                                _field(retained,donor_node,field)
                         donor_node.getparent().replace(donor_node,retained)
                         changes.append({'object':name,'fields':allowed[name],'semantic_envelope':target})
                     # The retained parent coordinate axes remain identical.
@@ -481,10 +517,21 @@ def merge_native(baseline, donor, allowed, output):
                     if dict(off.attrib)!=dict(ch_off.attrib) or dict(ext.attrib)!=dict(ch_ext.attrib) or xfrm.get('rot'):
                         raise ValueError('Regroup needs an identity member coordinate mapping')
                     new_nodes_inside={name:node for name,node in _nodes(clone).items() if name not in members}
-                    if any(_tag(node) in ('pic','graphicFrame') or node.xpath('.//*[@r:embed]',namespaces=NS) for node in new_nodes_inside.values()):
-                        raise ValueError('Regroup imports no new external media/resource')
+                    if any(_tag(node)=='graphicFrame' and node.find('a:graphic/a:graphicData/a:tbl',NS) is None for node in new_nodes_inside.values()):
+                        raise ValueError('Regroup requires self-contained native tables or scoped media')
                     for name,node in new_nodes_inside.items():
                         _props(node).set('id',str(next_id));next_id+=1
+                        if _tag(node)!='grpSp':
+                            from .native_scope import resources
+                            resources(node,incoming,parts)
+                    final_inside=_nodes(clone);donor_names={_props(n).get('id'):key for key,n in new_nodes.items()}
+                    fresh_names=set(new_nodes_inside)|{name for name in members if allowed[name]==['replace_component']}
+                    for name in fresh_names:
+                        for cx in final_inside[name].xpath('./p:nvCxnSpPr/p:cNvCxnSpPr/a:stCxn | ./p:nvCxnSpPr/p:cNvCxnSpPr/a:endCxn',namespaces=NS):
+                            endpoint=donor_names.get(cx.get('id'));target_node=final_inside.get(endpoint)
+                            if target_node is None:target_node=old_nodes.get(endpoint)
+                            if target_node is None:raise ValueError('Regroup connector endpoint is unresolved')
+                            cx.set('id',_props(target_node).get('id'))
                     # Existing connection IDs and untouched native content stay
                     # exactly as in the authoritative baseline package.
                     for node in members.values():destination.remove(node)
@@ -495,9 +542,10 @@ def merge_native(baseline, donor, allowed, output):
                     continue
                 if any(allowed.get(name)!=['add'] for name in subtree):
                     raise ValueError('Every added native group descendant needs explicit authorization')
-                if any(_tag(n)=='pic' or (_tag(n)=='graphicFrame' and n.find('a:graphic/a:graphicData/a:tbl',NS) is None)
-                       for n in subtree.values()) or any('{'+NS['r']+'}embed' in n.attrib for n in clone.iter()):
-                    raise ValueError('Native add cannot import raster or unscoped external resources')
+                if any(_tag(n)=='graphicFrame' and n.find('a:graphic/a:graphicData/a:tbl',NS) is None for n in subtree.values()):
+                    raise ValueError('Unsupported native external graphic requires a dedicated constructor')
+                from .native_scope import resources
+                resources(clone,incoming,parts)
                 added_names.update(subtree)
 
                 ids={}
@@ -545,6 +593,10 @@ def merge_native(baseline, donor, allowed, output):
                 old.getparent().remove(old)
                 removed_names.update(subtree)
                 for name in subtree:old_nodes.pop(name,None)
+            elif fields==['replace_component']:
+                if old is None or new is None:raise ValueError('Replacement target absent')
+                from .native_scope import replace as scoped_replace
+                regrouped_names.update(scoped_replace(old,new,old_nodes,new_nodes,allowed,incoming,parts))
             else:
                 if old is None or new is None:
                     raise ValueError('Native edit target missing: '+target)
@@ -552,7 +604,7 @@ def merge_native(baseline, donor, allowed, output):
                 from .saved_components import _transform, _group_matrix
                 import numpy as np
                 a,b=old.getparent(),new.getparent()
-                while _tag(a)=='grpSp' and _tag(b)=='grpSp':
+                while 'reparent' not in fields and _tag(a)=='grpSp' and _tag(b)=='grpSp':
                     if not np.allclose(_group_matrix(_transform(a)),_group_matrix(_transform(b)),atol=1e-9):
                         raise ValueError('Map donor geometry to the edited parent coordinate frame first')
                     a,b=a.getparent(),b.getparent()
@@ -563,7 +615,22 @@ def merge_native(baseline, donor, allowed, output):
                             key=donor_names.get(cx.get('id'))
                             if key not in old_nodes:raise ValueError('Connector endpoint must already exist or be included in the scoped addition')
                             cx.set('id',_props(old_nodes[key]).get('id'))
-                    if field!='paint_order':_field(old,new,field)
+                    if field=='reparent':
+                        parent=new.getparent()
+                        destination=tree.find('p:cSld/p:spTree',NS) if _tag(parent)=='spTree' else old_nodes.get(_props(parent).get('name'))
+                        if destination is None or destination is old or old in destination.iterancestors():raise ValueError('Invalid native reparent target')
+                        if old.getparent() is not destination:
+                            old.getparent().remove(old);destination.append(old)
+                            oldxf=old.find('p:grpSpPr/a:xfrm' if _tag(old)=='grpSp' else 'p:xfrm' if _tag(old)=='graphicFrame' else 'p:spPr/a:xfrm',NS)
+                            newxf=new.find('p:grpSpPr/a:xfrm' if _tag(new)=='grpSp' else 'p:xfrm' if _tag(new)=='graphicFrame' else 'p:spPr/a:xfrm',NS)
+                            if oldxf is None or newxf is None:raise ValueError('Explicit reparent frame missing')
+                            oldxf.getparent().replace(oldxf,copy.deepcopy(newxf))
+                    elif field=='photo_resource':
+                        if _tag(old)!='pic' or _tag(new)!='pic':raise ValueError('Photo resource grant requires native pictures')
+                        from .native_scope import resources
+                        clone=resources(copy.deepcopy(new.find('p:blipFill',NS)),incoming,parts)
+                        old.replace(old.find('p:blipFill',NS),clone)
+                    elif field!='paint_order':_field(old,new,field)
             changes.append({'object':target,'fields':fields})
         # Resolve explicit paint-order grants from the back, so new sibling
         # chains keep their donor order without disturbing other relative order.
@@ -585,8 +652,11 @@ def merge_native(baseline, donor, allowed, output):
         parts[slide_part]=E.tostring(tree,xml_declaration=True,encoding='UTF-8',standalone=True)
         output.parent.mkdir(parents=True,exist_ok=True)
         with ZipFile(output,'w') as merged:
+            prior_names=set()
             for info in base.infolist():
-                merged.writestr(info,parts[info.filename])
+                merged.writestr(info,parts[info.filename]);prior_names.add(info.filename)
+            for name,data in parts.items():
+                if name not in prior_names:merged.writestr(name,data)
     receipt={'status':'AUTHORIZED_NATIVE_FIELDS_MERGED','baseline':digest(baseline),
              'donor':digest(donor),'output':digest(output),'changes':changes,
              'preservation':'baseline package parts and non-target subtrees inherited'}

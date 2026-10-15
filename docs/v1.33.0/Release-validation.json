@@ -1,0 +1,10 @@
+{
+  "version": "1.33.0",
+  "tests": "NOT_RUN_PER_USER_REQUEST",
+  "syntax_import_cli": "NOT_RUN_PER_USER_REQUEST",
+  "runtime_validation": "NOT_RUN_PER_USER_REQUEST",
+  "reconstruction_rendering": "NOT_RUN_PER_USER_REQUEST",
+  "performance_effect_measurement": "NOT_RUN_PER_USER_REQUEST",
+  "static_review": "SOURCE_CALL_CHAIN_ONLY",
+  "historical_receipts_qualify_release": false
+}

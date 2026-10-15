@@ -80,6 +80,12 @@ def snapshot(task,state,pptx,hints=None):
                         contours.append({'closed':any(c['op']=='close' for c in commands),'commands':commands,
                             **({'compound':True} if sum(c['op']=='moveTo' for c in commands)>1 else {})})
                     obj['content']={'contours':contours}
+            # Retain only source semantic annotations from the hash-bound hints.
+            # Geometry, literals and mathematical AST above still come from OOXML.
+            original_content=hints.get(name,{}).get('content',{})
+            for semantic_key in ('natural_icon','natural_part'):
+                if semantic_key in original_content:
+                    obj['content'][semantic_key]=copy.deepcopy(original_content[semantic_key])
             obj['content']['native_snapshot']={'owner':name,
                 'native_xml_sha256':hashlib.sha256(E.tostring(node,method='c14n',exclusive=True)).hexdigest()}
             if entry.get('compatibility'):obj['content']['native_snapshot']['compatibility']=copy.deepcopy(entry['compatibility'])

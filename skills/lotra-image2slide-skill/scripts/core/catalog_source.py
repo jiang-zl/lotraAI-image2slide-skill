@@ -48,8 +48,10 @@ def _svg(model):
     return (''.join(elements)+'</svg>').encode('utf-8')
 
 def guide(task,state):
+    catalog=_catalog()
+    if not catalog['items']:return None
     from .svg_backend import svg2png
-    catalog=_catalog();items=[]
+    items=[]
     folder=task/'source/catalog';folder.mkdir(parents=True,exist_ok=True)
     for row in catalog['items']:
         model=read_json(safe_path(ROOT,row['path']));data=_svg(model)
@@ -68,7 +70,10 @@ def guide(task,state):
         'return':'analysis.catalog_review{source_hash,catalog_hash,decisions[{catalog_id,status:present|absent|uncertain,evidence,anatomy:role_counts_if_present,instances[{id,source_roi,source_note,pose_degrees?,purpose?,palette?,source_anchor?,source_container?}]}]}; each present instance id must occur as its own component.parts entry under exactly one enclosing component. Use its current source_traits in recursive children or recipe_instances. Do not collapse multiple instances into one part.'}
 
 def compile_review(state,review,components):
-    catalog=_catalog();fields(review,{'source_hash','catalog_hash','decisions'},'analysis.catalog_review')
+    catalog=_catalog()
+    if not catalog['items'] and review is None:
+        review={'source_hash':state['source']['sha256'],'catalog_hash':identity(catalog),'decisions':[]}
+    fields(review,{'source_hash','catalog_hash','decisions'},'analysis.catalog_review')
     if review.get('source_hash')!=state['source']['sha256'] or review.get('catalog_hash')!=identity(catalog):
         raise ValueError('Catalog review must bind the current raw original and public catalog')
     decisions=review.get('decisions');rows={r['id']:r for r in catalog['items']}

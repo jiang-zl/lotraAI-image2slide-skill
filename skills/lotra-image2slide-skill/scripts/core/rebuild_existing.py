@@ -7,6 +7,9 @@ from . import agent_runtime as a, source_quality
 
 def adopt(task,pptx,request):
     task,state=a._state(task)
+    if state.get('objectives',{}).get('component_first'):
+        from .component_import import adopt as import_component
+        return import_component(task,pptx,request)
     if state.get('selected') or state.get('active_candidate') or not state.get('analysis'):
         raise ValueError('Import one full existing baseline after original analysis in a new task')
     pptx=Path(pptx).resolve()
@@ -96,7 +99,52 @@ def reconcile(task,request):
     structural=[o['id'] for o in old_current['objects'] if o['id'] in inv['parents'] and o.get('parent')!=inv['parents'][o['id']]]
     compatibility=[o['id'] for o in old_current['objects'] if o['id'] in inv['compatibility_variants'] and
         o.get('content',{}).get('native_snapshot',{}).get('compatibility')!=inv['compatibility_variants'][o['id']]]
-    if not missing and not structural and not compatibility:return {'status':'COMPLETE_NATIVE_MIRROR_CURRENT','added':[]}
+    source_hints=None
+    if request.get('scene_hints_ref'):
+        source_hints=read_json(ec.resource(task,request['scene_hints_ref']))
+        if source_hints.get('source',{}).get('sha256')!=state['source']['sha256']:
+            raise ValueError('Semantic hints must bind this unchanged original')
+        if {o['id'] for o in source_hints['objects']}!=set(inv['native_names']):
+            raise ValueError('Semantic hints must cover the exact saved native inventory')
+    if not missing and not structural and not compatibility and source_hints is None:
+        return {'status':'COMPLETE_NATIVE_MIRROR_CURRENT','added':[]}
+    name_migration=None
+    if request.get('resolve_identity_by_verified_names'):
+        from .saved_components import inventory as saved_inventory
+        prior_ref=state.get('external_reconciliation')
+        if not prior_ref:raise ValueError('No unresolved external migration')
+        prior_record=read_json(ec.resource(task,prior_ref))
+        before=saved_inventory(ec.resource(task,prior_record['before']))
+        after=saved_inventory(ec.resource(task,current['pptx']))
+        def by_unique_name(value):
+            rows={r['name']:r for r in value['objects']}
+            if len(rows)!=len(value['objects']):raise ValueError('Ambiguous native names')
+            ids={r['shape_id']:r['name'] for r in value['objects']}
+            return rows,{n:ids.get(r['parent_id']) for n,r in rows.items()}
+        left,left_parents=by_unique_name(before);right,right_parents=by_unique_name(after)
+        if not set(left)<=set(right):raise ValueError('Deleted or renamed owner needs explicit binding')
+        if any(left[n]['kind']!=right[n]['kind'] for n in left):
+            raise ValueError('Native type changed; unique names cannot resolve representation')
+        actual_added=sorted(set(right)-set(left))
+        if any(n not in request.get('additional_owner_map',{}) for n in actual_added):
+            raise ValueError('Every new native owner needs an original source owner binding')
+        actual_reparented=[n for n in left if left_parents[n]!=right_parents[n]]
+        name_migration=copy.deepcopy(prior_record)
+        name_migration['prior_numeric_migration']=prior_ref
+        name_migration['identity_resolution']={
+            'mechanism':'unique_saved_native_names_and_actual_named_parents',
+            'before_pptx_sha256':prior_record['before']['sha256'],
+            'after_pptx_sha256':current['pptx']['sha256'],
+            'old_owner_count':len(left),'new_owner_count':len(right),
+            'source_bound_additions':{n:owners[n] for n in actual_added},
+            'actual_reparented':actual_reparented,
+            'numeric_id_changes':[n for n in left if left[n]['shape_id']!=right[n]['shape_id']],
+            'quality_acceptance':False}
+        name_migration['aliases']={};name_migration['ambiguous']=[]
+        name_migration['added']=[];name_migration['reparented']=actual_reparented
+        name_migration['changed']=sorted(set(actual_added)|{
+            n for n in left if left[n]['xml_hash']!=right[n]['xml_hash'] or n in actual_reparented})
+        name_migration['status']='binding_pending' if actual_reparented else 'intent_pending'
     with writer(task):
         folder=task/'source/native-reconciliation'/identity({'request':request,'implementation':ec._implementation()})
         folder.mkdir(parents=True,exist_ok=False);history=[]
@@ -105,7 +153,7 @@ def reconcile(task,request):
         mirrors={}
         for kind,candidate in candidates:
             source=ec.resource(task,candidate['pptx']);before=digest(source)
-            hints=read_json(ec.resource(task,candidate['scene']));scene=snapshot(task,state,source,hints)
+            hints=source_hints or read_json(ec.resource(task,candidate['scene']));scene=snapshot(task,state,source,hints)
             scene['revision']=candidate['revision'];path=folder/(kind+'-scene.json');write_json(path,scene)
             history.append({'candidate':candidate['pptx'],'prior_scene':candidate['scene'],'current_scene':a._file(task,path)})
             candidate['scene']=a._file(task,path);mirrors[kind]=scene
@@ -130,6 +178,15 @@ def reconcile(task,request):
                 plan['revision']+=1;plan['amendment']={'previous_sha256':previous['sha256'],'changed_frames':[],
                     'reason':'Extend logical owner coverage after a located native compatibility traversal omission; all previous frames and targets remain frozen.'}
                 frame_plan.bind(task,state,{'frame_plan':plan},active)
+        if name_migration is not None:
+            # Exact names are unchanged; remove only proven erroneous aliases
+            # introduced by the preserved numeric migration, not other history.
+            for original,wrong in prior_record['aliases'].items():
+                if state.get('native_aliases',{}).get(original)==wrong:
+                    state['native_aliases'].pop(original)
+            migration_path=folder/'verified-name-migration.json'
+            write_json(migration_path,name_migration)
+            state['external_reconciliation']=a._file(task,migration_path)
         state['native_import']['owner_map']=owners;state['native_import']['native_count']=len(owners)
         receipt={'status':'COMPLETE_NATIVE_MIRROR_RECONCILED','added':missing,'native_count':len(owners),
             'structural_parents_corrected':structural,'compatibility_records_corrected':compatibility,

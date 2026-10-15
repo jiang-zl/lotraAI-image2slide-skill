@@ -231,9 +231,11 @@ def build(scene, base, output):
     implementation=implementation_identity()
     prs.core_properties.identifier='lotraai-image2slide/'+VERSION+';scene='+identity(scene)+';implementation='+implementation['files_sha256']
     prs.core_properties.title='Scientific figure reconstruction'
-    scale = round(scene["canvas"]["target_width_inches"]*914400) / scene["canvas"]["width"]
-    prs.slide_width = round(scene["canvas"]["width"] * scale)
-    prs.slide_height = round(scene["canvas"]["height"] * scale)
+    from .native_input import scene_dimensions
+    width,height=scene_dimensions(scene)
+    scale = width / scene["canvas"]["width"]
+    prs.slide_width = width
+    prs.slide_height = height
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb=RGBColor(*scene['canvas'].get('background_rgb',[255,255,255]))

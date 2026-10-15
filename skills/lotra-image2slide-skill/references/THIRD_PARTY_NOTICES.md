@@ -1,6 +1,6 @@
 # Runtime provenance and dependency notices
 
-The v1.14.0 Skill ZIP contains project-authored reconstruction code, a conditional natural-component catalogue and runtime instructions. It does not include private input images, test histories, credentials, commercial fonts or OCR weights. The separate offline runtime companion contains pinned wheels and six PP-OCRv6 detection/recognition weights. Its manifest records original URLs, file hashes and environment requirements. Package integrity hashes are not publisher signatures.
+The v1.14.0 Skill ZIP contains project-authored reconstruction code, an empty component catalogue and runtime instructions. It does not include private input images, test histories, credentials, commercial fonts or OCR weights. The separate offline runtime companion contains pinned wheels and six PP-OCRv6 detection/recognition weights. Its manifest records original URLs, file hashes and environment requirements. Package integrity hashes are not publisher signatures.
 
 Python dependencies are installed separately and retain their own licenses. Consult the installed distribution metadata and their upstream license texts: python-pptx (MIT), lxml (BSD and included third-party notices), Pillow (HPND/Pillow license), NumPy (BSD and bundled notices), jsonschema (MIT), openpyxl (MIT). Transitive dependencies also retain their own licenses. The dependency declarations do not grant rights to user inputs or Microsoft Office/fonts. Office must be supplied by the user under their own license.
 

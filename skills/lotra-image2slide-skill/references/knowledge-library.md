@@ -6,7 +6,7 @@ The default persistent store is `CWD/.lotraAI-build/library`. Run from the user'
 project root, or pass `--project PROJECT` on any library command; use `--library
 LIB` to share a user-selected local store across projects. Resolution never scans
 parent/sibling projects, creates a store during a read, or writes inside the
-installed skill. Exclude `.sci-rebuild/` from source publishing. Task intermediates
+installed skill. Exclude `.lotraAI-build/` and all personal entries/caches from source publishing. Task intermediates
 may be archived separately; retain the evidence identities and their archive
 locations for audited recipes.
 
@@ -59,3 +59,18 @@ not a promoted entry. Wrap it in a knowledge entry with its semantic class,
 natural parts, edit requirements, limitations and provenance, then use the same
 positive/counterexample/reuse promotion process. A new class need not be added to
 Python or to the main prompt. Instances own independent IDs, geometry and styles.
+
+
+## Publication revision 9: clean personal knowledge boundary
+
+Semantic version remains 1.32.0 and component protocol design_revision remains 8.
+This source cleanup removes the developer's old component model and mandatory
+gallery from public defaults. Fresh installs contain no personal entries, model
+assets, task states, previews, database or cache. The default catalog is empty.
+Private project libraries and historical task evidence are not distribution data.
+
+Storage-backed context, exact-resource caches and manual local recipe learning
+exist. The component-first normal flow does not yet automatically capture and
+retrieve cross-task personal recipes. Do not describe that learning loop as fully
+integrated or claim measured token savings. Generic operators remain available;
+any reused private constructor needs current source applicability and checks.

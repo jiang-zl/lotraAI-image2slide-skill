@@ -1,0 +1,17 @@
+{
+  "schema": "language-font-collections-1",
+  "version": "1.32.0",
+  "languages": {
+    "zh": ["SimSun", "宋体", "NSimSun", "新宋体", "SimHei", "黑体", "KaiTi", "楷体", "FangSong", "仿宋", "Microsoft YaHei", "微软雅黑", "Microsoft YaHei UI", "Microsoft JhengHei", "微軟正黑體", "PMingLiU", "新細明體", "MingLiU", "細明體", "DengXian", "等线", "STSong", "华文宋体", "STHeiti", "华文黑体", "STKaiti", "华文楷体", "STFangsong", "华文仿宋", "Noto Serif CJK SC", "Noto Sans CJK SC", "Noto Serif CJK TC", "Noto Sans CJK TC", "Source Han Serif SC", "Source Han Sans SC", "Source Han Serif TC", "Source Han Sans TC", "Source Han Serif CN", "Source Han Sans CN", "思源宋体", "思源黑体", "PingFang SC", "PingFang TC", "Songti SC", "Songti TC", "Heiti SC", "Heiti TC", "WenQuanYi Zen Hei", "WenQuanYi Micro Hei"],
+    "en": ["Times New Roman", "Arial", "Calibri", "Aptos", "Cambria", "Georgia", "Verdana", "Tahoma", "Trebuchet MS", "Segoe UI", "Helvetica", "Helvetica Neue", "Courier New", "Consolas", "Palatino Linotype", "Book Antiqua", "Garamond", "Baskerville", "Century Schoolbook", "DejaVu Sans", "DejaVu Serif", "DejaVu Sans Mono", "Liberation Sans", "Liberation Serif", "Liberation Mono", "Carlito", "Caladea", "Noto Sans", "Noto Serif", "Latin Modern Roman", "TeX Gyre Termes", "TeX Gyre Heros"]
+  },
+  "chinese_probe": "中文字体数据模型系统边缘训练类别环境质量服务终端學習網絡",
+  "english_probe": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+  "unknown_chinese_probe_minimum": 0.9,
+  "max_ranked_faces": 256,
+  "max_glyph_samples": 12,
+  "minimum_improvement": 0.002,
+  "classification": "Exclusive family membership; otherwise explicit font metadata and glyph coverage. Latin glyph availability alone never makes a Chinese family an English family.",
+  "archive": "Project-local content-addressed full files and immutable collection revisions; never OS installation or automatic redistribution of host fonts.",
+  "final_review": "One source-bound review after component qualification and layout; preserve exact user identities and locks; extend only with a better eligible same-language face."
+}

@@ -21,6 +21,9 @@ def parser():
     for command,operations in (('containment-check',('discover','bind','report','repair','capture')),('office-math',('discover','bind','report','repair','edit-probe','roundtrip-probe')),('icon-clarity',('discover','bind','report','enhance','review','observe','probe-review','rebind-probes')),('task-completion',('begin','status','amend','branch','resume','stop')),('context-usage',('status','record')),('context-control',('status','resume','history','attempt')),('workflow-control',('plan','preflight','profile','advance'))):
         parser=sub.add_parser(command);parser.add_argument('task',type=Path);parser.add_argument('operation',choices=operations)
         parser.add_argument('--request',type=Path);parser.add_argument('--out',type=Path,required=True)
+    components=sub.add_parser('component-workflow');components.add_argument('task',type=Path)
+    components.add_argument('operation',choices=('bind','migrate','build','instantiate','evaluate','qualify','layout','status','review','fit','source_prepare','source_or_measurement_decision','repair','lock','unlock','edit','fonts','commit','recover','rollback','advance','final','export'))
+    components.add_argument('--request',type=Path);components.add_argument('--out',type=Path,required=True)
     batch=sub.add_parser('batch');batch.add_argument('task',type=Path);batch.add_argument('--request',type=Path,required=True);batch.add_argument('--out',type=Path,required=True)
     neighbors=sub.add_parser('neighbor-check')
     neighbors.add_argument('task',type=Path);neighbors.add_argument('operation',choices=('bind','capture','compile','report','next','repair','refresh-execution'))
@@ -246,6 +249,7 @@ def parser():
     agent_start=sub.add_parser('start');agent_start.add_argument('source',type=Path)
     agent_start.add_argument('--project',type=Path,required=True);agent_start.add_argument('--name')
     agent_start.add_argument('--objectives',type=Path);agent_start.add_argument('--configuration',type=Path)
+    agent_start.add_argument('--pptx',type=Path,help='Optional one-shot partial PPT input paired with the reference image')
     agent_next=sub.add_parser('next');agent_next.add_argument('task',type=Path);agent_next.add_argument('--configuration',type=Path)
     agent_submit=sub.add_parser('submit');agent_submit.add_argument('task',type=Path);agent_submit.add_argument('result',type=Path)
     agent_export=sub.add_parser('export');agent_export.add_argument('task',type=Path);agent_export.add_argument('--out',type=Path,required=True)
@@ -299,6 +303,15 @@ def _dispatch(args,p):
                 event(task,'command',args.command,seconds=time.monotonic()-started,detail={'inclusive':True})
 
 def _dispatch_impl(args,p):
+    if args.command=='component-workflow':
+        from core.component_workflow import dispatch
+        if args.operation=='export':
+            from core.component_workflow import export
+            result=export(args.task,args.out)
+        else:
+            result=dispatch(args.task,args.operation,read_json(args.request) if args.request else None)
+            write_json(args.out,result)
+        print(json.dumps({k:result[k] for k in ('status','components','component','count','ready') if k in result},ensure_ascii=False));return 0
     if args.command=='native-core':
         from core.native_core import command
         write_json(args.out,command(args.task,args.operation,read_json(args.request) if args.request else None))
@@ -345,7 +358,7 @@ def _dispatch_impl(args,p):
     if args.command=='runtime-bootstrap':
         from core.runtime_bootstrap import prepare
         result=prepare(args.project,args.bundle,args.native_libraries);write_json(args.out,result)
-        print(json.dumps(result,ensure_ascii=False));return 0
+        print(json.dumps(__import__("core.state_repository",fromlist=["plain"]).plain(result),ensure_ascii=False));return 0
     if args.command=='source-detail':
         from core.adaptive_detail import command
         with guard(args.task):result=command(args.task,args.operation,read_json(args.request) if args.request else None)
@@ -431,7 +444,7 @@ def _dispatch_impl(args,p):
         elif args.operation=='run':result=ql.run(task)
         elif args.operation=='report':result=ql.audit(task)
         else:
-            result=ql.export(task,args.out);print(json.dumps(result,ensure_ascii=False));return 0
+            result=ql.export(task,args.out);print(json.dumps(__import__("core.state_repository",fromlist=["plain"]).plain(result),ensure_ascii=False));return 0
         write_json(args.out,result)
         print(json.dumps({'status':result.get('status','EXECUTED'),'report':str(args.out)},ensure_ascii=False));return 0
     if args.command in ('source-recursion','signal-semantics'):
@@ -453,7 +466,7 @@ def _dispatch_impl(args,p):
     if args.command=='export-review':
         from core.working_review import export_review
         result=export_review(args.task,args.out)
-        print(json.dumps(result,ensure_ascii=False));return
+        print(json.dumps(__import__("core.state_repository",fromlist=["plain"]).plain(result),ensure_ascii=False));return
     if args.command in ('render-working','observe-rules'):
         if args.command=='render-working':
             from core.working_render import render_task
@@ -564,7 +577,7 @@ def _dispatch_impl(args,p):
         from core import agent_runtime
         if args.command=='start':
             result=agent_runtime.start(args.source,args.project,name=args.name,
-                    objectives=read_json(args.objectives) if args.objectives else None,configuration=args.configuration)
+                    objectives=read_json(args.objectives) if args.objectives else None,configuration=args.configuration,pptx=args.pptx)
         elif args.command=='next':result=agent_runtime.next_packet(args.task,args.configuration)
         elif args.command=='submit':result=agent_runtime.submit(args.task,read_json(args.result))
         elif args.command=='export':result=agent_runtime.export(args.task,args.out)
@@ -1078,7 +1091,7 @@ def _dispatch_impl(args,p):
         from core.context_control import present
         result=present(Path(args.task),result)
         result=bounded_output(Path(args.task),result)
-    print(json.dumps(result, ensure_ascii=False, separators=(',',':')))
+    print(json.dumps(__import__("core.state_repository",fromlist=["plain"]).plain(result), ensure_ascii=False, separators=(',',':')))
     return status
 
 

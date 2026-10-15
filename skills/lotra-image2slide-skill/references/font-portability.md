@@ -1,6 +1,6 @@
 # Source font intent and editable portable delivery
 
-Read this file for `font_binding` or `tool_font_embedding` only. Existing textbox/part quality, native grants, property protection and finite repair remain in the same loop. Font resources are not a second source oracle.
+For revision 6, first read [the mandatory Chinese/English collection rule](font-collections-v132.md). It overrides earlier unrestricted family/gallery selection. Read this file for resource provenance and `tool_font_embedding` mechanics. Existing textbox/part quality, native grants, property protection and finite repair remain in the same loop. Font resources are not a second source oracle.
 
 ## Intent before resources
 
@@ -16,7 +16,7 @@ These are user demands, not defaults for every source. Owner-specific choices us
 
 ## Binding packet
 
-The program freezes at most eight owner/location/script requests. It writes the full existing-resource catalogue privately and returns its hash/path, exact requested matches and separately labeled proposed matches. Classify original glyph structure before consulting recipe availability. Use the existing `font-gallery`/`rank-fonts` with at most four source-compatible families; keep original-owned glyph/weight/size/spacing targets. Do not reread the entire catalogue into context. An explicit requested family skips another identity guess; an inferred selection needs the actual source-bound gallery rank.
+The program freezes at most eight owner/location/script requests and returns candidates scoped to the Chinese or English collection for each request. Provide isolated original glyph samples through `font_binding`; `font_collection.ranking` compares the eligible actual resources and registers the source-bound result. An inferred binding selects that result's closest eligible face. Existing `font-gallery`/`rank-fonts` remain optional legacy diagnostics and cannot replace the revision 6 language-scoped selection receipt. Exact user requests preserve their distinct provenance within the language rule. Keep the native text size, box and spacing fixed, and use bounded packet-detail selectors rather than loading the full catalog.
 
 Reply using actual packet/resource IDs:
 
@@ -30,7 +30,7 @@ All native Scene text/math/cells compile Latin, East Asian and complex-script ty
 
 ## Existing-host resources and cache
 
-`core.font_resources` reads actual font name/face metadata, file hash, weight/slant, glyph coverage and embedding permission. Selected resources get private immutable snapshots in `.lotraAI-build/toolchain/font-snapshots`; this is not an OS installation or a public font bundle. Resource and EOT caches track input/output identities. Source evidence and current availability remain distinct.
+`core.font_resources` reads actual font name/face metadata, file hash, weight/slant, glyph coverage and embedding permission. Common resources are archived before construction in `toolchain/font-collections`; additional eligible selected resources extend that archive. Bound resources also get private immutable snapshots in `.lotraAI-build/toolchain/font-snapshots`; this is not an OS installation or a public font bundle. Resource and EOT caches track input/output identities. Source evidence and current availability remain distinct.
 
 `core.tool_router` stores `.lotraAI-build/toolchain/environment.json` and `font-resources.json`. Windows/WSL, Linux and macOS use their existing directories/configured `font_roots`/`font_dirs`; font and executable changes refresh relevant environment context. An installed Mac PowerPoint discovery is separate from a connected controllable host. Moving a project rebases relative snapshot references; it never aliases one family to another. No recurring GUI probe is required for unchanged resources.
 

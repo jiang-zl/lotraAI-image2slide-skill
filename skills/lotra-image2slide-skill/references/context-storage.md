@@ -129,3 +129,18 @@ and replays every ledger entry. Missing counters remain null, never zero. Old
 `legacy_packet_bytes`; new characters and UTF-8 bytes are distinct. No model
 call, API key or fabricated service usage is required. Do not infer billable
 token savings from entry text, bounded output size, ZIP bytes or cache hits.
+
+
+## Publication revision 9: clean personal knowledge boundary
+
+Semantic version remains 1.32.0 and component protocol design_revision remains 8.
+This source cleanup removes the developer's old component model and mandatory
+gallery from public defaults. Fresh installs contain no personal entries, model
+assets, task states, previews, database or cache. The default catalog is empty.
+Private project libraries and historical task evidence are not distribution data.
+
+Storage-backed context, exact-resource caches and manual local recipe learning
+exist. The component-first normal flow does not yet automatically capture and
+retrieve cross-task personal recipes. Do not describe that learning loop as fully
+integrated or claim measured token savings. Generic operators remain available;
+any reused private constructor needs current source applicability and checks.

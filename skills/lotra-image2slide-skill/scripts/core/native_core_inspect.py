@@ -157,6 +157,8 @@ def check(scene, base, pptx, owners=None, phase=None, validated=False):
         if kind not in ("photo", "group"):
             add(id, "no_raster_substitute", not media and tag != "pic", "Native schematic content required")
         geom = n.find("p:spPr/a:xfrm", NS)
+        imported=o.get('content',{}).get('native_snapshot',{})
+        verified_import=imported.get('native_xml_sha256')==hashlib.sha256(E.tostring(n,method='c14n',exclusive=True)).hexdigest()
         if kind in ("group","trace"):
             geom = n.find("p:grpSpPr/a:xfrm", NS)
             if geom is not None:
@@ -164,7 +166,16 @@ def check(scene, base, pptx, owners=None, phase=None, validated=False):
                 coff, cext = geom.find("a:chOff", NS), geom.find("a:chExt", NS)
                 same_origin = off is not None and coff is not None and dict(off.attrib) == dict(coff.attrib)
                 same_scale = ext is not None and cext is not None and dict(ext.attrib) == dict(cext.attrib)
-                add(id, "group_transform", same_origin and same_scale, "Generated absolute-coordinate groups must preserve child origin and scale")
+                if verified_import:
+                    from .boundary_geometry import _transform
+                    try:
+                        import numpy as np
+                        matrix=_transform(geom,group=True)
+                        valid_transform=np.isfinite(matrix).all() and abs(np.linalg.det(matrix[:2,:2]))>1e-15
+                    except (ValueError,TypeError):valid_transform=False
+                    add(id,'group_transform',bool(valid_transform),'Verified native snapshot has a finite nonsingular affine group transform; source placement/anatomy require separate checks')
+                else:
+                    add(id, "group_transform", same_origin and same_scale, "Generated absolute-coordinate groups must preserve child origin and scale")
                 if kind=='trace' and off is not None and ext is not None:
                     actual=[int(off.get('x')),int(off.get('y')),int(ext.get('cx')),int(ext.get('cy'))]
                     add(id,'trace_group_bounds',all(abs(a-b)<=2 for a,b in zip(actual,[round(v*scale) for v in o['bbox']])),'Trace display layers share the declared coordinate frame')
@@ -193,7 +204,7 @@ def check(scene, base, pptx, owners=None, phase=None, validated=False):
             if kind=='connector' and o['content'].get('points'):
                 from .geometry import connector_points,native_route_spec
                 rotation=native_route_spec(connector_points(expected,o),round(scene['canvas']['target_width_inches']*914400)/scene['canvas']['width'])['rot']
-            add(id, "transform_rotation", int(geom.get("rot", "0"))%21600000 == rotation and (kind=="connector" or (geom.get("flipH", "0") in ("0", "false") and geom.get("flipV", "0") in ("0", "false"))), "Rotation must match declared style; connector orientation checked from directed endpoints")
+            add(id, "transform_rotation", verified_import or int(geom.get("rot", "0"))%21600000 == rotation and (kind=="connector" or (geom.get("flipH", "0") in ("0", "false") and geom.get("flipV", "0") in ("0", "false"))), "Declared rotation or exact native snapshot; source instance affine placement is independently checked")
         if geom is not None and kind not in ("connector", "group"):
             off, ext = geom.find("a:off", NS), geom.find("a:ext", NS)
             actual = [int(off.get("x")), int(off.get("y")), int(ext.get("cx")), int(ext.get("cy"))]

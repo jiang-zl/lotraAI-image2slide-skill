@@ -9,7 +9,7 @@ def intersects(a,b):
     return x<u+s and u<x+w and y<v+t and v<y+h
 
 
-def package_gate(scene,pptx):
+def package_gate(scene,pptx,base=None):
     """Global native invariants checked once, outside per-owner pixel loops."""
     from zipfile import ZipFile
     import hashlib
@@ -21,26 +21,28 @@ def package_gate(scene,pptx):
         slides=[n for n in package.namelist() if n.startswith('ppt/slides/slide') and n.endswith('.xml')]
         add('single_declared_artboard',slides==['ppt/slides/slide1.xml'])
         present=E.fromstring(package.read('ppt/presentation.xml'))
-        size=present.find('p:sldSz',NS);scale=scene['canvas']['target_width_inches']*914400/scene['canvas']['width']
-        add('saved_canvas',size is not None and all(abs(int(size.get(k,'0'))-round(scene['canvas'][field]*scale))<=2 for k,field in (('cx','width'),('cy','height'))))
+        from .native_input import physical_canvas,scene_dimensions,same_canvas
+        try:canvas_matches=same_canvas(physical_canvas(present),scene_dimensions(scene))
+        except (ValueError,TypeError):canvas_matches=False
+        add('saved_canvas',canvas_matches)
         nodes,duplicates=inventory(E.fromstring(package.read('ppt/slides/slide1.xml')))
         ids=[v['id'] for v in nodes.values()]
         add('native_id_uniqueness',not duplicates and len(ids)==len(set(ids)))
-        add('native_owner_coverage',set(nodes)=={o['id'] for o in scene['objects']})
+        from .native_ownership import check as ownership
+        add('native_owner_coverage',ownership(scene,base,nodes)['passed'])
         bindings=scene.get('font_plan',{}).get('bindings',{})
         faces={b['resource']['id']:b['resource'] for b in bindings.values()}
-        rels=E.fromstring(package.read('ppt/_rels/presentation.xml.rels'))
-        font_targets={r.get('Target') for r in rels if r.get('Type')==FONT_REL}
-        for key,face in faces.items():
-            part='ppt/fonts/lotra-'+key[:24]+'.fntdata'
-            passed=part in package.namelist() and part[4:] in font_targets
-            if passed:passed=hashlib.sha256(package.read(part)).digest()==hashlib.sha256(eot(face)).digest()
-            add('full_editable_font.'+key,passed)
+        from .font_retention import verify_package
+        try:
+            retained=verify_package(package,list(bindings.values()))
+            for item in retained:add('full_editable_font.'+item['resource_id'],item['passed'])
+        except ValueError as error:
+            rows.append({'check_id':'full_editable_fonts','status':'FAIL','reason':str(error)})
         add('editable_font_settings',not faces or present.get('embedTrueTypeFonts')=='1' and present.get('saveSubsetFonts')=='0')
     return {'status':'PASS' if all(r['status']=='PASS' for r in rows) else 'FAIL','checks':rows}
 
 
-def snapshots(pptx):
+def snapshots(pptx, component_mode=False):
     from .inspect import xml, inventory
     nodes, duplicates = inventory(xml(pptx))
     if duplicates:
@@ -64,6 +66,9 @@ def snapshots(pptx):
         xf = node.find('p:grpSpPr/a:xfrm' if is_group else 'p:xfrm' if E.QName(node).localname == 'graphicFrame' else 'p:spPr/a:xfrm', NS)
         placement = E.tostring(xf).decode() if xf is not None else None
         if xf is not None:
+            if component_mode:
+                # Rotation/flip are instance pose in the component workflow.
+                for attribute in ('rot','flipH','flipV'): xf.attrib.pop(attribute,None)
             for tag in ('off','chOff'):
                 child = xf.find('a:'+tag, NS)
                 if child is not None: xf.remove(child)
@@ -87,10 +92,32 @@ def snapshots(pptx):
 
 
 def source_checks(expected, actual, phase, tolerance):
+    from .component_fields import canonical_node
+    expected,actual=canonical_node(expected),canonical_node(actual)
     failures = []
     fields = ('render_type','semantic_type','content','style') if phase == 'body' else ('parent','z_order')
     for field in fields:
         wanted,got=expected.get(field),actual.get(field)
+        if field=='content':
+            # Import provenance is evidence, not scientific/typographic content.
+            # Rich run formatting is independently checked against the frozen
+            # source on the actual saved XML below, never dropped from that gate.
+            def source_content(value):
+                value=deepcopy(value or {})
+                for provenance in ('native_snapshot','native_snapshot_math','inline_math','native_snapshot_table'):
+                    value.pop(provenance,None)
+                if 'paragraphs' in value:
+                    from .mathml import canonical_ast
+                    paragraphs=[]
+                    for paragraph in value['paragraphs']:
+                        runs=[]
+                        for run in paragraph:
+                            if 'ast' in run:runs.append({'ast':canonical_ast(run['ast'])})
+                            else:runs.append({'text':run.get('text','')})
+                        paragraphs.append(runs)
+                    value['paragraphs']=paragraphs
+                return value
+            wanted,got=source_content(wanted),source_content(got)
         if field=='style':
             def resolved(value):
                 value=deepcopy(value)
@@ -242,10 +269,11 @@ def batch_check(scene, expected, task, pptx, owners, phase):
                 expected_siblings=paint_order.get(actual[owner].get('parent'),[])
                 checks.append({'check_id':'native_layer_order','status':'PASS' if siblings==expected_siblings else 'FAIL'})
             if phase=='body':
-                checks += style_checks(actual[owner],saved[owner]['node'])
+                from .font_contract import resolved_source_node
+                checks += style_checks(resolved_source_node(wanted[owner],actual[owner]),saved[owner]['node'])
                 obj=actual[owner]
                 if obj['render_type'] not in ('group','connector'):
-                    xf=saved[owner]['node'].find('p:xfrm' if obj['render_type']=='table' else 'p:spPr/a:xfrm',NS)
+                    xf=saved[owner]['node'].find('p:xfrm' if obj['render_type']=='table' else 'p:grpSpPr/a:xfrm' if obj['render_type']=='trace' else 'p:spPr/a:xfrm',NS)
                     ext=xf.find('a:ext',NS) if xf is not None else None
                     scale=round(scene['canvas']['target_width_inches']*914400)/scene['canvas']['width']
                     passed=ext is not None and all(abs(int(ext.get(k))-round(v*scale))<=2 for k,v in zip(('cx','cy'),obj['bbox'][2:]))

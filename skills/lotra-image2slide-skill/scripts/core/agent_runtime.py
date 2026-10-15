@@ -59,7 +59,12 @@ class _StateSnapshot(dict):
 def _read_state(path):
     import hashlib
     data=Path(path).read_bytes()
-    return _StateSnapshot(json.loads(data.decode('utf-8-sig')),hashlib.sha256(data).hexdigest())
+    value=read_json(path)
+    from .state_repository import LazyDict
+    if isinstance(value,LazyDict):
+        value._read_stamp=hashlib.sha256(data).hexdigest()
+        return value
+    return _StateSnapshot(value,hashlib.sha256(data).hexdigest())
 
 
 def _state(task):
@@ -70,6 +75,9 @@ def _state(task):
     if digest(_path(task, state['source']['path'])) != state['source']['sha256']:
         raise ValueError('Task source evidence changed')
     execution_contract.policy(state)
+    if state.get('objectives',{}).get('component_first'):
+        state['project']=str(task.parents[2])
+        return task,state
     from .source_recursion import verify_activation
     verify_activation(task,state)
     from .source_contract import verify_seals
@@ -94,6 +102,12 @@ def _save_locked(task,state):
     file=Path(task)/'state.json';stamp=getattr(state,'_read_stamp',None)
     if file.exists() and (stamp is None or digest(file)!=stamp):
         raise ValueError('Stale task state write rejected; reload the current task. Saved artifacts remain recoverable, but an old reader cannot overwrite new execution records.')
+    if state.get('objectives',{}).get('component_first'):
+        from .state_repository import store_document
+        state['updated']=time.time()
+        store_document(file,state,task=task)
+        if hasattr(state,'_read_stamp'):state._read_stamp=digest(file)
+        return
     from .source_recursion import verify_activation
     verify_activation(task,state)
     from .source_contract import seal_pending,verify_seals
@@ -137,7 +151,7 @@ def _roi(roi, size):
     return roi
 
 
-def start(source, project, *, name=None, objectives=None, configuration=None):
+def start(source, project, *, name=None, objectives=None, configuration=None, pptx=None):
     from PIL import Image
     project = Path(project).expanduser().resolve()
     if not project.is_dir():
@@ -156,7 +170,7 @@ def start(source, project, *, name=None, objectives=None, configuration=None):
              'source_part_quality': True, 'source_relative_layout': True, 'source_textbox_quality': True, 'source_contract_seals':True, 'source_catalog_review':True, 'source_recursion':True,
               'source_semantic_composition': True, 'source_feature_ledger':True, 'source_font_contract':True,
                'portable_editable_fonts':True, 'source_frame_plan':True, 'whole_quality_intent':True, 'all_neighbor_closure':True, 'max_issue_repairs':12,
-             'max_branch_failures':2, **(objectives or {})}
+             'max_branch_failures':2, 'component_first':True, **(objectives or {})}
     if any(goals[key] is not True for key in ('source_part_quality','source_relative_layout','source_feature_ledger','source_contract_seals','source_catalog_review')):
         raise ValueError('New tasks require independent parts/layout/original features; no agent shortcuts')
     if (type(goals['max_issue_repairs']) is not int or not 1<=goals['max_issue_repairs']<=32
@@ -181,6 +195,8 @@ def start(source, project, *, name=None, objectives=None, configuration=None):
     authority=goals.get('layout_authority')
     original_request=frame_plan._resource(project,authority) if authority else None
     caps = capabilities(configuration,project)
+    native_input=Path(pptx).expanduser().resolve() if pptx else None
+    if native_input and not native_input.is_file():raise ValueError('Uploaded partial PPT input absent')
     task.mkdir(parents=True)
     for folder in ('source', 'versions', 'scratch', 'views', 'components'):
         (task / folder).mkdir()
@@ -194,11 +210,16 @@ def start(source, project, *, name=None, objectives=None, configuration=None):
              'reviews': {}, 'issues': [], 'protected': {}, 'packet': None,
              'actions': 0, 'attempts': [], 'revision': 0, 'external_versions': [],
               'telemetry': {'packet_chars': 0, 'program_seconds': 0, 'cache_hits': 0}}
+    if native_input:
+        retained_input=task/'source/input-presentation.pptx';shutil.copyfile(native_input,retained_input)
+        state['input_pptx']=_file(task,retained_input)
     authority=goals.pop('layout_authority',None)
     if authority:
         frozen_request=task/'source'/('user-layout-'+authority['sha256']+'.txt')
         shutil.copyfile(original_request,frozen_request)
         state['frame_authorities']=[_file(task,frozen_request)]
+    from .font_collection import prepare as prepare_font_collection
+    prepare_font_collection(state)
     lib = Library(project, scope=library_scope(state))
     lib.put('evidence', name + ':source', {'semantic_class': 'source_image',
             'original': lib.blob(source), 'size': size, 'state': 'immutable_evidence'})
@@ -639,21 +660,26 @@ def _packet(task, state, kind, target, objective, roi=None, extra=None):
     elif kind=='repair':
         from .source_quality import CAUSE_STAGES
         packet['allowed_cause_stages']=list(CAUSE_STAGES)
+    if state.get('objectives',{}).get('component_first'):
+        from .component_workflow import implementation
+        packet['component_implementation']=implementation()
     from .packet_compaction import compact
-    from .candidate_cost import attach
-    cost=attach(task,state)
-    if cost:packet['file_cost']=cost
+    if not state.get('objectives',{}).get('component_first'):
+        from .candidate_cost import attach
+        cost=attach(task,state)
+        if cost:packet['file_cost']=cost
     from .context_control import view_requests
     packet['view_requests']=view_requests(task,state,packet['views'],owner=target,rubric=kind)
     full_packet=packet
-    packet=compact(task,packet,state['objectives']['context_chars'])
+    packet=compact(task,packet,min(8000,state['objectives']['context_chars']) if state.get('objectives',{}).get('component_first') else state['objectives']['context_chars'])
     if len(canonical(packet).decode('utf-8')) > state['objectives']['context_chars']:
         # Large geometric data stays available by reference; do not silently
         # truncate evidence, grants or the result contract.
         raise ValueError('Work packet exceeds the context budget; narrow it or reference geometric data')
     state['packet'] = packet
-    from .context_efficiency import telemetry
-    telemetry(state,full_packet,packet)
+    if not state.get('objectives',{}).get('component_first'):
+        from .context_efficiency import telemetry
+        telemetry(state,full_packet,packet)
     _save(task, state)
     write_json(task/'current-packet.json', packet)
     return packet
@@ -735,7 +761,13 @@ def _accept_analysis(task, state, analysis):
             {state['task_id']+':source': state['source']['sha256']})
 
 
-def _candidate(task, state, scene, *, baseline=None, allowed=None, reason=None):
+def _candidate(task, state, scene, *, baseline=None, allowed=None, reason=None, transaction=None):
+    if state.get('component_workflow') and state.get('objectives',{}).get('component_first'):
+        from .component_constructor import construct
+        return construct(task,state,scene,baseline,allowed,reason,transaction=transaction)
+    if baseline and state.get('component_workflow'):
+        from .component_workflow import guard_changes
+        guard_changes(task,state,scene,allowed)
     from .build import build
     from .semantic_curves import compile_scene as compile_curves
     scene=compile_curves(scene,allowed)
@@ -1100,12 +1132,26 @@ def next_packet(task, configuration=None):
         ledger.pop('actual_host_context',None)
         ledger.pop('actual_host_contexts',None)
         state['packet']=None
+        if state.get('objectives',{}).get('component_first'):
+            current=state.get('active_candidate') or state.get('selected')
+            if current:
+                current.pop('preview',None);current.pop('render',None);current.pop('render_environment',None)
+                state.update(active_candidate=current,stage='host_render')
+            if state.get('component_workflow'):
+                from .component_workflow import _load as load_components,_save_ledger as save_components,refresh as refresh_components
+                contract,component_ledger=load_components(task,state)
+                refresh_components(task,state,contract,component_ledger,current)
+                component_ledger.update(layout_ready=False,final_dirty=True,final_result=None)
+                with writer(task):save_components(task,state,component_ledger,'render_environment_changed')
         _event(task,'render_environment_changed',{'prior':prior_route,'current':state['capabilities'].get('fingerprint'),
             'effect':'Owner captures remain historical; current environment observations are required'})
         _save(task,state)
     if state['selected'] and digest(_path(task, state['selected']['pptx']['path'])) != state['selected']['pptx']['sha256']:
         return {'status': 'USER_FILE_CHANGED', 'action': 'sync the edited PPTX before continuing'}
     candidate=state.get('active_candidate') or state.get('selected')
+    if not candidate and state.get('objectives',{}).get('component_first') and not state.get('font_pending_candidate'):
+        from .component_workflow import next_action as component_next
+        return component_next(task,state)
     if not candidate and state.get('analysis') and not state.get('global_aesthetic_plan'):
         from .global_aesthetic import discover as global_source_plan
         return {'status':'WORK_PACKET','task':str(task),'packet':{
@@ -1128,6 +1174,10 @@ def next_packet(task, configuration=None):
         _event(task,'saved_construction_packet_superseded',{'prior_packet':state['packet']['packet_id'],
             'saved_revision':state['revision'],'pptx':state['active_candidate']['pptx']})
         state['packet']=None;_save(task,state)
+    if state['packet'] and state.get('objectives',{}).get('component_first'):
+        from .component_workflow import implementation
+        if state['packet'].get('component_implementation')!=implementation():
+            state['packet']=None;_save(task,state)
     if state['packet']:
         return {'status': 'WORK_PACKET', 'task': str(task), 'packet': state['packet']}
     if state.get('font_pending_candidate'):
@@ -1141,11 +1191,23 @@ def next_packet(task, configuration=None):
             packet=_packet(task,state,'font_binding','source_fonts',
                 'Bind original/user font intent to real resources before drawing; do not replace an exact family with an available style peer.',extra=reading)
             return {'status':'WORK_PACKET','task':str(task),'packet':packet}
-        _candidate(task,state,scene,baseline=pending['baseline'],allowed=pending['allowed'],reason=pending['reason'])
-        _save(task,state)
+        _candidate(task,state,scene,baseline=pending['baseline'],allowed=pending['allowed'],reason=pending['reason'],
+                   transaction=read_json(_path(task,pending['transaction_path'])) if pending.get('transaction_path') else None)
+        if not state.get('objectives',{}).get('component_first'):_save(task,state)
+        # Component constructor owns its repository CAS; reload on the recursive next call.
         return next_packet(task)
     if state['stage']=='font_delivery':
         candidate=state['active_candidate']
+        if state.get('component_workflow') and state.get('objectives',{}).get('component_first'):
+            from .component_workflow import _load as load_components
+            font_contract_value,font_ledger=load_components(task,state)
+            pending_tx=font_ledger.get('pending_transaction')
+            transaction=read_json(_path(task,pending_tx['path'])) if pending_tx else {}
+            if len(transaction.get('font_provider_attempts',[]))>=font_contract_value['policy'].get('recovery_attempt_limit',3):
+                packet=_packet(task,state,'component_recovery_work','font_provider_recovery',
+                    'Bounded font provider attempts are retained. Inspect the exact font capability or submit a located source-font redecision.',
+                    extra={'transaction':pending_tx,'return':'component_request{action:retain_font_candidate_and_redecide,reason,evidence}','whole_audit_allowed':False})
+                return {'status':'WORK_PACKET','packet':packet}
         packet=_packet(task,state,'tool_font_embedding','saved_fonts',
             'On a staged copy use an existing compatible Office/font provider to embed every requested face fully. Return that copy; the program transfers font parts only.',
             extra={'reference':'references/font-portability.md','pptx':candidate['pptx'],
@@ -1169,6 +1231,10 @@ def next_packet(task, configuration=None):
         return _host_render_work(task,state)
     # An older render cannot supersede pending construction/font/host work,
     # the current packet or an external user edit awaiting explicit closure.
+    from .component_workflow import enabled as component_enabled, next_action as component_next
+    if candidate and component_enabled(state) and not state.get('rule_pending_built'):
+        component_work=component_next(task,state,candidate)
+        if component_work:return component_work
     if candidate and candidate.get('render') and (state.get('quality_intent') or state.get('objectives',{}).get('whole_quality_intent')) and not state.get('rule_pending_built'):
         from .quality_loop import next_action as quality_next
         return quality_next(task,state,candidate)
@@ -1241,7 +1307,7 @@ def next_packet(task, configuration=None):
             'Understand this original independently of future render objects. Record natural components, '
             'exact text/math, layers, pose, spacing, relations and uncertainty; omit only identified non-figure UI.',
             extra={'visual_catalog_comparison':catalog_guide,
-                   'return': {'analysis': 'source_hash, theme, catalog_review (visual_catalog_comparison return contract), components[{id, semantic_class, roi, '
+                   'return': {'analysis': 'source_hash, theme, catalog_review only if visual_catalog_comparison contains items, components[{id, semantic_class, roi, '
                    'source_note, parts, view, dependencies, review_unit, optional method}], relations, '
                    'optional scene_relations[{type,source,target}] (typed native edges only; source prose belongs in notes), '
                    'source_inventory{source_hash,features[{id,roi,kind,status,evidence,owner,source_part,importance,quality_property,constraints?}]} (or source_inventory_ref); important features need an independent quality_property; inferred illustration needs constraints'},
@@ -2079,6 +2145,18 @@ def submit(task, result):
     for view in packet['views']:
         if digest(_path(task, view['path'])) != view['sha256']:
             raise ValueError('Observation view changed')
+    if state.get('objectives',{}).get('component_first'):
+        from .component_workflow import implementation
+        if packet.get('component_implementation')!=implementation():raise ValueError('Component implementation changed; request a current next packet')
+    if packet['kind'] in ('component_contract_source','component_build_work','component_local_work','component_layout_work','component_final_visual','component_recovery_work','component_repair_work','component_user_mapping','component_font_review','component_final_audit'):
+        from .component_workflow import submit_result
+        return submit_result(task,result,packet)
+    if packet['kind']=='tool_render' and result.get('render_failure') and state.get('objectives',{}).get('component_first'):
+        from .component_constructor import retain_render_failure
+        return retain_render_failure(task,result)
+    if packet['kind']=='tool_font_embedding' and state.get('objectives',{}).get('component_first'):
+        from .component_constructor import accept_font_provider
+        return accept_font_provider(task,result)
     with writer(task):
         kind = packet['kind']
         if kind=='source_scene_relations':
@@ -2117,7 +2195,16 @@ def submit(task, result):
             requested={r['id'] for r in packet['requests']}
             if any(v.get('request_id') not in requested for v in result.get('font_bindings',[])):
                 raise ValueError('Font response expands beyond this bounded work packet')
-            font_contract.bind(task,state,scene,result.get('font_bindings'))
+            if result.get('font_samples'):
+                from .font_collection import store_samples
+                store_samples(task,state,scene,result['font_samples'])
+            if result.get('font_constraints'):
+                from .font_collection import store_constraints
+                if set(result['font_constraints'])-requested:raise ValueError('Font narrowing escaped the current request batch')
+                store_constraints(task,state,scene,result['font_constraints'])
+            if result.get('font_bindings'):font_contract.bind(task,state,scene,result['font_bindings'])
+            elif not (result.get('font_samples') or result.get('font_constraints')):
+                raise ValueError('Submit original glyph samples, source-supported narrowing or explicit font bindings')
         elif kind == 'rule_coverage_source':
             execution_contract.bind(task,state,result,state.get('active_candidate') or state['selected'])
         elif kind == 'source_spacing_source':
@@ -2238,6 +2325,11 @@ def submit(task, result):
             if abs(size[1]-size[0]*state['source_size'][1]/state['source_size'][0]) > 1.01:
                 raise ValueError('Host render does not use the fixed source canvas')
             candidate.update(preview=_file(task, preview), render=_file(task, receipt))
+            if state.get('component_workflow') and state.get('objectives',{}).get('component_first'):
+                candidate['render_environment']=state['capabilities']['fingerprint']
+                state.update(stage='review',packet=None);state['actions']+=1
+                _save(task,state)
+                return {'status':'ACTUAL_RENDER_RECORDED','next':'next '+str(task),'whole_audit_executed':False}
             _save(task,state)
             if ((candidate.get('reason') or {}).get('kind')=='complete_native_rebuild'
                     and state.get('selected',{}).get('pptx',{}).get('sha256')==candidate['pptx']['sha256']):
@@ -2383,6 +2475,9 @@ def submit(task, result):
 @transaction
 def export(task, output):
     task, state = _state(task)
+    if state.get('objectives',{}).get('component_first'):
+        from .component_workflow import export as component_export
+        return component_export(task,output)
     if state['stage'] != 'accepted' or not state['selected']:
         raise ValueError('Export requires an accepted actual drawing; preserve progress otherwise')
     selected = state['selected']
@@ -2558,6 +2653,9 @@ def _baseline_file(task, candidate, library):
 def sync(task, edited_pptx):
     """Explicit user-file adoption. Originals and old selected snapshots survive."""
     task,state=_state(task)
+    if state.get('objectives',{}).get('component_first'):
+        from .component_user_sync import sync as component_sync
+        return component_sync(task,state,edited_pptx)
     edited_pptx=Path(edited_pptx).resolve()
     from .saved_ppt_diff import snapshot
     from .saved_components import inventory

@@ -1,4 +1,26 @@
 """Native table cells, true rectangular merges and bounded dimensions."""
+import copy
+
+
+def normalize(content):
+    """An omitted cell style matrix has one canonical empty style per cell."""
+    rows=validate(content)
+    result=copy.deepcopy(content)
+    if result.get('cell_styles') is None:
+        result['cell_styles']=[[{} for _ in row] for row in rows]
+    return result
+
+
+def normalize_node(node):
+    result=copy.deepcopy(node)
+    if result.get('render_type')=='table':result['content']=normalize(result['content'])
+    return result
+
+
+def normalize_scene(scene):
+    result=copy.deepcopy(scene)
+    result['objects']=[normalize_node(node) for node in result['objects']]
+    return result
 
 def validate(content):
     import math

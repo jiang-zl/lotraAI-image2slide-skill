@@ -472,6 +472,9 @@ def _basis(state,candidate):
 def final_gate(task,state,candidate):
     """Called by acceptance AND export. This never trusts stage='accepted'."""
     policy(state)
+    if state.get('objectives',{}).get('component_first'):
+        from .component_workflow import accept_final
+        return accept_final(task,state,candidate)
     from .source_contract import reconcile
     current_contract = reconcile(state,task)
     if not current_contract['passed']:
@@ -564,6 +567,9 @@ def final_gate(task,state,candidate):
 
 
 def verify_acceptance(task,state,candidate):
+    if state.get('objectives',{}).get('component_first'):
+        from .component_workflow import accept_final
+        return accept_final(task,state,candidate)
     ref=state.get('acceptance')
     if not ref:raise ValueError('A formal delivery requires the program final acceptance receipt')
     value=read_json(resource(task,ref))

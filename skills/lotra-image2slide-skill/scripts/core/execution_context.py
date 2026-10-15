@@ -34,6 +34,7 @@ def session(task=None, *, independent=False):
     from .resource_facts import Facts
     scope['resources'] = Facts(scope)
     token = _active.set(scope)
+    record_cost = not (task and (Path(task)/'state.json').is_file() and state.get('objectives',{}).get('component_first'))
     start = time.monotonic()
     try:
         yield scope
@@ -42,7 +43,7 @@ def session(task=None, *, independent=False):
             scope['resources'].close()
         finally:
             try:
-                if task and (Path(task) / 'state.json').is_file():
+                if record_cost and task and (Path(task) / 'state.json').is_file():
                     from .context_control import event
                     event(task, 'runtime', 'independent_facts' if independent else 'shared_facts',
                           seconds=time.monotonic() - start,

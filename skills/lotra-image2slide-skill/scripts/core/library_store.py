@@ -241,6 +241,10 @@ class Library:
 
     def cache_put(self, key, value, dependencies):
         payload=canonical(value).decode();deps=canonical(dependencies).decode();now=time.time()
+        from .context_policy import configuration
+        total=len(payload.encode())+len(deps.encode())
+        # Large one-off payloads must not flush the small hot working set.
+        if total>min(8*1024*1024,configuration()['cache']['max_bytes']//8):return
         with self.connect() as db:
             db.execute('INSERT OR REPLACE INTO cache(key,payload,dependencies,created,payload_hash,accessed,storage_bytes) VALUES(?,?,?,?,?,?,?)',
                        (key,payload,deps,now,identity({'payload':value,'dependencies':dependencies}),now,len(payload.encode())+len(deps.encode())))
@@ -253,6 +257,14 @@ class Library:
         if type(max_bytes) is not int or type(max_entries) is not int or min(max_bytes,max_entries)<1:raise ValueError('Positive recomputable cache limits required')
         removed=0
         with self.connect() as db:
+            # Separate pixel/numeric working sets. Durable records and evidence are outside this table.
+            for prefix,share in (('resource-pixels:',.25),('',.75)):
+                clause="key LIKE 'resource-pixels:%'" if prefix else "key NOT LIKE 'resource-pixels:%'"
+                rows=db.execute('SELECT key,storage_bytes FROM cache WHERE '+clause+' ORDER BY COALESCE(accessed,created),key').fetchall()
+                amount=sum(r['storage_bytes'] for r in rows);entries=len(rows)
+                for row in rows:
+                    if amount<=max_bytes*share and entries<=max_entries*share:break
+                    db.execute('DELETE FROM cache WHERE key=?',(row['key'],));amount-=row['storage_bytes'];entries-=1;removed+=1
             count,total=db.execute('SELECT COUNT(*),COALESCE(SUM(storage_bytes),0) FROM cache').fetchone()
             if count>max_entries or total>max_bytes:
                 for row in db.execute('SELECT key,storage_bytes FROM cache ORDER BY COALESCE(accessed,created),key').fetchall():

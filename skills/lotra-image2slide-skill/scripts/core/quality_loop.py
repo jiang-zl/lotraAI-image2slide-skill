@@ -39,6 +39,11 @@ def _specifications(task,state):
     return reconcile(state,task)
 
 def audit(task,state=None,candidate=None,persist=True):
+    from .component_workflow import enabled as component_enabled, audit_final as component_audit
+    if state is None:
+        from .agent_runtime import _state
+        task,state=_state(task)
+    if component_enabled(state):return component_audit(task,state,candidate,persist)
     from .execution_context import session
     with session(task):
         return _audit(task,state,candidate,persist)
@@ -298,6 +303,8 @@ def _audit(task,state=None,candidate=None,persist=True):
     return result
 
 def final_gate(task,state,candidate,measured=None):
+    from .component_workflow import enabled as component_enabled, accept_final
+    if component_enabled(state):return accept_final(task,state,candidate,measured)
     from . import execution_contract as ec
     contracts=_specifications(task,state)
     if not contracts['passed']:raise ValueError('Full source contract reconciliation failed: '+repr(contracts['errors'][:6]))
@@ -329,7 +336,10 @@ def final_gate(task,state,candidate,measured=None):
 
 def run(task):
     from . import agent_runtime as a
-    task,state=a._state(task);candidate=_candidate(state);result=audit(task,state,candidate)
+    from .component_workflow import enabled as component_enabled, run as component_run
+    task,state=a._state(task)
+    if component_enabled(state):return component_run(task)
+    candidate=_candidate(state);result=audit(task,state,candidate)
     if result['status']=='ACCEPTED':
         from .task_completion import checkpoint
         checkpoint(task,state,candidate,result,{'action':'quality-loop export'})
@@ -379,6 +389,8 @@ def _measured_work(task,state,candidate,measured):
 
 
 def next_action(task,state,candidate,measured=None):
+    from .component_workflow import enabled as component_enabled, next_action as component_next
+    if component_enabled(state):return component_next(task,state,candidate)
     if measured is None:
         from .workflow_control import current_report
         measured,_=current_report(task,state,candidate)
@@ -569,6 +581,8 @@ def export(task,output):
     from . import agent_runtime as a,execution_contract as ec
     from .appearance_metrics import native_signatures
     task,state=a._state(task);candidate=_candidate(state)
+    from .component_workflow import enabled as component_enabled, export as component_export
+    if component_enabled(state):return component_export(task,output)
     final_gate(task,state,candidate);result=read_json(ec.resource(task,state['quality_result']))
     user_output=Path(output).resolve()
     if user_output.exists():raise FileExistsError('Preserve existing output; choose a new delivery directory')

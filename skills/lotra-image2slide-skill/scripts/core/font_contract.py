@@ -18,12 +18,8 @@ P = 'http://schemas.openxmlformats.org/presentationml/2006/main'
 
 
 def script(char):
-    code = ord(char)
-    if unicodedata.east_asian_width(char) in ('W', 'F'):
-        return 'ea'
-    if 0x600 <= code <= 0x8FF or 0x900 <= code <= 0xDFF or 0x590 <= code <= 0x5FF:
-        return 'cs'
-    return 'latin'
+    from .font_collection import language
+    return {'zh':'ea','en':'latin','unsupported':'cs'}[language(char)]
 
 
 def payloads(scene):
@@ -56,7 +52,8 @@ def payloads(scene):
                         yield obj, 'p'+str(pi)+'.r'+str(ri), run, run.get('text', ''), False
         elif kind == 'table':
             rows = content.get('rows', [])
-            formats = content.setdefault('cell_styles', [[{} for _ in row] for row in rows])
+            formats = content.get('cell_styles')
+            if formats is None:formats=[[{} for _ in row] for row in rows]
             for ri, row in enumerate(rows):
                 for ci, literal in enumerate(row):
                     yield obj, 'cell.'+str(ri)+'.'+str(ci), formats[ri][ci], literal, False
@@ -68,6 +65,9 @@ def requests(scene):
         style = {**obj['style'], **leaf}
         groups = {'math': literal} if math else {}
         if math:
+            from .font_collection import language
+            if any(language(c)=='zh' for c in literal):
+                raise ValueError('FONT_LANGUAGE_SPLIT_REQUIRED: expose Chinese formula annotations as explicitly bound Chinese text runs/owners; the mathematical font cannot bypass language classification')
             # The existing OMML isolated-comma operator intentionally names a
             # second real font. Bind/ship it rather than relying on fallback.
             ast=leaf.get('ast',obj['content'].get('ast'))
@@ -115,7 +115,14 @@ def required(state):
 
 def missing(scene, state):
     bindings = state.get('font_contract', {}).get('bindings', {})
-    return [r for r in requests(scene) if r['id'] not in bindings or not _request_match(bindings[r['id']], r)]
+    from .font_collection import assert_language
+    result=[]
+    for r in requests(scene):
+        bound=bindings.get(r['id'])
+        if not bound or not _request_match(bound,r):result.append(r);continue
+        try:assert_language(bound['resource'],r['role'])
+        except ValueError:result.append(r)
+    return result
 
 
 def user_family(state,request):
@@ -129,38 +136,51 @@ def packet(task, state, scene):
     rows = missing(scene, state)
     if not rows:
         return None
-    faces = resources.available(state['capabilities'])
+    from . import font_collection as collection
+    collection.prepare(state)
     selected = rows[:8]
+    per_request={r['id']:collection.eligible(state,r) for r in selected}
+    faces=list({f['id']:f for values in per_request.values() for f in values}.values())
     catalogue = Path(task)/'source/font-options.json'
     options = [{'id': f['id'], 'family': f['family'], 'aliases': f['aliases'], 'weight': f['weight'],
                 'italic': f['italic'], 'hosts': f['hosts'], 'editable_embedding': f['editable_embedding'],
                 'outline': f['outline'], 'variable': f['variable'],'style_class':f.get('style_class','unknown')} for f in faces]
     write_json(catalogue, {'environment_key': state['capabilities']['fonts']['environment_key'], 'faces': options})
-    return {'reference': 'references/font-portability.md', 'source_hash': state['source']['sha256'],
+    return {'reference': 'references/font-collections-v132.md', 'source_hash': state['source']['sha256'],
             'requests': selected, 'remaining': len(rows),
+            'language_candidates':{key:[f['id'] for f in values] for key,values in per_request.items()},
+            'font_collection':state['font_collection'],
+            'source_glyph_rankings':{r['id']:collection.ranking(task,state,r) for r in selected if collection.role_language(r['role']) in ('zh','en')},
+            'sample_return':'font_samples{request_id:[{character,roi}]}; selection decisions accept font_constraints{request_id:{style_classes?,resource_ids?,reason,evidence}}; prepare before binding',
             'user_font_requests': state['objectives'].get('font_requests', {}),
             'resource_catalogue': {'path': catalogue.relative_to(task).as_posix(), 'sha256': digest(catalogue)},
             'exact_resources': {r['id']: [f for f in options if user_family(state,r)
+                                  and f['id'] in {v['id'] for v in per_request[r['id']]}
                                   and resources.name_key(user_family(state,r)) in {resources.name_key(n) for n in f['aliases']}][:6] for r in selected},
-            'proposed_resources': {r['id']: [f for f in options if resources.name_key(r['proposed_family'])
+            'proposed_resources': {r['id']: [f for f in options if f['id'] in {v['id'] for v in per_request[r['id']]} and resources.name_key(r['proposed_family'])
                                   in {resources.name_key(n) for n in f['aliases']}][:6] for r in selected},
-            'source_reading': 'Classify observed glyph structure before consulting proposed_resources. Compare at most four source-compatible families from the catalogue in the existing native font gallery; availability or a recipe default is never identity evidence.',
+            'source_reading': 'Use only language_candidates for this request. Submit independently isolated original font_samples first. The program returns a registered source-bound ranking of eligible real resources; inferred binding selects its closest face. Availability and proposed recipe families are not original identity evidence.',
             'return': 'font_bindings[{request_id,family,resource_id,origin:user|source_metadata|raster_inference,status:exact|approximate,evidence:{source_hash,roi,description},alternatives?,comparison_ref?,synthetic_style?,prior_binding_hash?,revision_reason?}]',
             'rule': 'Available fonts are resources, not source evidence. User-specified exact identity dominates scores. Raster inference needs original glyph evidence and alternatives; uncertain inference stays approximate. Never alias different typefaces or silently replace a missing family.'}
 
 
-def bind(task, state, scene, values):
+def bind(task, state, scene, values, *, persist=True):
     rows = {r['id']: r for r in requests(scene)}
+    from . import font_collection as collection
+    collection.prepare(state)
     faces = {f['id']: f for f in resources.available(state['capabilities'])}
+    faces.update(collection.load(state['project'])['faces'])
     ledger = state.setdefault('font_contract', {'version': VERSION, 'bindings': {}, 'history': []})
     if not isinstance(values, list) or not values:
         raise ValueError('Answer the current source font requests')
-    accepted = {}
+    accepted = {};archive_faces=[]
     for value in values:
         request = rows.get(value.get('request_id'))
         face = faces.get(value.get('resource_id'))
         if request is None or face is None or not resources.matches(face, value.get('family', '')):
             raise ValueError('Bind an exact current request and a real matching font resource')
+        collection.assert_language(face,request['role'])
+        language=collection.role_language(request['role'])
         origin, status = value.get('origin'), value.get('status')
         if origin not in ('user', 'source_metadata', 'raster_inference','compiler') or status not in ('exact', 'approximate'):
             raise ValueError('Separate font provenance from identity certainty')
@@ -178,8 +198,6 @@ def bind(task, state, scene, values):
             ref = value.get('source_metadata_ref', {})
             if not ref or ref not in state.get('source_font_metadata', []):
                 raise ValueError('Raster input has no exact font metadata; bind a separately supplied source metadata resource')
-        if origin == 'raster_inference' and not value.get('alternatives'):
-            raise ValueError('Raster font selection needs alternatives and discriminating original glyph evidence')
         if origin == 'raster_inference':
             if status != 'approximate':
                 raise ValueError('Raster-selected font identity remains inferred; do not invent exact font metadata')
@@ -188,6 +206,9 @@ def bind(task, state, scene, values):
             if not comparison_file.resolve().is_relative_to(Path(task).resolve()) or not comparison_file.is_file() or digest(comparison_file) != ref.get('sha256'):
                 raise ValueError('Inferred font needs a task-local source-bound font-gallery ranking')
             comparison = read_json(comparison_file)
+            if language in ('zh','en'):collection.verify_choice(task,state,request,face,ref)
+            if not value.get('alternatives') and not (comparison.get('schema')=='language-font-ranking-1' and len(comparison.get('candidates',[]))==1):
+                raise ValueError('Retain actual alternatives, or the program proof that only one eligible face exists')
             selected = comparison.get('selected_style', {})
             if comparison.get('source_hash') != state['source']['sha256'] or not resources.matches(face, selected.get('font', '')):
                 raise ValueError('Font-gallery choice belongs to another original/family')
@@ -231,13 +252,16 @@ def bind(task, state, scene, values):
                 raise ValueError('A bound family needs an explicit source revision and the existing native font grant')
             ledger['history'].append({'prior':prior,'request':request['id'],'reason':value['revision_reason']})
         accepted[request['id']] = record
+        if language in ('zh','en'):archive_faces.append(face)
+    collection.archive(state['project'],archive_faces,'Bind source-qualified eligible language fonts')
     ledger['bindings'].update(accepted)
     ledger['history'].append({'source_hash': state['source']['sha256'], 'accepted': sorted(accepted)})
-    write_json(Path(task)/'source/font-bindings.json', ledger)
+    if persist:write_json(Path(task)/'source/font-bindings.json', ledger)
 
 
 def compile_scene(scene, state=None):
-    scene = copy.deepcopy(scene)
+    from .tables import normalize_scene
+    scene = normalize_scene(scene)
     if state is not None:
         bindings = state.get('font_contract', {}).get('bindings', {})
     else:
@@ -256,7 +280,10 @@ def compile_scene(scene, state=None):
             from .common import safe_path
             bound['resource']['path'] = str(safe_path(state['project'], bound['resource']['snapshot']['path']))
             bindings = {**bindings, key: bound}
-        resource=bound['resource'];key=(resource['path'],resource['face_index'])
+        resource=bound['resource']
+        from .font_collection import assert_language
+        assert_language(resource,request['role'])
+        key=(resource['path'],resource['face_index'])
         if key not in verified:
             file_hash=digest(resource['path'])
             if file_hash!=resource['file_sha256']:raise ValueError('Bound font bytes changed')
@@ -288,8 +315,10 @@ def bind_scene(task, state, scene):
 def auto_bind(task,state,scene):
     """Explicit user identities do not need repeated model font-selection work."""
     demands=state['objectives'].get('font_requests',{})
-    faces=resources.available(state['capabilities']);values=[]
+    from .font_collection import prepare,eligible
+    prepare(state);values=[]
     for row in missing(scene,state):
+        faces=eligible(state,row,extend=bool(user_family(state,row)))
         family=user_family(state,row)
         compiler=row['role'].startswith('math_aux:')
         if compiler:family=row['proposed_family']
@@ -416,3 +445,18 @@ def apply_user_intent(task, state, scene, proof, result):
     # A single request may include font and weight. Last value has the same intent.
     bind(task, state, scene, list({v['request_id']: v for v in values}.values()))
     return compile_scene(scene, state)
+
+
+def resolved_source_node(expected,actual):
+    """Hydrate only compiler font resources; preserve every source style parameter."""
+    from .tables import normalize_node
+    result=normalize_node(expected);actual=normalize_node(actual)
+    def hydrate(left,right):
+        if isinstance(left,dict) and isinstance(right,dict):
+            if 'font_faces' in right:left['font_faces']=copy.deepcopy(right['font_faces'])
+            for key in set(left)&set(right):
+                if key!='font_faces':hydrate(left[key],right[key])
+        elif isinstance(left,list) and isinstance(right,list) and len(left)==len(right):
+            for a,b in zip(left,right):hydrate(a,b)
+    hydrate(result,actual)
+    return result

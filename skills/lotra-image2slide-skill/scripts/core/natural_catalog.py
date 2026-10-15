@@ -63,6 +63,9 @@ def parameters(value):
 def packet(component):
     matched=component.get('semantic_class') in ('wireless_vehicle','top_view_vehicle','vehicle_icon')
     catalog=read_json(ROOT/'config/natural-components.json')
+    if not catalog['items']:
+        return {'catalog_version':catalog['schema'],'candidates':[],
+            'basis':'No personal task model is shipped. Use the current original or an explicitly selected project-private constructor; neither supplies current source evidence.'}
     return {'catalog_version':catalog['schema'],'current_owner_matches':matched,
         'scope':'Current-source compatible natural owners or recursive children of a mixed component; the catalog does not classify the whole owner.',
         'execution_rule':'Every declared vehicle body/window leaf needs its own constructed natural family root, including mixed scenes and cache reuse. Graphic wireless signals require native/vector contours. Saved native anatomy is reconciled again at the whole-inventory gate.',

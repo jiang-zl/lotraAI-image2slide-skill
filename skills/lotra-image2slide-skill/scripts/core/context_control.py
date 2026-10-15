@@ -139,9 +139,9 @@ def deliver_read(task, ref, request, result, *, fresh=False):
         abbreviated={'status': 'ALREADY_READ', 'reference': ref, 'selector': request,
                     'epoch': epoch, 'content_hash': old['content_hash'],
                     'continuation': {k: result[k] for k in ('next_offset', 'next_key_offset', 'total', 'count') if k in result},
-                    'recover': 'Use --fresh or context-control resume; a repeated request also restores the full body.'} if old else None
-        if old and not fresh and not old['needs_body'] and len(data)>len(canonical(abbreviated))+128:
-            db.execute('UPDATE reads SET hits=hits+1,needs_body=1 WHERE key=?', (key,))
+                    'recover': 'Use --fresh for the body or context-control resume for a new context epoch.'} if old else None
+        if old and not fresh and len(data)>len(canonical(abbreviated))+128:
+            db.execute('UPDATE reads SET hits=hits+1 WHERE key=?', (key,))
             return abbreviated
         db.execute('INSERT OR REPLACE INTO reads(key,epoch,request,reference,content_hash,characters,bytes,hits,needs_body) VALUES(?,?,?,?,?,?,?,?,?)',
                    (key, epoch, canonical(request).decode(), canonical(ref).decode(),
@@ -179,6 +179,17 @@ def checkpoint(task, state):
 
 
 def resume(task):
+    state=_state(task)
+    with index(task) as db:
+        epoch = _epoch(db) + 1
+        db.execute("INSERT OR REPLACE INTO meta VALUES('epoch',?)", (str(epoch),))
+    if state.get('objectives',{}).get('component_first'):
+        from . import agent_runtime as a,component_workflow as c
+        task=Path(task).resolve();contract,ledger=c._load(task,state)
+        return {'status':'COMPONENT_RESUME','epoch':epoch,'task':str(task),'revision':state['revision'],
+                'pending_transaction':(ledger or {}).get('pending_transaction'),
+                'contract':(state.get('component_workflow') or {}).get('contract'),
+                'next':a.next_packet(task)}
     state = _state(task)
     from . import agent_runtime as a
     # Includes current source seals, catalog and recursion activation.
@@ -191,9 +202,6 @@ def resume(task):
         file = safe_path(task, ref['path'])
         if digest(file) != ref['sha256']:
             raise ValueError('Cannot resume changed artifact; sync it through the native edit route')
-    with index(task) as db:
-        epoch = _epoch(db) + 1
-        db.execute("INSERT OR REPLACE INTO meta VALUES('epoch',?)", (str(epoch),))
     return {'status': 'CONTEXT_RESTORED', 'epoch': epoch, 'recovery': recovery,
             'objectives': state.get('objectives'), 'next': recovery['next'],
             'readiness': 'Re-read needed owners in this epoch; no pending obligation was removed.'}
@@ -291,6 +299,8 @@ def view_requests(task, state, views, *, owner, rubric):
 
 
 def event(task, stage, operation, *, seconds=0.0, characters=0, byte_count=0, detail=None):
+    if _state(task).get('objectives',{}).get('component_first'):
+        return None
     if not Path(task).is_dir():
         return
     if not isinstance(seconds, (int, float)) or not math.isfinite(seconds) or seconds < 0 or type(characters) is not int or type(byte_count) is not int or min(characters, byte_count) < 0:

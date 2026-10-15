@@ -189,6 +189,10 @@ def _registered_action(task,state,candidate):
 
 def advance(task,request):
     """Finite deterministic actions, then return the next real contract."""
+    from .component_workflow import enabled as component_enabled, advance as component_advance
+    from .agent_runtime import _state
+    task,state=_state(task)
+    if component_enabled(state):return component_advance(task,request)
     from . import agent_runtime as a
     maximum=request.get('max_actions',4)
     if type(maximum)is not int or not 1<=maximum<=8:raise ValueError('Advance needs a finite 1..8 action bound')

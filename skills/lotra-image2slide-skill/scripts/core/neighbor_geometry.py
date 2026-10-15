@@ -4,7 +4,9 @@ Curve flattening is bounded. Unsupported native paint requires a measured host
 matte; unknown/empty bounds are errors rather than infinitely distant objects.
 """
 import math
+from zipfile import ZipFile
 import numpy as np
+from lxml import etree as E
 from shapely.geometry import Polygon,LineString,Point,box
 from shapely.ops import unary_union
 from .boundary_geometry import saved_nodes
@@ -30,6 +32,41 @@ def _stroke(entry,props):
     emu=float(line.get('w',12700))
     parent=entry['parent_matrix'];scale=max(np.linalg.norm(parent[:2,i]) for i in (0,1))
     return emu*scale
+
+def _stroke_ends(entry,props,theme_lines):
+    """Read actual DrawingML caps/joins, rather than invent round endpoints.
+
+    Office resolves omitted properties through style/master/default. Non-
+    placeholder shapes with one verified package theme are supported here;
+    unresolved inheritance remains an actual-owner-matte obligation.
+    MS-OI29500 2.1.1284 defines Office defaults cap=flat and join=round.
+    """
+    line=props.find('a:ln',NS)
+    if line is None:raise ValueError('Explicit native stroke required')
+    cap=line.get('cap')
+    if cap is None:
+        if entry['node'].find('p:nvSpPr/p:nvPr/p:ph',NS) is not None:
+            raise ValueError('Master-inherited line cap needs an actual owner matte')
+        style=entry['node'].find('p:style/a:lnRef',NS)
+        index=int(style.get('idx',0)) if style is not None else 0
+        if index:
+            if theme_lines is None or not 1<=index<=len(theme_lines):
+                raise ValueError('Unresolved theme line cap needs an actual owner matte')
+            cap=theme_lines[index-1].get('cap','flat')
+        else:cap='flat'
+    caps={'rnd':1,'flat':2,'sq':3}
+    if cap not in caps:raise ValueError('Unsupported actual native line cap: '+cap)
+    join=1;limit=8.
+    if line.find('a:bevel',NS) is not None:join=3
+    elif line.find('a:miter',NS) is not None:
+        join=2;limit=float(line.find('a:miter',NS).get('lim',800000))/100000.
+        if not math.isfinite(limit) or limit<=0:raise ValueError('Invalid native miter limit')
+    return caps[cap],join,limit
+
+def package_theme_lines(pptx):
+    with ZipFile(pptx) as archive:
+        themes=[n for n in archive.namelist() if n.startswith('ppt/theme/theme') and n.endswith('.xml')]
+        return E.fromstring(archive.read(themes[0])).findall('.//a:lnStyleLst/a:ln',NS) if len(themes)==1 else None
 
 def _point(entry,p):return (np.array([p[0],p[1],1.])@entry['matrix'].T)[:2].tolist()
 
@@ -117,6 +154,7 @@ def read(task,state,candidate,mattes=None):
     pptx=safe_path(task,candidate['pptx']['path'])
     if digest(pptx)!=candidate['pptx']['sha256']:raise ValueError('Saved native artifact changed')
     nodes=saved_nodes(pptx,state['source_size']);rows={};errors=[];mattes=mattes or {}
+    theme_lines=package_theme_lines(pptx)
     from .component_report import _native_ink
     ink=_native_ink(pptx,safe_path(task,candidate['render']['path']).parent/'text-bounds.json',state['source_size']) if candidate.get('render') else {}
     for name,entry in nodes.items():
@@ -154,6 +192,7 @@ def read(task,state,candidate,mattes=None):
                 if any(float(v.get('val',100000))<100000 for v in props.findall('.//a:alpha',NS)):
                     raise ValueError('Transparent paint needs a bound actual matte')
                 width=_stroke(entry,props);fill=any(props.find('a:'+k,NS) is not None for k in ('solidFill','gradFill','pattFill'))
+                cap,join,miter=_stroke_ends(entry,props,theme_lines) if width else (2,1,8.)
                 if not fill and width==0:
                     rows[name]={'id':name,'nonpaint':True,'reason':'Saved native explicit no fill and no line','parent':entry['parent_name']};continue
                 paths=_paths(entry,props);pieces=[]
@@ -167,7 +206,7 @@ def read(task,state,candidate,mattes=None):
                         pieces.append(poly)
                     if width:
                         line=LineString(pts+[pts[0]] if closed else pts)
-                        pieces.append(line.buffer(width/2,resolution=16,cap_style=1,join_style=1))
+                        pieces.append(line.buffer(width/2,resolution=16,cap_style=cap,join_style=join,mitre_limit=miter))
                 g=unary_union(pieces);method='SAVED_NATIVE_CONTOUR_BOUNDED_FLATTENING'
             serial(g)
             rows[name]={'id':name,'box':box_xywh(g),'stroke':width,'geometry':g,'parent':entry['parent_name'],'order':list(nodes).index(name),'method':method,'precision_px':float(ref['sampling_error_px']) if ref else PRECISION}

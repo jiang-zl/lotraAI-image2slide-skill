@@ -21,7 +21,7 @@ from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 NAME = "lotra-image2slide-skill"
-VERSION = "1.31.0"
+VERSION = "1.33.0"
 SOURCE = Path(__file__).resolve().parents[1]
 MANIFEST = "MANIFEST.json"
 RECEIPT = ".lotraai-image2slide-install.json"
@@ -81,7 +81,7 @@ def allowed(name):
     if parts[0] == "agents":
         return name == "agents/openai.yaml"
     if parts[0] == 'assets':
-        return len(parts)==3 and parts[1]=='natural-components' and path.suffix=='.json'
+        return False  # Personal component models are private, never distribution seeds.
     return len(parts) == 2 and parts[0] in ("schemas", "config") and path.suffix == ".json"
 
 
@@ -191,6 +191,8 @@ def check_payload(payload):
         catalog=json.loads(payload['config/natural-components.json'])
         if catalog.get('schema')!='natural-component-catalog-1' or not isinstance(catalog.get('items'),list):
             raise PackageError('Typed natural construction catalog is required')
+        if catalog['items']:
+            raise PackageError('A public skill must start with an empty personal component catalog')
         seen=set()
         for row in catalog['items']:
             name=row['path'];portable_name(name)

@@ -258,6 +258,8 @@ def transfer_provider(original,provider,bindings,max_font_bytes=64*1024*1024):
                 else:
                     with source.open(info) as reader,output.open(info,'w') as file:shutil.copyfileobj(reader,file,1024*1024)
             for name,data in changed.items():output.writestr(name,data)
+    from .font_retention import verify_package
+    with ZipFile(temporary) as completed:verify_package(completed,bindings)
     temporary.replace(original)
     return {'status':'EMBEDDED_FULL_EDITABLE_FONTS','font_count':len(expected),'fonts':records,
             'font_bytes':sum(r['bytes'] for r in records),
