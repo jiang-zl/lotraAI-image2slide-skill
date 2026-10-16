@@ -22,6 +22,6 @@ The runtime repository is the installation entry. Updates add new files, replace
 
 Python/OCR resources cover Windows AMD64, Linux x86_64/aarch64 and macOS Apple Silicon/Intel. Math packages are indexed for Windows AMD64, Linux x86_64 and both macOS architectures. Linux ARM64 has core resources but no supplied Math package; the complete installer reports this limitation. macOS requires 13 or later.
 
-The current installation revision is **1.33.0 install-r2**. Original releases and offline archives remain available. The current entry uses a file manifest rather than downloading the old full bundle for each update.
+The current installation revision is **1.33.0 install-r3**. Original releases and offline archives remain available. The current entry uses a file manifest rather than downloading the old full bundle for each update.
 
 See [the workflow](https://github.com/jiang-zl/lotraAI-image2slide-skill/blob/release/skills/lotra-image2slide-skill/references/workflow-v133.md). This revision was implemented and statically reviewed without tests, installation runs, reconstruction, rendering or performance/effect measurements.

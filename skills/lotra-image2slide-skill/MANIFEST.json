@@ -1,11 +1,11 @@
 {
   "files": {
     "README.md": {
-      "sha256": "edd374b14a7d2601dcf7e81d434763b34fb37c755f283b580bedf22cfc5cbf89",
+      "sha256": "54cd91d947a9f1b0633bf47f1ac29180e79ec1602945e1ff6621589043bf4677",
       "size": 1852
     },
     "README.zh-CN.md": {
-      "sha256": "0dfc3cec22101d258e0582fbce316a8a3ec924dcd3fc1b0280b11db7d8b5211b",
+      "sha256": "68162cb9871a76badbbcdf5bf3d5244e356a01c7aec140fbc2d06b04324a0ec7",
       "size": 1604
     },
     "SKILL.md": {
@@ -393,7 +393,7 @@
       "size": 9692
     },
     "references/workflow-v133.md": {
-      "sha256": "e135f5cd3aa97216b3224de580833e91d5ca3d9f282c1d008801bcb1e5f14d69",
+      "sha256": "5d777b462cf4801e7de21d24600ca70ef4270a2c51073cd20a968f84f511f19f",
       "size": 11093
     },
     "requirements.txt": {

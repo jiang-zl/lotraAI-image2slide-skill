@@ -164,7 +164,7 @@ independently of the Math catalog. macOS ARM64/Intel use the shared shell entry
 and pinned official Math disk images; missing Math on another platform is a
 specific capability limitation, never an invented PASS. No Office behavior tests
 or reconstruction runs are part of publication. Existing bound tasks retain their
-policy until explicitly migrated. Installation revision 2 remains version 1.33.0.
+policy until explicitly migrated. Installation revision 3 remains version 1.33.0.
 Unowned or modified skill entries stop synchronization and are preserved. Core/OCR
 preparation and Math import precede registration; document render/edit remains
 NOT_RUN. These are future installer behaviors, not checks executed to qualify this

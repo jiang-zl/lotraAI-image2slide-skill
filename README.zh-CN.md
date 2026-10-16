@@ -22,6 +22,6 @@ Runtime 仓库是统一安装入口。程序新增新文件、替换变更文件
 
 Python/OCR 资源覆盖 Windows AMD64、Linux x86_64/aarch64、macOS Apple Silicon 和 Intel。Math 清单覆盖 Windows AMD64、Linux x86_64 和两种 macOS 架构。Linux ARM64 有核心资源，尚无随包 Math，完整安装会明确报告该限制。macOS 要求 13 或更新版本。
 
-当前安装修订为 **1.33.0 install-r2**。历史版本与离线归档保留，当前入口使用文件清单进行差分更新。
+当前安装修订为 **1.33.0 install-r3**。历史版本与离线归档保留，当前入口使用文件清单进行差分更新。
 
 详细规则见[工作流](https://github.com/jiang-zl/lotraAI-image2slide-skill/blob/release/skills/lotra-image2slide-skill/references/workflow-v133.md)。本修订完成实现与静态审查，未运行测试、安装、重建、渲染或性能与效果测量。

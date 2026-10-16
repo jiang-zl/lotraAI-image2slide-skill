@@ -9,6 +9,57 @@ from download import fetch
 from file_sync import prepare,apply,rollback,put,reuse,owned
 
 
+def runtime_checkpoint(project,state,key,math_record):
+    names={'.lotraAI-build/Portable-renderer.json','.lotraAI-build/toolchain/core-runtime-'+key+'.json',
+           '.lotraAI-build/toolchain/ocr-runtime-'+key+'.json','.lotraAI-build/toolchain/ocr-runtime.json',
+           '.lotraAI-build/toolchain/install-code-'+key+'.json'}
+    math_marker='.lotraAI-build/toolchain/LibreOffice-'+math_record['version']+'-'+key+'/lotra-runtime.json'
+    if within(project,math_marker).is_file():names.add(math_marker)
+    for name in list(names):
+        file=within(project,name)
+        if not file.is_file() or 'runtime-' not in name:continue
+        profile=read_json(file)
+        refs=[profile.get('core_readiness',{})]+list(profile.get('probes',{}).values())
+        for ref in refs:
+            path=ref.get('path','')
+            if not path:continue
+            if not path.startswith('.lotraAI-build/toolchain/') or not path.endswith('.json'):raise ValueError('Unexpected runtime proof path')
+            proof=within(project,path);names.add(path)
+            if proof.is_file() and ref.get('sha256') and sha(proof)!=ref['sha256']:raise ValueError('Preserve changed runtime proof')
+            if proof.parent.name=='probes':
+                for sibling in sorted(proof.parent.glob('*.json'))[:256]:names.add(sibling.relative_to(project).as_posix())
+    original={}
+    for name in sorted(names):
+        file=within(project,name)
+        original[name]=sha(file) if file.is_file() else None
+        if file.is_file():put(within(state,'runtime-preimage/'+name),file.read_bytes())
+    applied=state/'Apply.json'
+    write_json(state/'Runtime-preimages.json',{'status':'PENDING','files':original,'prior_apply_sha256':sha(applied) if applied.exists() else None})
+
+
+def restore_runtime(project,state):
+    record=state/'Runtime-preimages.json'
+    if not record.exists():return
+    saved=read_json(record)
+    if saved['status']!='PENDING':return
+    applied=state/'Apply.json'
+    if applied.exists() and read_json(applied)['status']=='COMPLETE' and sha(applied)!=saved.get('prior_apply_sha256'):
+        write_json(record,{**saved,'status':'COMPLETE'});return
+    for name,expected in saved['files'].items():
+        target=within(project,name)
+        if expected is not None:
+            original=within(state,'runtime-preimage/'+name)
+            if sha(original)!=expected:raise ValueError('Preserve changed runtime preimage')
+            put(target,original.read_bytes())
+        elif target.exists():target.unlink()
+    write_json(record,{**saved,'status':'ROLLED_BACK'})
+
+
+def finish_runtime(state):
+    record=state/'Runtime-preimages.json'
+    if record.exists():write_json(record,{**read_json(record),'status':'COMPLETE'})
+
+
 def companion(project,spec,key,cache,local_archive=None):
     descriptor=within(project,'.lotraAI-build/toolchain/core-runtime-'+key+'.json')
     prior=read_json(descriptor) if descriptor.exists() else {}
@@ -125,8 +176,9 @@ def install(project,catalog,root,harness):
             if previous.exists():target=previous
     cache=within(project,'.lotraAI-build/downloads/sha256')
     metadata=('AGENTS.md','.lotraAI-build/Active-skill.json','.lotraAI-build/Bundle-install.json')
-    touched=False;relocated=False
+    touched=False;relocated=False;committed=False
     try:
+        restore_runtime(project,state)
         relocation=state/'Relocation.json'
         if relocation.exists() and read_json(relocation)['status']=='MOVING':target=canonical;relocated=True
         rollback(target,state)
@@ -142,6 +194,7 @@ def install(project,catalog,root,harness):
             canonical.rename(previous);target=previous;relocated=False
             write_json(relocation,{'status':'ROLLED_BACK','previous':str(previous)})
         candidate,plan=prepare(project,target,catalog['skill']['files'],state,root.parent)
+        runtime_checkpoint(project,state,key,catalog['bundle']['math_renderers'][key])
         bundle=catalog['bundle']
         # Resolve unsupported optional-platform resources before touching the skill.
         math_record=bundle.get('math_renderers',{}).get(key)
@@ -155,6 +208,7 @@ def install(project,catalog,root,harness):
         selected=project/'.lotraAI-build/Active-skill.json'
         if (not any(plan[n] for n in ('add','replace','delete')) and selected.exists()
                 and read_json(selected).get('release_id')==catalog['release_id']):
+            finish_runtime(state)
             print(json.dumps({'status':'ALREADY_CURRENT','version':catalog['version'],'skill_entry':str(target/'SKILL.md'),
                               'core_ready':True,'render_status':'NOT_RUN','report':str(state/'Result.json')}))
             return
@@ -191,13 +245,14 @@ def install(project,catalog,root,harness):
             raw=(json.dumps(value,ensure_ascii=False,sort_keys=True,indent=2)+'\n').encode();put(within(project,name),raw)
         write_json(state/'Result.json',result)
         data=read_json(state/'Apply.json');write_json(state/'Apply.json',{**data,'status':'COMPLETE'})
+        committed=True;finish_runtime(state)
         if relocated:write_json(state/'Relocation.json',{'status':'COMPLETE'})
         print(json.dumps({'status':result['status'],'version':catalog['version'],'revision':catalog['publication_revision'],
                           'skill_entry':'.agents/skills/lotra-image2slide-skill/SKILL.md','core_ready':True,'render_status':'NOT_RUN','report':str(state/'Result.json')}))
     except Exception as error:
-        applied=state/'Apply.json'
-        if applied.exists() and read_json(applied)['status']=='COMPLETE':raise
+        if committed:raise
         rollback(target,state)
+        restore_runtime(project,state)
         registration=state/'Registration.json'
         if touched and registration.exists():
             for name,existed in read_json(registration).items():

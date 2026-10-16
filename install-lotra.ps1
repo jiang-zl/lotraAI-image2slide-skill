@@ -75,6 +75,6 @@ if(-not $python){
 $entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe'
 New-Item -ItemType Directory -Path $entryRoot -Force|Out-Null
 $entry=Join-Path $entryRoot 'install_lotra.py'
-Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r2/install_lotra.py' -Destination $entry -Sha256 '57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe' -Bytes 6509
+Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r3/install_lotra.py' -Destination $entry -Sha256 '57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe' -Bytes 6509
 & $python -I -X utf8 -B $entry --project $projectRoot
 exit $LASTEXITCODE

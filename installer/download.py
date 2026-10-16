@@ -47,6 +47,24 @@ def _fetch(record, cache, *, attempts=3):
     else:
         if part.exists():raise ValueError('Preserve unowned partial download')
         owner.write_text(json.dumps(identity),encoding='utf-8')
+    if part.exists() and part.stat().st_size==size and sha(part)==expected:os.replace(part,file);return file
+    if record.get('parts'):
+        pieces=[fetch(item,cache,attempts=attempts) for item in record['parts']]
+        if sum(p.stat().st_size for p in pieces)!=size:raise ValueError('Member part sizes differ')
+        for _ in range(2):
+            offset=part.stat().st_size if part.exists() else 0
+            if offset>size:part.unlink();offset=0
+            with part.open('ab' if offset else 'wb') as output:
+                passed=0
+                for piece in pieces:
+                    length=piece.stat().st_size
+                    skip=max(0,min(length,offset-passed));passed+=length
+                    with piece.open('rb') as source:
+                        source.seek(skip)
+                        for block in iter(lambda:source.read(4*1024*1024),b''):output.write(block)
+            if part.stat().st_size==size and sha(part)==expected:os.replace(part,file);return file
+            part.unlink()  # Exact owned logical member; verified pieces remain cached.
+        raise ValueError('Verified member pieces do not match the complete file')
     last=None
     for attempt in range(attempts):
         offset=part.stat().st_size if part.exists() else 0

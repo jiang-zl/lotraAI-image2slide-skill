@@ -52,5 +52,5 @@ if [ -z "$python" ]; then
  [ "$(hash_file "$python")" = "$exe_hash" ] || { echo 'Python executable differs' >&2; exit 2; }
 fi
 entry="$project/.lotraAI-build/bootstrap/57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe/install_lotra.py"
-get 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r2/install_lotra.py' "$entry" '57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe'
+get 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r3/install_lotra.py' "$entry" '57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe'
 exec "$python" -I -X utf8 -B "$entry" --project "$project"
