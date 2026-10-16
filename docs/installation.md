@@ -1,5 +1,17 @@
-# v1.33 安装与增量更新
+# Installation and updates
 
-使用 [当前 README Quick start](../README.md) 的官方一键入口。程序按匹配哈希复用 runtime，只下载更新包和缺失的平台资源，完成后返回短回执。无需 Agent 手工下载、组合全部离线分片，也不要加载全部安装清单。
+[简体中文](installation.zh-CN.md) · [Back to README](../README.md)
 
-历史 v1.31 文件仍在对应发布中保留；它们不代表 v1.33 运行验收。
+Open your working project in Codex and send:
+
+> Install or update lotraAI Image2Slide in this project from https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime.
+
+One entry prepares both the runtime and the main skill. First installation selects your platform resources. Later updates add, replace and retire managed files while retaining unchanged active files without downloading or rewriting them. Your knowledge library, fonts, tasks, originals, PPTs and global skills are preserved.
+
+For manual commands, Windows/Linux/macOS resource coverage, complete-bundle downloads and installation from an extracted bundle, use the maintained [runtime installation guide](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/docs/installation.md).
+
+After installation, attach your image and send:
+
+> Use $lotra-image2slide-skill to rebuild this image as an editable PPT.
+
+See the [usage guide](usage.md). Actual installation resources and capabilities are recorded in the working project's `.lotraAI-build/Bundle-install.json`.

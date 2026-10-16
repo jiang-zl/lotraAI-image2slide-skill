@@ -1,10 +1,9 @@
 {
-  "version": "1.33.0",
-  "tests": "NOT_RUN_PER_USER_REQUEST",
-  "syntax_import_cli": "NOT_RUN_PER_USER_REQUEST",
-  "runtime_validation": "NOT_RUN_PER_USER_REQUEST",
-  "reconstruction_rendering": "NOT_RUN_PER_USER_REQUEST",
+  "installation": "PREPUBLICATION_WINDOWS_X64_AND_WSL_LINUX_X64_PASSED",
+  "installation_transport": "LOCAL_BUNDLE_AND_LOCAL_HTTP_ONLINE",
+  "macos_native_host": "NOT_RUN",
+  "office_editing": "NOT_RUN_PER_USER_REQUEST",
   "performance_effect_measurement": "NOT_RUN_PER_USER_REQUEST",
-  "static_review": "SOURCE_CALL_CHAIN_ONLY",
-  "historical_receipts_qualify_release": false
+  "reconstruction_rendering": "NOT_RUN_PER_USER_REQUEST",
+  "version": "1.33.0"
 }

@@ -1,33 +1,33 @@
 {
-  "bundle_id": "6f58453ae3f710c9c62b91cf6c9f99132faaacfbfe3f8293392f6e4408258fd3",
+  "bundle_id": "67e8721de50944c9db00acbb38c50eed46cac0d50af8217174e40d4526f128c7",
   "complete_bundle": {
-    "bytes": 2408818538,
+    "bytes": 2408827196,
     "manifest": {
-      "bytes": 7504,
-      "sha256": "c546b84a5a2ff772674b38d4e40b0673553b78069a2692855db9f884c40de667",
-      "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r5/v1.33.0-bundle.json"
+      "bytes": 7420,
+      "sha256": "bd12f06cc2e7154b04e12dfefb62c770a847ae8f60e931cc6689c768702d5817",
+      "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0/v1.33.0-bundle.json"
     },
     "max_part_bytes": 134217728,
     "parts": 18,
-    "sha256": "35629ac256415871f1b24c55c131fd28c7650ab2ce7a40696948b1f8222b597c"
+    "sha256": "9176c307f624be9203b94066f5001dd458c8b8ba975e6833a51974309a891abd"
   },
   "download_mode": "manifest-owned-file-differential",
   "functional_validation": "NOT_RUN_PER_USER_REQUEST",
-  "historical_full_bundle_sha256": "484ea4c0a9a2689b4d9a0dda509d775b352da041a7536d980245341c959250cd",
   "install_entry": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime",
+  "installation_validation": "PREPUBLICATION_WINDOWS_X64_WSL_LINUX_X64_PASSED",
   "product": "lotraAI",
-  "publication_revision": 5,
+  "publication_revision": 6,
   "release_branch": "release",
-  "release_id": "1.33.0-install-r5",
-  "release_tag": "v1.33.0-install-r5",
-  "release_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.33.0-install-r5",
-  "skill_payload_sha256": "f04b1d15204b1c2d734d5ff56763ec4c718f6660b8198be2e6aa79c3d494b05d",
+  "release_id": "1.33.0-67e8721de509",
+  "release_tag": "v1.33.0",
+  "release_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.33.0",
+  "skill_payload_sha256": "f747c383b627de439b41f43c065091b5e3829820fd0d845af75cbcd41936e0f4",
   "skill_source_path": "skills/lotra-image2slide-skill",
   "static_review": "docs/v1.33.0/Static-review.md",
   "update": {
-    "bytes": 1647077,
-    "sha256": "f04b1d15204b1c2d734d5ff56763ec4c718f6660b8198be2e6aa79c3d494b05d",
-    "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.33.0-install-r5/lotraAI-image2slide-skill-v1.33.0-install-r5.zip"
+    "bytes": 1650746,
+    "sha256": "f747c383b627de439b41f43c065091b5e3829820fd0d845af75cbcd41936e0f4",
+    "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.33.0/lotraAI-image2slide-skill-v1.33.0.zip"
   },
   "version": "1.33.0",
   "version_branch": "1.33.0"

@@ -1,5 +1,6 @@
 param([Parameter(Mandatory=$true)][string]$Project,[ValidateSet('auto','codex','claude','generic')][string]$Harness='auto',[switch]$Update)
 $ErrorActionPreference='Stop'
+Import-Module (Join-Path $PSHOME 'Modules/Microsoft.PowerShell.Utility/Microsoft.PowerShell.Utility.psd1') -ErrorAction Stop
 $root=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $projectPath=(Resolve-Path -LiteralPath $Project).Path
 if($projectPath -eq [IO.Path]::GetPathRoot($projectPath) -or $projectPath -eq [Environment]::GetFolderPath('UserProfile')){throw 'Select an existing project directory.'}

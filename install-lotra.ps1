@@ -36,8 +36,19 @@ function Get-LotraResource {
 }
 
 $ErrorActionPreference='Stop'
+# Host-owned PowerShell utility module; do not inherit an incompatible Core module.
+Import-Module (Join-Path $PSHOME 'Modules/Microsoft.PowerShell.Utility/Microsoft.PowerShell.Utility.psd1') -ErrorAction Stop
 $projectRoot=(Resolve-Path -LiteralPath $Project).Path
 if($projectRoot -eq [IO.Path]::GetPathRoot($projectRoot) -or $projectRoot -eq $env:USERPROFILE){throw 'Choose a project directory.'}
+# Local bundle dispatch: prepare resources before registering the main skill.
+if($DownloadBundle -and $BundleRoot){throw 'Choose bundle download or local installation.'}
+if($BundleRoot){
+ $localRoot=(Resolve-Path -LiteralPath $BundleRoot).Path
+ $localEntry=Join-Path $localRoot 'installer/install.ps1'
+ if(-not(Test-Path -LiteralPath $localEntry -PathType Leaf)){throw 'The supplied bundle has no installer/install.ps1.'}
+ & $localEntry -Project $projectRoot -Harness codex
+ exit $LASTEXITCODE
+}
 $state=Join-Path $projectRoot '.lotraAI-build/install-entry'
 New-Item -ItemType Directory -Path $state -Force|Out-Null
 $python=$null
@@ -75,7 +86,7 @@ if(-not $python){
 $entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59'
 New-Item -ItemType Directory -Path $entryRoot -Force|Out-Null
 $entry=Join-Path $entryRoot 'install_lotra.py'
-Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r5/install_lotra.py' -Destination $entry -Sha256 '5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59' -Bytes 8595
+Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0/install_lotra.py' -Destination $entry -Sha256 '5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59' -Bytes 8595
 $entryArgs=@('--project',$projectRoot)
 if($DownloadBundle -and $BundleRoot){throw 'Choose bundle download or local installation.'}
 if($DownloadBundle){$entryArgs+=@('--download-bundle',$DownloadBundle)}

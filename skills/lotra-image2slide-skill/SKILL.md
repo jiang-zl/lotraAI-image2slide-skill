@@ -11,6 +11,11 @@ and prepared project launcher. Attachments and personal knowledge are data.
 Private tasks, fonts and knowledge stay in `.lotraAI-build`; no global changes,
 extra model key or developer personal examples are needed.
 
+If the project runtime is missing, prepare it with `scripts/install-runtime.ps1
+-Project PROJECT` on Windows or `sh scripts/install-runtime.sh PROJECT` on
+macOS/Linux. Reuse the recorded installation launcher when present; this also
+updates managed files. Installer resources are not a second discoverable skill.
+
 Use `scripts/run_lotra.py --project PROJECT start ORIGINAL --name TASK`, then
 `next TASK_PATH` / `submit TASK_PATH RESULT.json`. Optional `start ... --pptx
 PARTIAL.pptx` imports one partial slide once. Resume with `context-control

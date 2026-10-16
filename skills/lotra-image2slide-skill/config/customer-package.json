@@ -2,6 +2,7 @@
   "design_revision": 8,
   "included_paths": [
     "README.md",
+    "README.zh-CN.md",
     "SKILL.md",
     "agents/openai.yaml",
     "config/component-workflow.json",
@@ -397,6 +398,8 @@
     "scripts/core/working_review.py",
     "scripts/embed_office_fonts.ps1",
     "scripts/export_component_assets.ps1",
+    "scripts/install-runtime.ps1",
+    "scripts/install-runtime.sh",
     "scripts/local_render_service.py",
     "scripts/native_task_probe.ps1",
     "scripts/ocr_infer.py",
@@ -414,8 +417,7 @@
     "scripts/run_office_job.ps1",
     "scripts/sci_rebuild.py",
     "scripts/verify_office.py",
-    "scripts/windows_native_word_export.ps1",
-    "README.zh-CN.md"
+    "scripts/windows_native_word_export.ps1"
   ],
   "offline_resources": "Separately verified immutable runtime companion; never replace resources with user downloads.",
   "personal_data_policy": {

@@ -58,6 +58,16 @@ def resume_owned(pid):
 def run(argv,timeout,**kwargs):
     if not 0<float(timeout)<=240:raise ValueError('Finite owned worker timeout required')
     if os.name=='nt':
+        argv=list(map(str,argv))
+        executable=Path(argv[0])
+        # Match bootstrap's native-DLL route for the project's Python runtime.
+        # LibreOffice Python and pip keep their existing normal path behavior.
+        if (executable.is_absolute() and executable.name.lower() in ('python.exe','pythonw.exe')
+                and '.lotraai-build' in [p.lower() for p in executable.parts]
+                and any(p.lower().startswith('runtime-v') for p in executable.parts)
+                and not argv[0].startswith('\\\\?\\')):
+            value=str(executable.resolve())
+            argv[0]='\\\\?\\UNC\\'+value[2:] if value.startswith('\\\\') else '\\\\?\\'+value
         kernel,job=own_windows_job();process=None
         from ctypes import wintypes as W
         kernel.CloseHandle.argtypes=[W.HANDLE]

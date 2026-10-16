@@ -1,16 +1,16 @@
 {
   "files": {
     "README.md": {
-      "sha256": "9c894281a36b3c764cf4ad2cc2d13a517960841467ee7a1c7f4fd5fac61b3de3",
-      "size": 2513
+      "sha256": "676ae2031b7f870e4a8e56e427bc73133e6731ce3498f7ae6987203198c2b3ca",
+      "size": 766
     },
     "README.zh-CN.md": {
-      "sha256": "6b98ac30024cac69b179256b8937bbe304792be7c1c86a99f200cf1efdc16bab",
-      "size": 2277
+      "sha256": "9767b4fc2761d98ab8914b1ef9426409ba4f16cf424ab9d1e6d2aadb5031d936",
+      "size": 698
     },
     "SKILL.md": {
-      "sha256": "9655418c49c376087d431a56370bd74c69d6ce0bb78ce3bc353f4041f732c69f",
-      "size": 4367
+      "sha256": "c16a3dc808ee6e1d17fccc2a68db6bdd1d3461ef6cbb8d393f52d134c1277453",
+      "size": 4616
     },
     "agents/openai.yaml": {
       "sha256": "25917d32599e30915b9d9645dc3222cc26e9e354e6cbe7786ebb69a54d6cde63",
@@ -29,8 +29,8 @@
       "size": 61397
     },
     "config/customer-package.json": {
-      "sha256": "469c8eb0e9c8551cfe0a07bf39b5ca7f37808a09aceee175d42b70eabd35aa48",
-      "size": 16807
+      "sha256": "cca6495efff1515b6a93a389bf1dcbfc3e54c7322705df212464e3916b89ea6e",
+      "size": 16876
     },
     "config/font-collections.json": {
       "sha256": "1c90aa23438be48260f8479ce1a31f96edceaeb0cbeb19ac3ae9729025d3c7ce",
@@ -1553,8 +1553,8 @@
       "size": 33237
     },
     "scripts/core/worker_process.py": {
-      "sha256": "4a8b53684ddb4a9dda8d1fdbe234fcac91d52997f4b55c609654c69bb3b2e29e",
-      "size": 7230
+      "sha256": "7d4894739fc7807299a8a188a1133ea093d1356aab28f4f89a8d171abb839162",
+      "size": 7908
     },
     "scripts/core/workflow.py": {
       "sha256": "e4677543a7d64bf224ce73b71242c8dafeabdbd41dfad4482f908389b8795162",
@@ -1587,6 +1587,14 @@
     "scripts/export_component_assets.ps1": {
       "sha256": "8c532a35458280d0ab6f66db6fd1043f690ea9b6c68a80d4018b7c7bf83a84c4",
       "size": 1751
+    },
+    "scripts/install-runtime.ps1": {
+      "sha256": "e6c70d021aa1e075adf05fd49fc132dd5ffe4394ca601bd06d4e7aaf31f40de7",
+      "size": 7003
+    },
+    "scripts/install-runtime.sh": {
+      "sha256": "f7598882a6ab74e869fe10d24d974c15decd90594e1663c097d1ce66723b4f2c",
+      "size": 4950
     },
     "scripts/local_render_service.py": {
       "sha256": "50e6a38639955b0ef47e9d3afce3251e5e26840379d91d30d1aa1b6ea1d379de",

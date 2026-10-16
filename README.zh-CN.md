@@ -1,31 +1,151 @@
-# lotraAI Image2Slide
+# lotraAI
 
-[English](README.md) | **简体中文**
+**将科研参考图重建为分层、可编辑的 PowerPoint。**
 
-将科研图片重建为分层、原生可编辑的 PowerPoint，也支持一次性导入半成品 PPT 作为起点。
+[English](README.md) · [中文版](README.zh-CN.md)
 
-## Quick start
+lotraAI 将当前 agent 对原图的理解与项目内的重建程序结合起来，用于科研系统图、方法流程图和结构示意图。文字、形状、连接与语义分组按原生对象组织；公式使用结构化 Office Math；照片等图像内容保留为适当范围的图片对象。
 
-在项目中，将这一句话交给 Codex，首次安装和后续更新都适用：
+[快速开始](#快速开始) · [案例](#案例) · [使用指南](docs/usage.zh-CN.md) · [安装说明](docs/installation.zh-CN.md) · [下载完整包](docs/download.zh-CN.md)
 
-> 请从 https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime 在当前项目安装或更新 lotraAI Image2Slide。
+## 快速开始
 
-Codex 自动取得并调用正式安装程序，你无需自己下载、合并或安装 runtime。
+### 1. 让 Codex 安装 skill，并自动准备运行资源
 
-安装后附上原图：
+在 Codex 中打开工作项目，把下面这一句话交给它；首次安装和后续更新都适用：
 
-> 用 $lotra-image2slide-skill 将这张图重建为可编辑 PPT。
+~~~text
+请从 https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime 在当前项目安装或更新 lotraAI Image2Slide。
+~~~
 
-## 下载与差分更新
+Codex 调用维护好的安装程序，按平台准备 Python、依赖、OCR 和 Math，再登记唯一的 `lotra-image2slide-skill`。下载、续传、校验与分块合并由程序完成，无需逐项手动处理。
 
-首次安装按当前系统和架构选择资源。大资源可以分块下载，由程序自动续传、校验和合并。已有安装按文件清单差分同步：新增新文件、替换变化文件、移除新版已删除的受管理文件；未变化的生效文件不重复下载、不重新写入。文件改名时也优先复用本地相同内容。个人知识库、字体、任务、原图和 PPT 保留在私有 `.lotraAI-build` 中。
+如果已有完整 ZIP，提供文件或本地绝对路径，再发送：
 
-完整 bundle 继续提供有序分块，用于本地安装、离线保存和恢复，与正常安装共用正式下载器和内容缓存；日常更新无需下载完整 bundle。参见 [runtime 安装与完整包](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime)。
+~~~text
+请用提供的 lotraAI-image2slide-v1.33.0-bundle.zip 在当前项目安装或更新 Image2Slide。
+~~~
 
-## 平台与发布范围
+运行资源和私有任务状态保存在项目 `.lotraAI-build`。手动命令与平台要求见[安装说明](docs/installation.zh-CN.md)，完整包获取方式见[下载说明](docs/download.zh-CN.md)。
 
-产品版本仍为 **1.33.0**。Python/OCR 资源覆盖 Windows AMD64、Linux x86_64/aarch64、macOS Apple Silicon 和 Intel。完整 Math 准备已有 Windows AMD64、Linux x86_64 和两种 macOS 架构的资源路线。macOS 要求 13 或更新版本，需要首次联网取得固定哈希的 Math 磁盘镜像；该镜像未包含在完整 bundle 中。Linux ARM64 有核心资源，尚无随包完整 Math，安装器会明确报告该限制。
+### 2. 附上原图开始重建
 
-本次完成实现与静态代码审查。按用户要求，未运行产品测试、语法/import/CLI 检查、安装、重建/渲染或性能与效果测量。发布哈希用于标识分发内容，不代表运行时或重建质量验收。历史标签与归档保留。
+~~~text
+用 $lotra-image2slide-skill 将这张图重建为可编辑 PPT。
+~~~
 
-详细流程见[工作流说明](https://github.com/jiang-zl/lotraAI-image2slide-skill/blob/release/skills/lotra-image2slide-skill/references/workflow-v133.md)。
+当前 agent 负责解释原图，程序负责执行、检查与导出。工作流交付 `Final_editable.pptx` 和记录实际完成情况的 `Report.md`。
+
+## 按系统下载安装
+
+也可以先进入要使用 Image2Slide 的项目目录，直接执行对应命令。脚本会自动选择当前系统和架构，首次安装与后续更新使用同一入口。
+
+**Windows（PowerShell）**
+
+```powershell
+$url = 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/release/install-lotra.ps1'
+curl.exe -fL --retry 2 --connect-timeout 20 $url -o install-lotra.ps1
+if ($LASTEXITCODE -eq 7) { curl.exe --noproxy '*' -fL --retry 2 --connect-timeout 20 $url -o install-lotra.ps1 }
+if ($LASTEXITCODE -eq 0) { powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-lotra.ps1 -Project (Get-Location).Path }
+```
+
+**macOS（终端，Apple Silicon / Intel）**
+
+```sh
+curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/release/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
+```
+
+**Linux / WSL（终端）**
+
+```sh
+curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/release/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
+```
+
+skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime.sh`，可为指定项目补齐或更新 runtime。各入口共用安装核心，使用相同的资源校验、缓存与差分同步流程。参数和已有解压包的用法见安装说明。
+
+## 能做什么
+
+- **按语义组织对象。** 用原生文字、形状、路径、连接和分组表达图中的结构，便于后续调整；中文和英文分别从对应语种的字体集合中匹配。
+- **保留结构化公式。** 数学表达使用源结构与真正的 Office Math，保留公式内部的数学关系。
+- **细化图标部件。** 复杂图标先拆分为形状与部件，再组合成可编辑分组；已完成的构造可复用于同图的重复元素。
+- **用函数重建曲线。** 有数学含义的曲线保留对应特征，一般曲线用分段函数近似，保留主要趋势、转折和不连续位置。
+- **积累自己的绘制方法。** 适合复用且通过验收的构造方法进入本地个性化知识库，供后续任务检索；每张新图仍以自己的原图为依据。
+- **项目内准备依赖。** 安装器在本地准备 Python、OCR 和相关程序资源；无需额外模型 API key。当前 agent 服务的运行方式由宿主决定。
+
+## 案例
+
+以下三组案例由作者提供，每组包含原图、PowerPoint 截图和亮点图。点击图片查看原尺寸。截图用于展示重建结构；原生 PPTX 文件和各案例的实际生成版本未随这些图片提供。
+
+
+### 1. 边缘联邦学习系统
+
+包含服务器、客户端与终端设备三层结构，呈现数据规模长尾、类别异构与观测噪声。
+
+| 原图 | 重建 PowerPoint | 重建亮点 |
+|:---:|:---:|:---:|
+| <a href="docs/assets/examples/01-edge-federated-learning/original.jpg"><img src="docs/assets/examples/01-edge-federated-learning/original.jpg" alt="边缘联邦学习系统 — 原图" width="100%"></a> | <a href="docs/assets/examples/01-edge-federated-learning/reconstruction.jpg"><img src="docs/assets/examples/01-edge-federated-learning/reconstruction.jpg" alt="边缘联邦学习系统 — 重建 PowerPoint" width="100%"></a> | <a href="docs/assets/examples/01-edge-federated-learning/highlights.jpg"><img src="docs/assets/examples/01-edge-federated-learning/highlights.jpg" alt="边缘联邦学习系统 — 重建亮点" width="100%"></a> |
+
+- PowerPoint 截图展示可分别选择的文字、数据条、类别标记、客户端电脑和通信箭头。
+- 亮点图展示车辆车身、车窗、后视镜、无线信号弧线与地图图层的部件拆分。
+
+[查看案例说明](docs/examples/01-edge-federated-learning.zh-CN.md)
+
+### 2. 感知与通信系统
+
+由终端、通信、边缘服务器三层组成，包含感知图像、数据估值表、数学标注、资源分配与模型训练。
+
+| 原图 | 重建 PowerPoint | 重建亮点 |
+|:---:|:---:|:---:|
+| <a href="docs/assets/examples/02-sensing-communication/original.jpg"><img src="docs/assets/examples/02-sensing-communication/original.jpg" alt="感知与通信系统 — 原图" width="100%"></a> | <a href="docs/assets/examples/02-sensing-communication/reconstruction.jpg"><img src="docs/assets/examples/02-sensing-communication/reconstruction.jpg" alt="感知与通信系统 — 重建 PowerPoint" width="100%"></a> | <a href="docs/assets/examples/02-sensing-communication/highlights.jpg"><img src="docs/assets/examples/02-sensing-communication/highlights.jpg" alt="感知与通信系统 — 重建亮点" width="100%"></a> |
+
+- 重建截图展示分层面板、表格布局、标签、箭头与训练网络元素的独立选择状态。
+- 亮点图展开摄像机外壳、镜头、支架和无线标记，并展示可独立选取的照片；照片本身仍属于图像内容。
+
+[查看案例说明](docs/examples/02-sensing-communication.zh-CN.md)
+
+### 3. 信号重建训练与推理流程
+
+覆盖 SPGA、STFT、CTFR、时频掩码和混合引导损失的训练与推理流程。
+
+| 原图 | 重建 PowerPoint | 重建亮点 |
+|:---:|:---:|:---:|
+| <a href="docs/assets/examples/03-signal-reconstruction/original.jpg"><img src="docs/assets/examples/03-signal-reconstruction/original.jpg" alt="信号重建训练与推理流程 — 原图" width="100%"></a> | <a href="docs/assets/examples/03-signal-reconstruction/reconstruction.jpg"><img src="docs/assets/examples/03-signal-reconstruction/reconstruction.jpg" alt="信号重建训练与推理流程 — 重建 PowerPoint" width="100%"></a> | <a href="docs/assets/examples/03-signal-reconstruction/highlights.jpg"><img src="docs/assets/examples/03-signal-reconstruction/highlights.jpg" alt="信号重建训练与推理流程 — 重建亮点" width="100%"></a> |
+
+- 重建展示保留训练/推理分区，以及围绕波形、频谱内容组织的多层损失面板。
+- 选择状态截图展示模块框、标签、箭头、数学标注与反馈路径的独立对象结构。
+
+[查看案例说明](docs/examples/03-signal-reconstruction.zh-CN.md)
+
+
+## 使用方式
+
+已有半成品时，同时附上原图和对应的一页 PPT，发送：
+
+~~~text
+用 $lotra-image2slide-skill 根据原图，基于这份半成品 PPT 继续重建。
+~~~
+
+任务中断后，在同一个工作项目中要求继续原来的任务。保留原图和 `.lotraAI-build`，具体操作见[使用指南](docs/usage.zh-CN.md)。
+
+## v1.33.0
+
+本版在部件优先重建流程上，加入曲线函数化、同一原图问题的有限收敛控制，以及个性化知识的捕获、检索与反馈。确定的内容直接构造，复杂部件先局部完成；排版完成后集中复核字体、整图与最终输出。
+
+安装与更新使用同一入口，按文件差分同步：新增的加入、变化的替换、新版移除的受管理文件删除；未变化的生效文件不重复下载或写入。个人知识库、字体、任务、原图和 PPT 保留在本地，公开包不预置作者的个人知识库。
+
+运行资源覆盖 Windows x64、Linux x64、macOS Apple Silicon 和 Intel。macOS 要求 13 或更高版本，Math 资源首次单独联网获取；Linux ARM64 尚缺完整 Math 包。具体支持范围见[安装说明](docs/installation.zh-CN.md)。
+
+本版已在 Windows x64 与 WSL/Linux x64 完成预发布安装检查，重建功能与效果未重新验证。安装准备、实际文档渲染和整图验收分别记录；上述历史案例截图不作为本版实测结果。详见[版本记录](CHANGELOG.md)和[验证状态](docs/validation.md)。
+
+## 文档与项目结构
+
+| 入口 | 内容 |
+| --- | --- |
+| [安装](docs/installation.zh-CN.md) | 自动安装、差分更新、完整包与平台要求 |
+| [使用](docs/usage.zh-CN.md) | 图片重建、半成品导入与恢复任务 |
+| [案例](docs/examples/README.md) | 原图、重建截图与部件细节 |
+| [工作流](skills/lotra-image2slide-skill/references/workflow-v133.md) | 1.33.0 的重建流程与复用规则 |
+| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.33.0 的完整主载荷 |
+| [来源与许可](NOTICE.md) | 项目源码、第三方组件和案例素材 |
+
+需要反馈时，请描述系统、产品版本、具体操作和相关诊断；按需提供经过检查的原图或片段。项目内的私有任务数据由你管理。

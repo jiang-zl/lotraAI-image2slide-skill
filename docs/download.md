@@ -1,5 +1,21 @@
-# v1.33 安装与增量更新
+# Download the complete bundle
 
-使用 [当前 README Quick start](../README.md) 的官方一键入口。程序按匹配哈希复用 runtime，只下载更新包和缺失的平台资源，完成后返回短回执。无需 Agent 手工下载、组合全部离线分片，也不要加载全部安装清单。
+[简体中文](download.zh-CN.md) · [Installation](installation.md)
 
-历史 v1.31 文件仍在对应发布中保留；它们不代表 v1.33 运行验收。
+The current complete file is `lotraAI-image2slide-v1.33.0-bundle.zip`. Its size, whole-archive SHA-256 and 18 ordered parts are recorded in the [runtime bundle manifest](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/releases/v1.33.0-bundle.json).
+
+## Ask Codex to download and assemble
+
+Give Codex the [runtime repository](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime) and send:
+
+~~~text
+Download the complete lotraAI Image2Slide installation bundle into this project.
+~~~
+
+The program handles resume, per-part verification, assembly and whole-archive verification. For ordinary installation or updates, send:
+
+~~~text
+Install or update lotraAI Image2Slide in this project from https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime.
+~~~
+
+First installation selects your platform resources; later updates synchronize managed files by content. A complete ZIP can be supplied directly to Codex, and an extracted bundle can use its bundled installer. See the [runtime installation guide](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/docs/installation.md). The macOS Math DMG requires a separate initial online download and is not embedded in the complete bundle.

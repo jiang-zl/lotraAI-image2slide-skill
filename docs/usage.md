@@ -1,36 +1,33 @@
 # Usage
 
-[中文](usage.zh-CN.md) · [README](../README.md)
+[简体中文](usage.zh-CN.md) · [Back to README](../README.md)
 
-## Reconstruct a figure
+## Start from an image
 
-Open the working project after bundle installation, attach the unchanged reference image, and invoke the skill:
+In a working project with Image2Slide installed, attach a clear, unchanged original and send:
 
-~~~text
-Use $lotra-image2slide-skill to reconstruct this reference image as an editable
-PowerPoint slide. Preserve its original wording, mathematical expressions,
-grouping, and connections. Keep photographic content in its appropriate scope.
-~~~
+> Use $lotra-image2slide-skill to rebuild this image as an editable PPT.
 
-The agent interprets the source and resolves semantic ambiguity. Programs register the task, expose the current action contract, execute bounded work, check saved results and renders, and manage acceptance. Reuse the current agent; no extra model key is required.
+Add any exact wording, colors or semantic relationships that must be preserved. The task is bound to the original; unreadable or ambiguous content needs an explicit record or your clarification.
 
-## Make a local change
+## Continue from a partial slide
 
-Describe both the change and the content to preserve:
+Attach the original image and its corresponding single partial PPT slide:
 
-~~~text
-Increase the gap between the communication layer and the server layer.
-Preserve the equations, wording, icon parts, and the remaining layout.
-~~~
+> Use $lotra-image2slide-skill to continue rebuilding from this partial PPT, following the original image.
 
-Keep the same project and task. Approved attributes and user edits are protected according to the current contract. Dependencies affected by a change still require checking.
+This is a one-shot import at task start for continuing existing content. The current workflow focuses on image reconstruction and partial-slide import.
 
-## Resume after an interruption
+## Resume an interrupted task
 
-Ask the agent to resume the registered task in the same project. Keep the original image and `.lotraAI-build` state available. The installed skill describes `context-control resume`, `next`, and the current packet's action references. A new image starts its own source-bound task.
+Keep the working project, original and `.lotraAI-build`, then ask Codex to continue the existing task in the same project. Task records supply its current stage and next action. A new original starts a separate task.
 
 ## Deliverables
 
-The reconstruction workflow exports `Final_editable.pptx` and `Report.md` with actual per-component measurements and direction indicators. Intermediate renders, working components, checkpoints, and temporary PDFs belong to the private task workflow. An accepted export is separate from an intermediate PPTX.
+Final delivery includes an editable `.pptx` and a task report. The report should distinguish completed work, checks actually performed and remaining differences. Intermediate PPTX files, previews and checkpoints support ongoing work; use the files identified in the final delivery record.
 
-The three [example studies](examples/README.md) illustrate the supplied screenshots. Native decks were not supplied. Office Math structure, font resources, native edit/save/reopen behavior, and whole-result quality need evidence from the corresponding native file and host.
+Complete difficult components locally, then finish layout before the consolidated font review, whole-figure review and final output. A local edit does not trigger a whole-figure check each time. Chinese and English text use their corresponding font collections; equations retain structured Office Math.
+
+The private local knowledge library retains eligible construction methods for reuse. Another figure's content or acceptance result is not transferred to a new original. See the [workflow reference](../skills/lotra-image2slide-skill/references/workflow-v133.md).
+
+The [public examples](examples/README.md) provide originals, screenshots and details. See [evidence notes](validation.md) for their scope and this version's qualification status.

@@ -1,12 +1,7 @@
-# Publication layout
+# Publication
 
-| Repository | Purpose |
-| --- | --- |
-| [lotraAI skill](https://github.com/jiang-zl/lotraAI-image2slide-skill) | Product documentation, skill source, examples, usage |
-| [lotraAI runtime](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime) | Complete-bundle transport, version manifests, download helper |
-
-Each repository publishes `1.31.0` and `release` branches. Both initially identify the same v1.31.0 publication commit within that repository. The default branch is `release`; tag `v1.31.0` identifies the GitHub Release. The skill repository's pre-existing `main` history is retained.
-
-18 release transport parts, a version manifest, and a helper reconstruct the single complete ZIP. Assembly checks every part and the original complete ZIP. Large local artifacts and private work are ignored by Git.
-
-The ongoing `sci-rebuild` checkout is outside this publication. Frozen skill payload files are retained byte-for-byte. Functional product validation remains `NOT_RUN_PER_USER_REQUEST`. See [validation notes](validation.md).
+The skill and runtime repositories use the 1.33.0 version branch, the release
+installation branch and the v1.33.0 tag. Runtime resources are uploaded with the
+maintained WSL publisher. The release installation branch is activated after all
+required resources match the prepared manifest. See the runtime repository's
+docs/publishing-v133.md and [installation evidence](v1.33.0/Release-report.md).
