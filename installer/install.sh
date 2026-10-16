@@ -26,14 +26,17 @@ case "$os" in Darwin)
 esac
 archive="$root/engines/$key.tar.gz"
 expected=$(cat "$root/engines/$key.archive.sha256")
-if [ "$key" != linux-x86_64-cp312 ]; then echo 'Complete Math runtime supplied for Linux x86_64 and Windows AMD64 only' >&2; exit 2; fi
+hash_file() {
+    if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}';
+    else shasum -a 256 "$1" | awk '{print $1}'; fi
+}
 descriptor="$project/.lotraAI-build/toolchain/core-runtime-$key.json"
 if [ -f "$descriptor" ] && [ -f "$root/Update-manifest.json" ]; then
     engine=$(awk '/"engine"[ ]*:/{s=1;next} s&&/"path"[ ]*:/{sub(/^.*"path"[ ]*:[ ]*"/,"");sub(/".*$/,"");print;exit}' "$descriptor")
     engine_hash=$(awk '/"engine"[ ]*:/{s=1;next} s&&/"sha256"[ ]*:/{sub(/^.*"sha256"[ ]*:[ ]*"/,"");sub(/".*$/,"");print;exit}' "$descriptor")
     case "$engine" in .lotraAI-build/*) ;; *) echo 'Invalid prepared engine path' >&2; exit 2;; esac
     case "$engine" in *..*|*\\*) echo 'Unsafe prepared engine path' >&2; exit 2;; esac
-    if [ -f "$project/$engine" ] && [ "$(sha256sum "$project/$engine" | awk '{print $1}')" = "$engine_hash" ]; then
+    if [ -f "$project/$engine" ] && [ "$(hash_file "$project/$engine")" = "$engine_hash" ]; then
         exec "$project/$engine" -I -X utf8 -B "$root/installer/online.py" --project "$project" --harness "$harness" --bundle-root "$root"
     fi
 fi
@@ -42,7 +45,7 @@ if [ ! -f "$archive" ] && [ -f "$root/Update-manifest.json" ]; then
     archive="$project/.lotraAI-build/downloads/bootstrap/$expected.tar.gz"
     if [ ! -f "$archive" ]; then
         curl --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - --output "$archive.part" "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0/$key.tar.gz"
-        if [ "$(sha256sum "$archive.part" | awk '{print $1}')" != "$expected" ]; then echo 'Bootstrap hash mismatch; partial retained' >&2; exit 2; fi
+        if [ "$(hash_file "$archive.part")" != "$expected" ]; then echo 'Bootstrap hash mismatch; partial retained' >&2; exit 2; fi
         mv -- "$archive.part" "$archive"
     fi
 fi
@@ -78,5 +81,8 @@ else
 fi
 if [ "$actual" != "$expected" ]; then echo 'Bootstrap executable checksum mismatch' >&2; exit 2; fi
 entry=install.py
+if [ -f "$root/Differential-manifest.json" ]; then
+    exec "$python" -I -X utf8 -B "$root/installer/differential.py" --project "$project" --harness "$harness" --catalog "$root/Differential-manifest.json"
+fi
 if [ -f "$root/Update-manifest.json" ]; then entry=online.py; fi
 "$python" -I -X utf8 -B "$root/installer/$entry" --project "$project" --harness "$harness" --bundle-root "$root"

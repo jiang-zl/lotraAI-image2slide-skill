@@ -57,6 +57,10 @@ if(-not $python){
  $python=Join-Path $bootstrap $record.executable
  if((Get-FileHash -LiteralPath $python -Algorithm SHA256).Hash.ToLowerInvariant() -ne $record.executable_sha256){throw 'Bootstrap interpreter mismatch.'}
 }
+if(Test-Path -LiteralPath (Join-Path $root 'Differential-manifest.json')){
+ & $python -I -X utf8 -B (Join-Path $PSScriptRoot 'differential.py') --project $projectPath --harness $Harness --catalog (Join-Path $root 'Differential-manifest.json')
+ exit $LASTEXITCODE
+}
 $entry=if(Test-Path -LiteralPath (Join-Path $root 'Update-manifest.json')){'online.py'}else{'install.py'}
 & $python -I -X utf8 -B (Join-Path $PSScriptRoot $entry) --project $projectPath --harness $Harness --bundle-root $root
 exit $LASTEXITCODE

@@ -1,6 +1,5 @@
 {
-  "schema": "lotra-customer-package-1",
-  "version": "1.33.0",
+  "design_revision": 8,
   "included_paths": [
     "README.md",
     "SKILL.md",
@@ -415,21 +414,23 @@
     "scripts/run_office_job.ps1",
     "scripts/sci_rebuild.py",
     "scripts/verify_office.py",
-    "scripts/windows_native_word_export.ps1"
+    "scripts/windows_native_word_export.ps1",
+    "README.zh-CN.md"
   ],
-  "runtime_regressions": "Not executed for revision 8 per explicit user request; no tests, syntax/import/CLI/runtime checks or performance/effect measurements.",
-  "private_data": "No task states, actual host font archives, observations, databases, user files or release histories.",
   "offline_resources": "Separately verified immutable runtime companion; never replace resources with user downloads.",
-  "design_revision": 8,
-  "release_status": "IMPLEMENTED_STATICALLY_REVIEWED_NOT_TESTED_PER_USER_REQUEST",
-  "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
-  "publication_revision": 9,
   "personal_data_policy": {
-    "shipped_personal_knowledge": "EMPTY",
-    "shipped_component_models": "EMPTY",
-    "private_root": ".lotraAI-build/library",
     "automatic_component_learning": "NOT_CONNECTED",
     "default_catalog_previews": "DISABLED_WHEN_EMPTY",
-    "personal_data_redistribution": false
-  }
+    "personal_data_redistribution": false,
+    "private_root": ".lotraAI-build/library",
+    "shipped_component_models": "EMPTY",
+    "shipped_personal_knowledge": "EMPTY"
+  },
+  "private_data": "No task states, actual host font archives, observations, databases, user files or release histories.",
+  "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
+  "publication_revision": 9,
+  "release_status": "IMPLEMENTED_STATICALLY_REVIEWED_NOT_TESTED_PER_USER_REQUEST",
+  "runtime_regressions": "Not executed for revision 8 per explicit user request; no tests, syntax/import/CLI/runtime checks or performance/effect measurements.",
+  "schema": "lotra-customer-package-1",
+  "version": "1.33.0"
 }

@@ -1,6 +1,6 @@
 """Extract only the selected immutable equation-editor payload into this project."""
 from pathlib import Path,PurePosixPath
-import hashlib,io,json,os,shutil,tarfile,zipfile
+import hashlib,io,json,os,shutil,subprocess,plistlib,tarfile,zipfile
 
 def sha(path):
     h=hashlib.sha256()
@@ -15,9 +15,15 @@ def install_renderer(bundle,project,manifest,key):
     source=bundle/record['path']
     root=project/'.lotraAI-build/toolchain'/('LibreOffice-'+record['version']+'-'+key)
     receipt=root/'lotra-runtime.json'
+    ready=False
     if receipt.exists():
-        if json.loads(receipt.read_text())['sha256']!=record['sha256']:raise ValueError('Preserve another math runtime')
-    else:
+        previous=json.loads(receipt.read_text())
+        if previous['sha256']!=record['sha256']:raise ValueError('Preserve another math runtime')
+        ready=all((root/record[n]).is_file() for n in ('executable','uno_python'))
+        for name in ('executable','uno_python'):
+            if previous.get(name+'_sha256') and (root/record[name]).is_file() and sha(root/record[name])!=previous[name+'_sha256']:
+                raise ValueError('Preserve a changed Math executable')
+    if not ready:
         if sha(source)!=record['sha256']:raise ValueError('Math runtime archive changed')
         root.mkdir(parents=True,exist_ok=True)
         def safe(name):
@@ -32,7 +38,22 @@ def install_renderer(bundle,project,manifest,key):
                 if path.read_bytes()!=data:raise ValueError('Preserve a changed runtime file')
             else:path.write_bytes(data)
             if mode is not None and os.name!='nt':path.chmod(mode&0o777)
-        if record['format']=='zip':
+        if record['format']=='macos-dmg':
+            mount=root/'disk-image';mount.mkdir(exist_ok=True)
+            attached=False
+            try:
+                completed=subprocess.run(['hdiutil','attach','-readonly','-nobrowse','-plist','-mountpoint',str(mount),str(source)],capture_output=True,check=True,timeout=180)
+                attached=True;plistlib.loads(completed.stdout)
+                app=mount/'LibreOffice.app'
+                if not app.is_dir() or app.is_symlink():raise ValueError('Official disk image has no regular LibreOffice app')
+                for base,dirs,files in os.walk(app,followlinks=False):
+                    for name in dirs+files:
+                        p=Path(base)/name
+                        if p.is_symlink() and not p.resolve().is_relative_to(app.resolve()):raise ValueError('External app-bundle link')
+                subprocess.run(['ditto',str(app),str(root/'LibreOffice.app')],capture_output=True,check=True,timeout=300)
+            finally:
+                if attached:subprocess.run(['hdiutil','detach',str(mount)],capture_output=True,check=True,timeout=90)
+        elif record['format']=='zip':
             with zipfile.ZipFile(source) as z:
                 for member in z.infolist():
                     path=safe(member.filename)
@@ -66,14 +87,18 @@ def install_renderer(bundle,project,manifest,key):
                                     elif path.exists():raise ValueError('Preserve existing runtime link target')
                                     else:path.symlink_to(raw)
                                 else:raise ValueError('Unsupported runtime member')
-        receipt.write_text(json.dumps({'sha256':record['sha256'],'version':record['version'],'tested':False})+'\n')
     target=project/'.lotraAI-build/Portable-renderer.json'
     value=json.loads(target.read_text()) if target.exists() else {'platforms':{}}
-    platform='Windows' if key.startswith('windows') else 'Linux'
+    platform='Windows' if key.startswith('windows') else 'Darwin' if key.startswith('macos') else 'Linux'
     def normal(path):
         text=str(path.resolve())
         return '\\\\'+text[8:] if text.startswith('\\\\?\\UNC\\') else text[4:] if text.startswith('\\\\?\\') else text
+    if not all((root/record[n]).is_file() for n in ('executable','uno_python')):raise ValueError('Math package has no required executable/Python launcher')
+    if not ready:
+        receipt.write_text(json.dumps({'sha256':record['sha256'],'version':record['version'],'tested':False,
+                                      **{n+'_sha256':sha(root/record[n]) for n in ('executable','uno_python')}})+'\n')
     value.setdefault('platforms',{})[platform]={'executable':normal(root/record['executable']),
         'uno_python':normal(root/record['uno_python']),'version':record['version'],'installed_not_tested':True}
-    target.write_text(json.dumps(value,indent=2)+'\n')
+    data=json.dumps(value,indent=2)+'\n'
+    if not target.exists() or target.read_text()!=data:target.write_text(data)
     return {'status':'INSTALLED_NOT_TESTED','root':str(root),'version':record['version'],'tested':False,'fallback_attempts':0}

@@ -37,21 +37,44 @@ function Get-LotraResource {
 
 $ErrorActionPreference='Stop'
 $projectRoot=(Resolve-Path -LiteralPath $Project).Path
-$releaseRoot=Join-Path $projectRoot '.lotraAI-build/releases/1.33.0'
-New-Item -ItemType Directory -Path $releaseRoot -Force|Out-Null
-$archive=Join-Path $releaseRoot 'update.zip'
-Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.33.0/lotraAI-image2slide-v1.33.0-update.zip' -Destination $archive -Sha256 '3718fb5b5b99205577a113a318fddda71b128ef2b8cbd5130b9840ff5035e080' -Bytes 4305380
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$zip=[IO.Compression.ZipFile]::OpenRead($archive)
-try{
- foreach($entry in $zip.Entries){
-  if($entry.FullName -match '(^|/)[.][.](/|$)|\\|:' -or $entry.FullName.StartsWith('/') -or (($entry.ExternalAttributes -shr 16) -band 0xF000) -eq 0xA000){throw 'Unsafe release member.'}
-  $destination=[IO.Path]::GetFullPath((Join-Path $releaseRoot $entry.FullName))
-  if(-not $destination.StartsWith($releaseRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Release path escaped root.'}
-  [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($destination))|Out-Null
-  $inputStream=$entry.Open();$outputStream=[IO.File]::Open($destination,[IO.FileMode]::Create)
-  try{$inputStream.CopyTo($outputStream)}finally{$outputStream.Dispose();$inputStream.Dispose()}
+if($projectRoot -eq [IO.Path]::GetPathRoot($projectRoot) -or $projectRoot -eq $env:USERPROFILE){throw 'Choose a project directory.'}
+$state=Join-Path $projectRoot '.lotraAI-build/install-entry'
+New-Item -ItemType Directory -Path $state -Force|Out-Null
+$python=$null
+$descriptor=Join-Path $projectRoot '.lotraAI-build/toolchain/core-runtime-windows-amd64-cp312.json'
+if(Test-Path -LiteralPath $descriptor){
+ $prior=Get-Content -LiteralPath $descriptor -Raw|ConvertFrom-Json
+ if($prior.engine.path -notmatch '^\.lotraAI-build[/\\]' -or $prior.engine.path -match '[.][.]'){throw 'Invalid prepared engine path.'}
+ $candidate=Join-Path $projectRoot $prior.engine.path
+ if((Test-Path -LiteralPath $candidate) -and (Get-FileHash -LiteralPath $candidate -Algorithm SHA256).Hash.ToLowerInvariant() -eq $prior.engine.sha256){$python=$candidate}
+}
+if(-not $python){
+ $base=Join-Path $projectRoot '.lotraAI-build/bootstrap/e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42'
+ $archive=Join-Path $projectRoot '.lotraAI-build/install-entry/e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42.zip'
+ New-Item -ItemType Directory -Path $base -Force|Out-Null
+ Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0/windows-amd64-cp312.zip' -Destination $archive -Sha256 'e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42' -Bytes 23135647
+ $python=Join-Path $base 'python/python.exe'
+ if(-not(Test-Path -LiteralPath $python)){
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $zip=[IO.Compression.ZipFile]::OpenRead($archive)
+  try{
+   foreach($entry in $zip.Entries){
+    if($entry.FullName -notmatch '^python/' -or $entry.FullName -match '(^|/)[.][.](/|$)|\\|:' -or (($entry.ExternalAttributes -shr 16) -band 0xF000) -eq 0xA000){throw 'Unsafe Python archive member.'}
+    $destination=[IO.Path]::GetFullPath((Join-Path $base $entry.FullName))
+    if(-not $destination.StartsWith($base+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Python path escaped root.'}
+    [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($destination))|Out-Null
+    if($entry.FullName.EndsWith('/')){continue}
+    if(Test-Path -LiteralPath $destination){continue}
+    $inp=$entry.Open();$out=[IO.File]::Open($destination,[IO.FileMode]::CreateNew)
+    try{$inp.CopyTo($out)}finally{$out.Dispose();$inp.Dispose()}
+   }
+  }finally{$zip.Dispose()}
  }
-}finally{$zip.Dispose()}
-& (Join-Path $releaseRoot 'installer/install.ps1') -Project $projectRoot
+ if((Get-FileHash -LiteralPath $python -Algorithm SHA256).Hash.ToLowerInvariant() -ne '86c4690be87a6bb6be1affe24b3c1b67ceedc86b477d6cde9f812fafd0f6d3b9'){throw 'Python executable differs.'}
+}
+$entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe'
+New-Item -ItemType Directory -Path $entryRoot -Force|Out-Null
+$entry=Join-Path $entryRoot 'install_lotra.py'
+Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r2/install_lotra.py' -Destination $entry -Sha256 '57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe' -Bytes 6509
+& $python -I -X utf8 -B $entry --project $projectRoot
 exit $LASTEXITCODE

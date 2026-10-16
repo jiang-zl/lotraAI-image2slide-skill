@@ -70,7 +70,7 @@ def allowed(name):
     if any(part.startswith(".") or part.casefold() in EXCLUDED_PARTS for part in parts):
         return False
     if len(parts) == 1:
-        return name in ("SKILL.md", "README.md") or fnmatch.fnmatchcase(name, "requirements*.txt")
+        return name in ("SKILL.md", "README.md", "README.zh-CN.md") or fnmatch.fnmatchcase(name, "requirements*.txt")
     if parts[0] == "scripts":
         if parts[-1].startswith('regression_') and name!='scripts/regression_contracts.py':
             return False

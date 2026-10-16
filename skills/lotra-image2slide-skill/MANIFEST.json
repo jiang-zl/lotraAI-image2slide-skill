@@ -1,8 +1,12 @@
 {
   "files": {
     "README.md": {
-      "sha256": "3e36fe47439ee6ddfdbc29f3c13f94ee0cba066d07188c475ac9a87e0f918b84",
-      "size": 3847
+      "sha256": "edd374b14a7d2601dcf7e81d434763b34fb37c755f283b580bedf22cfc5cbf89",
+      "size": 1852
+    },
+    "README.zh-CN.md": {
+      "sha256": "0dfc3cec22101d258e0582fbce316a8a3ec924dcd3fc1b0280b11db7d8b5211b",
+      "size": 1604
     },
     "SKILL.md": {
       "sha256": "9655418c49c376087d431a56370bd74c69d6ce0bb78ce3bc353f4041f732c69f",
@@ -25,8 +29,8 @@
       "size": 61397
     },
     "config/customer-package.json": {
-      "sha256": "f9d3170f99ec74cc35c22fb7d64eb329e7ce803416374a58a837df1029bcfa9d",
-      "size": 17219
+      "sha256": "469c8eb0e9c8551cfe0a07bf39b5ca7f37808a09aceee175d42b70eabd35aa48",
+      "size": 16807
     },
     "config/font-collections.json": {
       "sha256": "1c90aa23438be48260f8479ce1a31f96edceaeb0cbeb19ac3ae9729025d3c7ce",
@@ -389,8 +393,8 @@
       "size": 9692
     },
     "references/workflow-v133.md": {
-      "sha256": "4c9de2dbc19904014befad2f29fa4334baa600aaddca2de5028b43e7a7759b04",
-      "size": 10895
+      "sha256": "e135f5cd3aa97216b3224de580833e91d5ca3d9f282c1d008801bcb1e5f14d69",
+      "size": 11093
     },
     "requirements.txt": {
       "sha256": "d3d976e2d1f96b0d67122c2b9257a0909d16ff9bd6b2af09fdd11900b8aa5e59",
@@ -1605,8 +1609,8 @@
       "size": 807
     },
     "scripts/package_skill.py": {
-      "sha256": "2cbeafbcf247c96aef24f10ef80409424ee62255153af71965f777a957e587a4",
-      "size": 21189
+      "sha256": "4841290c6891390f8543679e11147dc34d61c9a027dcf18f8b97bdb77c6c1247",
+      "size": 21208
     },
     "scripts/packet_detail.py": {
       "sha256": "119103f50b0c88945ee526cb04a5f0389515440fc9be26456e7e2039ebdc4560",

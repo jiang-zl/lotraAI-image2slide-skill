@@ -146,22 +146,27 @@ Host transcript compression and provider prompt caching are outside this skill.
 
 ## Installation / update / publication
 
-README is the short user entry. Official platform scripts prepare the bundled
-engine if needed, then one stdlib online coordinator reuses hash-compatible
-project runtime or downloads only missing platform assets with finite retries,
-resume and SHA-256. Update ZIP carries source/installer metadata and small skill
-payload; immutable runtime version/hash is independent of skill version.
-Offline bundle is retained. Supported complete routes are Windows AMD64 and
-Linux x86_64; other engines in historical payloads are not a complete Math claim.
+The runtime repository is the one-sentence user entry. Its project-local launcher
+reads the current pinned release catalog and calls the maintained installer once.
+Both repository READMEs retain English and Chinese guides. No manual user download
+or separate Setup skill is required.
 
-Installer prepares core/OCR and checks Math UNO import before publishing the one
-skill. Actual document rendering/edit behavior stays NOT_RUN. Publication archives
-owned old skill and registration preimages and restores them on install failure.
-Unowned/modified skill files are preserved. Private library/fonts/tasks are outside
-replacement scope. Re-run the same entry to resume; no model-managed part downloads
-or separate Setup skill. Default success/failure is a short JSON with log refs.
+Updates compare old/new managed file manifests and actual local content. They
+download only absent content hashes, add new files, replace changed files, and
+remove retired owned files. Unchanged active files are never rewritten. Candidate
+views reuse unchanged local bytes. Runtime companion members use the same content
+cache; stored-ZIP byte ranges retrieve missing members without a full archive.
+Changed/deleted preimages and scoped registration receipts support failed-install
+recovery. Personal knowledge, fonts, tasks and source inputs are outside this set.
 
-This release is implemented and statically reviewed without tests, syntax/import/
-CLI checks, runtime validation, reconstruction, rendering, performance or effect
-measurements at the user's explicit request. Installation checks described above
-are future program behavior, not checks executed to qualify this publication.
+Core platform catalogs are generated from the supplied environments and engines,
+independently of the Math catalog. macOS ARM64/Intel use the shared shell entry
+and pinned official Math disk images; missing Math on another platform is a
+specific capability limitation, never an invented PASS. No Office behavior tests
+or reconstruction runs are part of publication. Existing bound tasks retain their
+policy until explicitly migrated. Installation revision 2 remains version 1.33.0.
+Unowned or modified skill entries stop synchronization and are preserved. Core/OCR
+preparation and Math import precede registration; document render/edit remains
+NOT_RUN. These are future installer behaviors, not checks executed to qualify this
+source publication. No tests, syntax/import/CLI checks, runtime validation,
+reconstruction or performance/effect measurements qualify this revision.

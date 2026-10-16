@@ -37,6 +37,10 @@ def main():
     parser.add_argument('--project',type=Path,required=True);parser.add_argument('--harness',default='auto')
     parser.add_argument('--bundle-root',type=Path,default=Path(__file__).resolve().parent.parent)
     args=parser.parse_args();project=args.project.resolve();root=args.bundle_root.resolve()
+    if (root/'Differential-manifest.json').is_file():
+        from differential import install as differential_install
+        differential_install(project,read_json(root/'Differential-manifest.json'),root/'installer',args.harness)
+        return 0
     if not project.is_dir() or project==Path.home().resolve() or project==Path(project.anchor):raise ValueError('Select an existing project')
     manifest=read_json(root/'Bundle-manifest.json');release=read_json(root/'Update-manifest.json');key=platform_key()
     if key not in manifest.get('math_renderers',{}):raise ValueError('Complete Math runtime is not supplied for this platform')

@@ -1,20 +1,23 @@
 {
-  "product": "lotraAI",
-  "version": "1.33.0",
-  "bundle_id": "56ea8082336d4afbbe734724ca82b8f2625e0c38c4f9f67d734d87e12b47aade",
-  "bundle_sha256": "484ea4c0a9a2689b4d9a0dda509d775b352da041a7536d980245341c959250cd",
-  "skill_source_path": "skills/lotra-image2slide-skill",
-  "skill_payload_sha256": "5e927e55e69939cc0cd68a4bbfaa1a34a400cdd3a3b462ef5b558eae88837d6e",
-  "release_tag": "v1.33.0",
-  "version_branch": "1.33.0",
-  "release_branch": "release",
-  "release_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.33.0",
-  "download_mode": "small-update-and-missing-platform-resources",
-  "update": {
-    "bytes": 4305380,
-    "sha256": "3718fb5b5b99205577a113a318fddda71b128ef2b8cbd5130b9840ff5035e080",
-    "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.33.0/lotraAI-image2slide-v1.33.0-update.zip"
-  },
+  "bundle_id": "cabadedcf82acc5c3e52c17c559ca77a93b3e78814c7fbab2877422fb3722da5",
+  "download_mode": "manifest-owned-file-differential",
   "functional_validation": "NOT_RUN_PER_USER_REQUEST",
-  "static_review": "docs/v1.33.0/Static-review.md"
+  "historical_full_bundle_sha256": "484ea4c0a9a2689b4d9a0dda509d775b352da041a7536d980245341c959250cd",
+  "install_entry": "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime",
+  "product": "lotraAI",
+  "publication_revision": 2,
+  "release_branch": "release",
+  "release_id": "1.33.0-install-r2",
+  "release_tag": "v1.33.0-install-r2",
+  "release_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.33.0-install-r2",
+  "skill_payload_sha256": "7609a657236eb22dd41c499ce0f1a8f26c05928aeec47dfe8095e00b8e633d0c",
+  "skill_source_path": "skills/lotra-image2slide-skill",
+  "static_review": "docs/v1.33.0/Static-review.md",
+  "update": {
+    "bytes": 1646231,
+    "sha256": "7609a657236eb22dd41c499ce0f1a8f26c05928aeec47dfe8095e00b8e633d0c",
+    "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.33.0-install-r2/lotraAI-image2slide-skill-v1.33.0-install-r2.zip"
+  },
+  "version": "1.33.0",
+  "version_branch": "1.33.0"
 }
