@@ -146,27 +146,37 @@ Host transcript compression and provider prompt caching are outside this skill.
 
 ## Installation / update / publication
 
-The runtime repository is the one-sentence user entry. Its project-local launcher
-reads the current pinned release catalog and calls the maintained installer once.
-Both repository READMEs retain English and Chinese guides. No manual user download
-or separate Setup skill is required.
+The runtime repository is the one-sentence installation/update entry. Use its
+recorded project launcher, or the OS bootstrap; both call one common coordinator.
+English and Chinese READMEs retain the same short user request. No manual user
+download or separate Setup skill is required. Product version remains 1.33.0.
 
-Updates compare old/new managed file manifests and actual local content. They
-download only absent content hashes, add new files, replace changed files, and
-remove retired owned files. Unchanged active files are never rewritten. Candidate
-views reuse unchanged local bytes. Runtime companion members use the same content
-cache; stored-ZIP byte ranges retrieve missing members without a full archive.
-Changed/deleted preimages and scoped registration receipts support failed-install
-recovery. Personal knowledge, fonts, tasks and source inputs are outside this set.
+First installation selects only the current platform package. Large packages
+may use immutable ordered parts, downloaded with finite retries and resumable
+owned checkpoints, then hash-verified and merged by the common downloader.
+Existing installations compare actual owned files with the new file manifest:
+add new, replace changed, delete retired owned files, keep unchanged active
+files without download or rewrite. Identical renamed content is reused locally.
+Runtime updates retrieve only absent member content; a changed archive wrapper
+does not cause a full runtime download. Byte-range retrieval is bounded and
+cannot silently fall back to a whole archive when the server ignores ranges.
 
-Core platform catalogs are generated from the supplied environments and engines,
-independently of the Math catalog. macOS ARM64/Intel use the shared shell entry
-and pinned official Math disk images; missing Math on another platform is a
-specific capability limitation, never an invented PASS. No Office behavior tests
-or reconstruction runs are part of publication. Existing bound tasks retain their
-policy until explicitly migrated. Installation revision 3 remains version 1.33.0.
-Unowned or modified skill entries stop synchronization and are preserved. Core/OCR
-preparation and Math import precede registration; document render/edit remains
-NOT_RUN. These are future installer behaviors, not checks executed to qualify this
-source publication. No tests, syntax/import/CLI checks, runtime validation,
-reconstruction or performance/effect measurements qualify this revision.
+The complete bundle remains a separate ordered-part route for local install,
+offline storage and recovery. The compatibility fetch entry delegates to the
+same installer/downloader/cache. Its bundle manifest is pinned separately in
+the current channel, avoiding a circular archive/catalog digest. Supplied local
+bundles dispatch to the same differential coordinator and use local resources
+before network retrieval. macOS Math DMGs are acquired separately on first use;
+the complete bundle does not claim to include those disk images.
+
+Core/OCR and Math preparation precede registration of exactly one main skill.
+Scoped changed/deleted preimages and runtime/registration metadata support
+interrupted publication recovery. Project knowledge, fonts, tasks, images/PPTs,
+global skills and historical releases remain outside managed deletion.
+
+Prepared publication includes a resumable upload program and exact outbound
+manifest. Uploaded assets are reused only by full SHA-256 and byte count. The
+current branches switch only after all required assets are published. These are
+installer/publication behaviors, not checks executed to qualify this revision.
+No tests, syntax/import/CLI checks, runtime validation, reconstruction/rendering
+or performance/effect measurements qualify this source publication.

@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from install import (read_json,write_json,within,sha,same_bytes,platform_key,register,
                      acquire_lock,readable_windows_path)
-from download import fetch
+from download import fetch,archive_member
 from file_sync import prepare,apply,rollback,put,reuse,owned
 
 
@@ -74,6 +74,14 @@ def companion(project,spec,key,cache,local_archive=None):
     if old and all(same_bytes(within(old,name),record) for name,record in files.items()):
         old_env=old_manifest.get('environments',{}).get(key)
         if old_env==new['environments'][key]:return old,prior,True
+    # Only a fresh installation obtains the complete selected-platform package.
+    # Updates always retain member-level retrieval; a changed ZIP wrapper does
+    # not make unchanged installed resources eligible for another download.
+    package=spec.get('archive')
+    if package and not (local_archive and local_archive.is_file()):
+        cached=within(cache,package['sha256'])
+        if same_bytes(cached,package):local_archive=cached
+        elif not old_manifest:local_archive=fetch(package,cache)
     target=within(project,'.lotraAI-build/toolchain/companion-'+key+'-'+spec['manifest_sha256'][:16])
     target.mkdir(parents=True,exist_ok=True)
     def obtain(item):
@@ -85,13 +93,8 @@ def companion(project,spec,key,cache,local_archive=None):
         if not source or not same_bytes(source,record):source=existing.get(record['sha256'])
         if not source or not same_bytes(source,record):
             if local_archive and local_archive.is_file():
-                import zipfile
-                with zipfile.ZipFile(local_archive) as archive:
-                    destination.parent.mkdir(parents=True,exist_ok=True)
-                    with archive.open(name) as inp,destination.open('xb') as out:shutil.copyfileobj(inp,out,1024*1024)
-                if not same_bytes(destination,record):raise ValueError('Offline companion member differs from release')
-                return
-            source=fetch(record,cache)
+                source=archive_member(local_archive,name,record,cache)
+            else:source=fetch(record,cache)
         reuse(source,destination)
     with ThreadPoolExecutor(max_workers=4) as workers:list(workers.map(obtain,files.items()))
     raw=(json.dumps(new,ensure_ascii=False,sort_keys=True,indent=2)+'\n').encode()

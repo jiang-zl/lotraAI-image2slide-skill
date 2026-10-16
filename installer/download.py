@@ -6,6 +6,8 @@ import time
 import threading
 import urllib.error
 import urllib.request
+import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 
@@ -18,6 +20,39 @@ def sha(file):
 
 _LOCKS={}
 _LOCK_GUARD=threading.Lock()
+
+
+def archive_member(archive,name,record,cache):
+    """Seed the common content cache from a local verified package, resumably."""
+    expected=record['sha256'];size=int(record['bytes'])
+    if len(expected)!=64 or any(c not in '0123456789abcdef' for c in expected) or size<0:raise ValueError('Invalid member identity')
+    with _LOCK_GUARD:lock=_LOCKS.setdefault(expected,threading.Lock())
+    with lock:
+        cache=Path(cache);cache.mkdir(parents=True,exist_ok=True)
+        file=cache/expected;part=cache/(expected+'.part');owner=cache/(expected+'.owner.json')
+        if any(p.is_symlink() or getattr(p,'is_junction',lambda:False)() for p in (cache,file,part,owner)):
+            raise ValueError('Preserve redirected content cache')
+        if file.exists():
+            if file.stat().st_size==size and sha(file)==expected:return file
+            raise ValueError('Preserve changed verified member')
+        identity={'owner':'lotra-download-1','sha256':expected,'bytes':size}
+        if owner.exists():
+            prior=json.loads(owner.read_text())
+            if any(prior.get(k)!=v for k,v in identity.items()):raise ValueError('Preserve another partial member')
+        else:
+            if part.exists():raise ValueError('Preserve unowned partial member')
+            owner.write_text(json.dumps(identity),encoding='utf-8')
+        for attempt in range(2):
+            offset=part.stat().st_size if part.exists() else 0
+            if offset>size:part.unlink();offset=0
+            with zipfile.ZipFile(archive) as package:
+                if package.getinfo(name).file_size!=size:raise ValueError('Local member size differs')
+                with package.open(name) as source,part.open('ab' if offset else 'wb') as output:
+                    source.seek(offset)
+                    for block in iter(lambda:source.read(4*1024*1024),b''):output.write(block)
+            if part.stat().st_size==size and sha(part)==expected:os.replace(part,file);return file
+            part.unlink()  # The exact content identity owns this partial.
+        raise ValueError('Local archive member differs from the release')
 
 
 def fetch(record, cache, *, attempts=3):
@@ -49,7 +84,10 @@ def _fetch(record, cache, *, attempts=3):
         owner.write_text(json.dumps(identity),encoding='utf-8')
     if part.exists() and part.stat().st_size==size and sha(part)==expected:os.replace(part,file);return file
     if record.get('parts'):
-        pieces=[fetch(item,cache,attempts=attempts) for item in record['parts']]
+        if record.get('assembly')=='ordered-release-parts':
+            with ThreadPoolExecutor(max_workers=2) as workers:
+                pieces=list(workers.map(lambda item:fetch(item,cache,attempts=attempts),record['parts']))
+        else:pieces=[fetch(item,cache,attempts=attempts) for item in record['parts']]
         if sum(p.stat().st_size for p in pieces)!=size:raise ValueError('Member part sizes differ')
         for _ in range(2):
             offset=part.stat().st_size if part.exists() else 0

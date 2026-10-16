@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory=$true)][string]$Project)
+﻿param([Parameter(Mandatory=$true)][string]$Project,[string]$DownloadBundle,[string]$BundleRoot)
 function Get-LotraResource {
  param([string]$Uri,[string]$Destination,[string]$Sha256,[long]$Bytes)
  $ErrorActionPreference='Stop'
@@ -72,9 +72,13 @@ if(-not $python){
  }
  if((Get-FileHash -LiteralPath $python -Algorithm SHA256).Hash.ToLowerInvariant() -ne '86c4690be87a6bb6be1affe24b3c1b67ceedc86b477d6cde9f812fafd0f6d3b9'){throw 'Python executable differs.'}
 }
-$entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe'
+$entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59'
 New-Item -ItemType Directory -Path $entryRoot -Force|Out-Null
 $entry=Join-Path $entryRoot 'install_lotra.py'
-Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r3/install_lotra.py' -Destination $entry -Sha256 '57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe' -Bytes 6509
-& $python -I -X utf8 -B $entry --project $projectRoot
+Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r4/install_lotra.py' -Destination $entry -Sha256 '5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59' -Bytes 8595
+$entryArgs=@('--project',$projectRoot)
+if($DownloadBundle -and $BundleRoot){throw 'Choose bundle download or local installation.'}
+if($DownloadBundle){$entryArgs+=@('--download-bundle',$DownloadBundle)}
+if($BundleRoot){$entryArgs+=@('--bundle-root',$BundleRoot)}
+& $python -I -X utf8 -B $entry @entryArgs
 exit $LASTEXITCODE

@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
-[ "$#" -eq 1 ] || { echo 'Pass the project path' >&2; exit 2; }
+[ "$#" -ge 1 ] || { echo 'Pass the project path' >&2; exit 2; }
 project=$(cd "$1" && pwd -P)
+shift
 case "$project" in /|"$HOME") echo 'Choose a project directory' >&2; exit 2;; esac
 hash_file() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi; }
 case "$(uname -s):$(uname -m)" in
@@ -51,6 +52,6 @@ if [ -z "$python" ]; then
  python="$base/$executable"
  [ "$(hash_file "$python")" = "$exe_hash" ] || { echo 'Python executable differs' >&2; exit 2; }
 fi
-entry="$project/.lotraAI-build/bootstrap/57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe/install_lotra.py"
-get 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r3/install_lotra.py' "$entry" '57012b8f5543722a138a0d9a2730c40d08ed009fad03b9f5561ffc2b362c5dbe'
-exec "$python" -I -X utf8 -B "$entry" --project "$project"
+entry="$project/.lotraAI-build/bootstrap/5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59/install_lotra.py"
+get 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r4/install_lotra.py' "$entry" '5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59'
+exec "$python" -I -X utf8 -B "$entry" --project "$project" "$@"

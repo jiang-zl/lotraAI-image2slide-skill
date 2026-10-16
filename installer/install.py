@@ -424,6 +424,10 @@ def main():
     p.add_argument('--skip-render-probe', action='store_true', help='Explicitly report render as unverified')
     args = p.parse_args()
     root, requested_project = args.bundle_root.resolve(), args.project.resolve()
+    if (root / 'Differential-manifest.json').is_file():
+        from differential import install as differential_install
+        differential_install(requested_project, read_json(root / 'Differential-manifest.json'), root / 'installer', args.harness)
+        return 0
     if not requested_project.is_dir() or requested_project == Path.home().resolve() or requested_project == Path(requested_project.anchor):
         raise ValueError('Choose an existing project directory, not a user home or drive root')
     project = extended_windows_path(requested_project)
