@@ -74,22 +74,6 @@ The skill package also includes `scripts/install-runtime.ps1` and `scripts/insta
 
 Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
 
-Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
-
-Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
-
-Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
-
-Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
-
-Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
-
-Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
-
-Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
-
-Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
-
 ## Examples
 
 These three author-supplied case studies each include a reference image, a PowerPoint screenshot, and a detail view. Click any image for its original size. Screenshots illustrate the reconstruction structure; native PPTX files and the generating version of each case were not supplied with these images.
