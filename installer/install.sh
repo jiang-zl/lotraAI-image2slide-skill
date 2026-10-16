@@ -32,12 +32,15 @@ hash_file() {
 }
 descriptor="$project/.lotraAI-build/toolchain/core-runtime-$key.json"
 if [ -f "$descriptor" ] && [ -f "$root/Update-manifest.json" ]; then
-    engine=$(awk '/"engine"[ ]*:/{s=1;next} s&&/"path"[ ]*:/{sub(/^.*"path"[ ]*:[ ]*"/,"");sub(/".*$/,"");print;exit}' "$descriptor")
-    engine_hash=$(awk '/"engine"[ ]*:/{s=1;next} s&&/"sha256"[ ]*:/{sub(/^.*"sha256"[ ]*:[ ]*"/,"");sub(/".*$/,"");print;exit}' "$descriptor")
+    engine_fields=$(tr '\r\n' '  ' < "$descriptor" | sed -n 's/.*"engine"[[:space:]]*:[[:space:]]*{\([^}]*\)}.*/\1/p')
+    engine=$(printf '%s\n' "$engine_fields" | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    engine_hash=$(printf '%s\n' "$engine_fields" | sed -n 's/.*"sha256"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    if [ -n "$engine" ] && [ -n "$engine_hash" ]; then
     case "$engine" in .lotraAI-build/*) ;; *) echo 'Invalid prepared engine path' >&2; exit 2;; esac
     case "$engine" in *..*|*\\*) echo 'Unsafe prepared engine path' >&2; exit 2;; esac
     if [ -f "$project/$engine" ] && [ "$(hash_file "$project/$engine")" = "$engine_hash" ]; then
         exec "$project/$engine" -I -X utf8 -B "$root/installer/online.py" --project "$project" --harness "$harness" --bundle-root "$root"
+    fi
     fi
 fi
 if [ ! -f "$archive" ] && [ -f "$root/Update-manifest.json" ]; then

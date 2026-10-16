@@ -75,7 +75,7 @@ if(-not $python){
 $entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59'
 New-Item -ItemType Directory -Path $entryRoot -Force|Out-Null
 $entry=Join-Path $entryRoot 'install_lotra.py'
-Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r4/install_lotra.py' -Destination $entry -Sha256 '5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59' -Bytes 8595
+Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r5/install_lotra.py' -Destination $entry -Sha256 '5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59' -Bytes 8595
 $entryArgs=@('--project',$projectRoot)
 if($DownloadBundle -and $BundleRoot){throw 'Choose bundle download or local installation.'}
 if($DownloadBundle){$entryArgs+=@('--download-bundle',$DownloadBundle)}

@@ -36,11 +36,14 @@ get() {
 python=''
 descriptor="$project/.lotraAI-build/toolchain/core-runtime-$key.json"
 if [ -f "$descriptor" ]; then
- engine=$(awk '/"engine"[ ]*:/{s=1;next} s&&/"path"[ ]*:/{sub(/^.*"path"[ ]*:[ ]*"/,"");sub(/".*$/,"");print;exit}' "$descriptor")
- expected=$(awk '/"engine"[ ]*:/{s=1;next} s&&/"sha256"[ ]*:/{sub(/^.*"sha256"[ ]*:[ ]*"/,"");sub(/".*$/,"");print;exit}' "$descriptor")
+    engine_fields=$(tr '\r\n' '  ' < "$descriptor" | sed -n 's/.*"engine"[[:space:]]*:[[:space:]]*{\([^}]*\)}.*/\1/p')
+    engine=$(printf '%s\n' "$engine_fields" | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    expected=$(printf '%s\n' "$engine_fields" | sed -n 's/.*"sha256"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+ if [ -n "$engine" ] && [ -n "$expected" ]; then
  case "$engine" in .lotraAI-build/*) ;; *) echo 'Invalid prepared engine path' >&2; exit 2;; esac
  case "$engine" in *..*|*\*) echo 'Unsafe engine path' >&2; exit 2;; esac
  if [ -f "$project/$engine" ] && [ "$(hash_file "$project/$engine")" = "$expected" ]; then python="$project/$engine"; fi
+ fi
 fi
 if [ -z "$python" ]; then
  archive="$state/$engine_hash.tar.gz"
@@ -53,5 +56,5 @@ if [ -z "$python" ]; then
  [ "$(hash_file "$python")" = "$exe_hash" ] || { echo 'Python executable differs' >&2; exit 2; }
 fi
 entry="$project/.lotraAI-build/bootstrap/5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59/install_lotra.py"
-get 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r4/install_lotra.py' "$entry" '5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59'
+get 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0-install-r5/install_lotra.py' "$entry" '5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59'
 exec "$python" -I -X utf8 -B "$entry" --project "$project" "$@"
