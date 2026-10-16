@@ -41,4 +41,13 @@ def crop_file(task,crop):
 def bounded_output(task,result,budget=6000):
     if type(budget) is not int or not 1000<=budget<=16000:raise ValueError('Bounded output characters required')
     from .packet_compaction import compact
-    return compact(task,result,budget)
+    display=compact(task,result,budget)
+    if display is not result:
+        # The CLI can compact an entire response after its nested work packet
+        # was registered. Register only these program-created envelope files;
+        # otherwise managed selectors cannot read the references just emitted.
+        from .context_control import register_output
+        for key in ('execution_reference','detail_reference'):
+            ref=display.get(key)
+            if ref:register_output(task,safe_path(task,ref['path']))
+    return display

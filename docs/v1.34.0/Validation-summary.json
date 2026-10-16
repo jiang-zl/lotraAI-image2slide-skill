@@ -1,0 +1,91 @@
+{
+  "version": "1.34.0",
+  "date": "2026-10-16",
+  "scope": "Distinct channels; synthetic acceptance does not accept external user art.",
+  "behavioral_tests": {
+    "passed": 42,
+    "failed": 0
+  },
+  "publisher_guard_tests": {
+    "passed": 6,
+    "failed": 0
+  },
+  "code": {
+    "version": "1.34.0",
+    "python_files_parsed": 297,
+    "imported_modules": [
+      "core.component_source_features",
+      "core.source_features",
+      "core.native_surfaces",
+      "core.surface_metrics",
+      "core.component_workflow",
+      "core.component_final",
+      "core.component_revision",
+      "core.knowledge",
+      "core.context_efficiency",
+      "core.context_control",
+      "core.component_protocol",
+      "core.component_metric_adapters",
+      "core.problem_control",
+      "core.curve_functions",
+      "core.knowledge_flow",
+      "core.transient_export"
+    ],
+    "implementation": "b50af25c536d4c730d4dc8ff2cf4f98d66a87cdb7349936717fc3e7ed2106a31",
+    "manifest_sha256": "b537d0d83c0b75cd4d448ad2ee137b0029f4978adcb6b63e147e5e92ece27e67",
+    "legacy_module_sha256": "c6dbe74bae927aedc0d5f9c4c4eb8de6cd7cafd48910aba6eda8551c863f1e1f",
+    "export_validator_sha256": "6bbbf321a2ab8b517ea1e65dcaebfea59c4f60f1b8b3f9fcce31d88a5fec67c5"
+  },
+  "package": {
+    "status": "PASSED",
+    "skill_payload": {
+      "bytes": 1674533,
+      "sha256": "2c1278927c5f058b0f8faf2ed3e35dbd550fc05ce8e1020393a236e4154d73d2"
+    },
+    "bundle": {
+      "bytes": 2408856477,
+      "sha256": "a66b44573153ebc2419d72ec66b8b69d370f53927eb91342264527d734f30d78"
+    },
+    "bundle_id": "86654ba0a3477d65cb472b06cea8a398ed8052ea55d58411ee38185cff274645",
+    "bundle_entries": 574,
+    "skill_files": 421,
+    "runtime_assets": 70,
+    "source_assets": 6,
+    "private_task_material_in_payload": false
+  },
+  "installation": {
+    "windows_x64": "PASSED_COMPLETE_BUNDLE_STARTUP_NORMAL_UPDATE_REPEAT",
+    "linux_x64": "PASSED_COMPLETE_BUNDLE_STARTUP_NORMAL_UPDATE_REPEAT",
+    "macos": "NOT_RUN",
+    "linux_arm64_complete_math": "NOT_SUPPLIED"
+  },
+  "actual_render": {
+    "native_constructor_gallery": "PASSED_PREPARED_LINUX_LIBREOFFICE",
+    "final_synthetic_case": "ACCEPTED_CURRENT_COMPONENT_AUDIT",
+    "accepted_export": "ACCEPTED_EXPORT_VERIFIED",
+    "host": "PowerPoint 16.0 target_render_only",
+    "comparison_dimensions": [
+      2000,
+      1250
+    ],
+    "receipt_sha256": "0d928aef2b5be786157e29da7951535708eac2a1f0fe3e6d49b801ba9a7f1585",
+    "audit_sha256": "360c83bd90142a46d2dae1fa2e076b26c76e35561692d1560b9c78bc2eb41f59",
+    "pptx_sha256": "9002c37e2fc6c70fa4212506a6ed6a0fcfbeb92f928b881e4619ddf8ae73d989",
+    "preview_pixels": "EXACT",
+    "pdf_three_scale": "EXACT",
+    "native_xml_fonts": "BYTE_IDENTICAL",
+    "comparison_pdfs": "DISPOSED_2_X_7909_BYTES"
+  },
+  "excluded_or_unvalidated": {
+    "office_edit_open_save_reopen": "EXCLUDED_PER_USER_REQUEST",
+    "provider_tokens_performance_effect": "NOT_RUN",
+    "external_user_artwork": "NOT_ACCEPTED_BY_SYNTHETIC_TESTS",
+    "public_github_installation": "PENDING_MANUAL_RUNTIME_UPLOAD"
+  },
+  "runtime": {
+    "binary_version": "1.14.0",
+    "matching_product_version": "1.34.0",
+    "assets_prepared": 70,
+    "upload": "HUMAN_EXECUTES_PREPARED_SCRIPT"
+  }
+}

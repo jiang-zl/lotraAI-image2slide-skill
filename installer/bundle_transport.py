@@ -13,7 +13,7 @@ from install import within,read_json
 
 
 def download(project,manifest,output):
-    if manifest.get('schema')!='lotraai-publication-release-1' or manifest.get('version')!='1.33.0':
+    if manifest.get('schema')!='lotraai-publication-release-1' or manifest.get('version')!='1.34.0':
         raise ValueError('Unsupported complete-bundle manifest')
     bundle=manifest['bundle'];parts=bundle['parts'];name=bundle['filename']
     if not re.fullmatch(r'lotraAI-image2slide-v1\.33\.0-bundle\.zip',name):
@@ -54,7 +54,7 @@ def download(project,manifest,output):
             try:os.link(temporary,destination);temporary.unlink()
             except FileExistsError:raise ValueError('Preserve a concurrently created output')
             except OSError:temporary.rename(destination)
-    return {'status':'BUNDLE_DOWNLOADED','version':'1.33.0','bundle':str(destination),
+    return {'status':'BUNDLE_DOWNLOADED','version':'1.34.0','bundle':str(destination),
             'sha256':bundle['sha256'],'parts':len(parts),'product_execution':False}
 
 

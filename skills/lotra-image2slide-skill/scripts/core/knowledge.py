@@ -43,12 +43,22 @@ def template_from_scene(scene,root_id,*,include_text=False):
         if expanded==selected:break
         selected=expanded
     mapping={key:'root' if key==root_id else 'part_'+str(i) for i,key in enumerate(sorted(selected))}
+    from .semantic_composition import compile_order
+    order=compile_order(scene)
+    def authored(identity):
+        yield objects[identity]
+        for child in order.get(identity,[]):
+            if child in selected:yield from authored(child)
     parts=[]
-    for original in scene['objects']:
-        if original['id'] not in selected:continue
+    for original in authored(root_id):
         if original['render_type'] in ('text','equation') and not include_text:
             raise ValueError('Literal text/math retention requires include_text')
         part={k:copy.deepcopy(original[k]) for k in ('id','render_type','semantic_type','bbox','content','style')}
+        # Capture source-free native geometry, never a prior task's source
+        # interpretation, compiler qualification or retained package snapshot.
+        for field in ('source_surface','curve_compilation','natural_part','native_snapshot',
+                      'native_snapshot_math','native_snapshot_table'):
+            part['content'].pop(field,None)
         part['id']=mapping[original['id']]
         part['parent']=mapping.get(original.get('parent'))
         for field in ('source','target','source_anchor_object','target_anchor_object'):

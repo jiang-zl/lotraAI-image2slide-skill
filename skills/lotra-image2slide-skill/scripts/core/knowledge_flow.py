@@ -219,7 +219,7 @@ def expand(task, state, scene, request):
 
 
 def capture_qualified(task, state, contract, ledger, scene, accepted=False):
-    if contract.get('workflow_version') != '1.33.0': return []
+    if contract.get('workflow_version') not in ('1.33.0','1.34.0'): return []
     library = root(state); captured = []
     for row in contract['components']:
         if row['route'] != 'assembly' or ledger['components'][row['id']]['status'] != 'QUALIFIED': continue
@@ -239,7 +239,7 @@ def capture_qualified(task, state, contract, ledger, scene, accepted=False):
 
 
 def accepted(task, state, contract, ledger, scene, acceptance):
-    if contract.get('workflow_version')!='1.33.0':return {'captured':0,'feedback':0,'legacy_contract_retained':True}
+    if contract.get('workflow_version') not in ('1.33.0','1.34.0'):return {'captured':0,'feedback':0,'legacy_contract_retained':True}
     captures = capture_qualified(task, state, contract, ledger, scene, accepted=True)
     library = root(state)
     for binding in scene.get('knowledge_bindings', []):

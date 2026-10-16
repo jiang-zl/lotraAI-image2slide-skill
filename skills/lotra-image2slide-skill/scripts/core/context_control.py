@@ -225,7 +225,7 @@ def present(task, result):
     display = {k: full[k] for k in CONTROL if k in full}
     from .context_policy import configuration
     policy=configuration()
-    display['action_references']=policy['reference_routes'].get(full.get('kind'),[policy['fallback_reference']])
+    display['action_references']=full.get('action_references') or policy['reference_routes'].get(full.get('kind'),[policy['fallback_reference']])
     new, reused = {}, {}
     with index(task) as db:
         epoch = _epoch(db)

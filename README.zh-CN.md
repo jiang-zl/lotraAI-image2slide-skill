@@ -23,7 +23,7 @@ Codex 调用维护好的安装程序，按平台准备 Python、依赖、OCR 和
 如果已有完整 ZIP，提供文件或本地绝对路径，再发送：
 
 ~~~text
-请用提供的 lotraAI-image2slide-v1.33.0-bundle.zip 在当前项目安装或更新 Image2Slide。
+请用提供的 lotraAI-image2slide-v1.34.0-bundle.zip 在当前项目安装或更新 Image2Slide。
 ~~~
 
 运行资源和私有任务状态保存在项目 `.lotraAI-build`。手动命令与平台要求见[安装说明](docs/installation.zh-CN.md)，完整包获取方式见[下载说明](docs/download.zh-CN.md)。
@@ -67,7 +67,8 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 
 - **按语义组织对象。** 用原生文字、形状、路径、连接和分组表达图中的结构，便于后续调整；中文和英文分别从对应语种的字体集合中匹配。
 - **保留结构化公式。** 数学表达使用源结构与真正的 Office Math，保留公式内部的数学关系。
-- **细化图标部件。** 复杂图标先拆分为形状与部件，再组合成可编辑分组；已完成的构造可复用于同图的重复元素。
+- **细化图标部件。** 先从原图登记部件、可见细节和相互关系，再递归拆解；优先使用形状、填色和边框，必要时使用原生曲线路径。已完成的构造可复用于同图的重复元素。
+- **重建立体结构。** 根据原图的投影、顶面与侧面、厚度和遮挡构造原生面；逐项检查轮廓、孔洞、内部线条、色块与明暗关系。
 - **用函数重建曲线。** 有数学含义的曲线保留对应特征，一般曲线用分段函数近似，保留主要趋势、转折和不连续位置。
 - **积累自己的绘制方法。** 适合复用且通过验收的构造方法进入本地个性化知识库，供后续任务检索；每张新图仍以自己的原图为依据。
 - **项目内准备依赖。** 安装器在本地准备 Python、OCR 和相关程序资源；无需额外模型 API key。当前 agent 服务的运行方式由宿主决定。
@@ -127,15 +128,15 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 
 任务中断后，在同一个工作项目中要求继续原来的任务。保留原图和 `.lotraAI-build`，具体操作见[使用指南](docs/usage.zh-CN.md)。
 
-## v1.33.0
+## v1.34.0
 
-本版在部件优先重建流程上，加入曲线函数化、同一原图问题的有限收敛控制，以及个性化知识的捕获、检索与反馈。确定的内容直接构造，复杂部件先局部完成；排版完成后集中复核字体、整图与最终输出。
+复杂图标先从原图递归登记部件、可见特征与关系，优先使用形状、填色和边框；投影、厚度、内壁与变化宽度等内容由共享面和有限原生曲线表达。原图覆盖、原生一致性和实际外观分别验收。保留 1.34.0 的曲线函数、有限收敛控制和私有构造方法复用，排版后集中复核字体、整图与最终输出。
 
 安装与更新使用同一入口，按文件差分同步：新增的加入、变化的替换、新版移除的受管理文件删除；未变化的生效文件不重复下载或写入。个人知识库、字体、任务、原图和 PPT 保留在本地，公开包不预置作者的个人知识库。
 
 运行资源覆盖 Windows x64、Linux x64、macOS Apple Silicon 和 Intel。macOS 要求 13 或更高版本，Math 资源首次单独联网获取；Linux ARM64 尚缺完整 Math 包。具体支持范围见[安装说明](docs/installation.zh-CN.md)。
 
-本版已在 Windows x64 与 WSL/Linux x64 完成预发布安装检查，重建功能与效果未重新验证。安装准备、实际文档渲染和整图验收分别记录；上述历史案例截图不作为本版实测结果。详见[版本记录](CHANGELOG.md)和[验证状态](docs/validation.md)。
+本版已通过 Windows x64、WSL/Linux x64 的安装与启动、本机 HTTP 更新和重复安装检查，也执行了针对性反例、原生构造实际渲染和合成图完整验收流程。这些检查不代表外部用户原图验收或普遍效果提升。安装准备、实际渲染和整图验收分别记录；上述历史案例不作为本版基准。详见[版本记录](CHANGELOG.md)和[验证状态](docs/validation.md)。
 
 ## 文档与项目结构
 
@@ -144,8 +145,8 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 | [安装](docs/installation.zh-CN.md) | 自动安装、差分更新、完整包与平台要求 |
 | [使用](docs/usage.zh-CN.md) | 图片重建、半成品导入与恢复任务 |
 | [案例](docs/examples/README.md) | 原图、重建截图与部件细节 |
-| [工作流](skills/lotra-image2slide-skill/references/workflow-v133.md) | 1.33.0 的重建流程与复用规则 |
-| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.33.0 的完整主载荷 |
+| [工作流](skills/lotra-image2slide-skill/references/workflow-v134.md) | 1.34.0 的重建流程与复用规则 |
+| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.34.0 的完整主载荷 |
 | [来源与许可](NOTICE.md) | 项目源码、第三方组件和案例素材 |
 
 需要反馈时，请描述系统、产品版本、具体操作和相关诊断；按需提供经过检查的原图或片段。项目内的私有任务数据由你管理。

@@ -144,6 +144,17 @@ def _pdf(folder,receipt,pptx):
             or digest(pdf)!=receipt.get('pdf_hash')):raise ValueError('Actual saved PPTX to PDF export did not succeed')
     return pdf
 
+def _preview_dimensions(folder,receipt):
+    """Only reuse a host preview at the exact comparison canvas for every page."""
+    from PIL import Image
+    pages=receipt.get('pages') or [{'path':'Final_preview.png'}]
+    result=[]
+    for page in pages:
+        path=Path(folder)/page.get('path','Final_preview.png')
+        if not path.is_file():raise ValueError('Actual preview page absent')
+        with Image.open(path) as image:result.append(image.size)
+    return result
+
 def validate(before,after,root,caps,*,base_render=None):
     """Same host, same canvas, every page. Failure cannot authorize adoption."""
     from .tool_router import render_saved
@@ -159,7 +170,9 @@ def validate(before,after,root,caps,*,base_render=None):
         path=Path(base_render);row=read_json(path)
         keys=('backend','backend_version','office_build','font_inventory_hash','renderer_script_hash')
         if all(row.get(k)==final.get(k) for k in keys) and row.get('pptx_hash')==start[0]:
-            _pdf(path.parent,row,before);original=(path.parent,row)
+            _pdf(path.parent,row,before)
+            if _preview_dimensions(path.parent,row)==_preview_dimensions(out,final):
+                original=(path.parent,row)
     if original is None:
         folder=root/'original-render';row=render_saved(before,folder,caps,2000);original=(folder,row);own_base=True
     folder,row=original;pdf_original=_pdf(folder,row,before)

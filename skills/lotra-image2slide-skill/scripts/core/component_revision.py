@@ -75,6 +75,10 @@ def decide(task,request):
     if request.get('source_hash')!=state['source']['sha256'] or request.get('pptx_hash')!=(candidate or {}).get('pptx',{}).get('sha256'):
         raise ValueError('Decision must bind current original and native revision')
     if not request.get('revision_reason'):raise ValueError('Describe the original/model/measurement correction')
+    if contract.get('workflow_version') == '1.34.0' and request.get('decision_kind') not in (
+            'source_omission','representation_insufficient','parameter_error','measurement_invalid',
+            'native_mismatch','relation_error','source_ambiguity'):
+        raise ValueError('Classify the located source/model/measurement failure before repairing')
     from .problem_control import reserve
     reserve(task,state,c.component_row(task,state,contract,request['component']),'source_reads',token=identity(request))
     selected={request['component']};scope=descendants(contract,selected)
@@ -92,6 +96,25 @@ def decide(task,request):
     rows={**old,**changed}
     for key in removed:rows.pop(key,None)
     revised=copy.deepcopy(contract);revised['components']=list(rows.values())
+    if 'feature_bindings' in request:
+        prior={b['feature']:b for b in contract.get('feature_bindings',[])}
+        after={b['feature']:b for b in request['feature_bindings']}
+        for key in set(prior)|set(after):
+            if prior.get(key)!=after.get(key) and any(b and b.get('component') not in scope for b in (prior.get(key),after.get(key))):
+                raise ValueError('Feature revision escaped the selected component subtree')
+        revised['feature_bindings']=copy.deepcopy(request['feature_bindings'])
+    if 'native_constructions' in request:
+        from .native_surfaces import construct
+        permitted={o for key in scope for o in rows.get(key,old.get(key,{})).get('owners',[])}
+        permitted.update(o for key in scope for o in old.get(key,{}).get('owners',[]))
+        prior={s['id']:s for s in contract.get('native_constructions',[])}
+        after={s['id']:s for s in request['native_constructions']}
+        for key in set(prior)|set(after):
+            if prior.get(key)==after.get(key):continue
+            for spec in (prior.get(key),after.get(key)):
+                if spec and not {o['id'] for o in construct(spec)[0]}<=permitted:
+                    raise ValueError('Native construction revision escaped the selected owner resource group')
+        revised['native_constructions']=copy.deepcopy(request['native_constructions'])
     if 'relations' in request:
         prior={r['id']:r for r in contract['relations']};after={r['id']:r for r in request['relations']}
         for key in set(prior)|set(after):

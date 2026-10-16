@@ -27,11 +27,14 @@ def observe(task,request):
         raise ValueError('Six located visual judgments required; scores do not substitute for observations')
     ledger['final_visual']=evidence;ledger['final_dirty']=True;ledger['final_result']=None
     failed=[key for key,value in dimensions.items() if not value['passed']]
+    from .component_source_features import final_review
+    feature_review = final_review(task,contract,value)
+    if not feature_review['passed']: failed.append('source_feature_correspondence')
     if failed:
         from .component_revision import queue_final_repair
         queue_final_repair(ledger,failed,evidence)
     with writer(task): c._save_ledger(task,state,ledger,'final_visual_observed',{'evidence':evidence})
-    return {'status':'FINAL_VISUAL_RECORDED','passed':all(v['passed'] for v in dimensions.values()),'acceptance':False}
+    return {'status':'FINAL_VISUAL_RECORDED','passed':not failed,'feature_review':feature_review,'acceptance':False}
 
 
 def _visual(task,state,candidate,ledger):
@@ -44,7 +47,12 @@ def _visual(task,state,candidate,ledger):
     dims=value.get('dimensions',{})
     good=(binding and value.get('observer') in ('host_model','human') and set(dims)==set(DIMENSIONS) and
           all(v.get('passed') is True and v.get('observations') for v in dims.values()))
+    from .component_source_features import final_review
+    contract,_ = c._load(task,state)
+    feature_review = final_review(task,contract,value)
+    good = good and feature_review['passed']
     return {'passed':bool(good),'binding_current':binding,'evidence':evidence,'dimensions':dims,
+            'source_feature_review':feature_review,
             'basis':'Explicit host/human original/current visual judgments; no program semantic-confidence claim'}
 
 
@@ -75,11 +83,21 @@ def audit(task,state=None,candidate=None,persist=True):
     relations=evaluate(task,state,candidate,contract)
     receipt=c.actual_render(task,state,candidate,independent=True)
     visual=_visual(task,state,candidate,ledger)
+    from .component_source_features import probes, source_check, enabled as features_enabled
+    if features_enabled(contract):
+        observation=read_json(c._resource(task,contract['source_observation']))
+        feature_probes=probes(task,state,candidate,observation['features'])
+        feature_basis={'passed':all(source_check(row)['passed'] for row in contract['components']),
+            'source_observation':contract['source_observation'],'native_correspondence':identity(contract['feature_bindings'])}
+    else:
+        feature_probes={'passed':True,'applicable':False,'legacy_policy_retained':True}
+        feature_basis={'passed':True,'applicable':False,'legacy_policy_retained':True}
     gates={'component_qualification':{'passed':ready['ready'],'components':len(ledger['components'])},
            'font_language_and_binding':font_binding,
            'ownership':inventory,'native_resources':{'passed':package['status']=='PASS','result':package},
            'assembly_and_layout':relations,'source_placement':source_placement(task,state,candidate,contract),
            'actual_render':{'passed':True,'backend':receipt['backend'],'receipt':candidate['render']},
+           'source_feature_basis':feature_basis,'source_feature_probes':feature_probes,
            'final_visual':visual}
     failures=[key for key,value in gates.items() if value.get('passed') is not True]
     exclusions=contract.get('scope',{}).get('excluded_checks',[])

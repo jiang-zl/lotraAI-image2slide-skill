@@ -86,7 +86,7 @@ def validate_contract(value, scene, source_hash):
     if required_units!=covered_units:raise ValueError('Complete source-unit/component reconciliation required')
     coverage = defaultdict(list)
     for row in components:
-        if value.get('workflow_version')=='1.33.0' and row.get('route')=='assembly' and (not row.get('semantic_class') or not row.get('view')):
+        if value.get('workflow_version') in ('1.33.0','1.34.0') and row.get('route')=='assembly' and (not row.get('semantic_class') or not row.get('view')):
             raise ValueError('SOURCE_DECISION_REQUIRED: freeze assembly semantic_class and observed view for the private method lifecycle')
         if row.get('route') not in ROUTES: raise ValueError('Unsupported component route')
         if not row.get('source_evidence') or not row.get('source_refs'):
@@ -270,6 +270,7 @@ def ready_for_final(contract, ledger):
                         if ledger.get('relations', {}).get(r['id'], {}).get('status') != 'QUALIFIED']
     return {'ready': not pending and not relation_pending and ledger.get('layout_ready') is True and
                     not ledger.get('pending_transaction') and not ledger.get('user_reconciliation') and
+                    not ledger.get('source_observation_dirty') and
                     (ledger.get('repair_batch') or {}).get('status')!='PLAN_REQUIRED',
             'components_pending': pending, 'relations_pending': relation_pending,
             'layout_ready': ledger.get('layout_ready') is True}

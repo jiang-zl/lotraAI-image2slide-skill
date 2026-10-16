@@ -44,6 +44,9 @@ def consumer(row,policy,state=None):
     modules.update(row.get('implementation_dependencies',[]))
     if row.get('problem_id'): modules.add('problem_control')
     if row.get('curve_spec_hash'): modules.add('curve_functions')
+    if row.get('feature_basis'):
+        modules.update(('component_source_features','native_surfaces','surface_metrics'))
+    if row.get('route')=='assembly': modules.update(('knowledge','knowledge_flow'))
     source_adapter=row.get('model',{}).get('source_adapter')
     if source_adapter:
         from .constructor_registry import SOURCE_ADAPTERS

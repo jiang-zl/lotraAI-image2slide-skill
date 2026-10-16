@@ -28,6 +28,6 @@ Final delivery includes an editable `.pptx` and a task report. The report should
 
 Complete difficult components locally, then finish layout before the consolidated font review, whole-figure review and final output. A local edit does not trigger a whole-figure check each time. Chinese and English text use their corresponding font collections; equations retain structured Office Math.
 
-The private local knowledge library retains eligible construction methods for reuse. Another figure's content or acceptance result is not transferred to a new original. See the [workflow reference](../skills/lotra-image2slide-skill/references/workflow-v133.md).
+The private local knowledge library retains eligible construction methods for reuse. Another figure's content or acceptance result is not transferred to a new original. See the [workflow reference](../skills/lotra-image2slide-skill/references/workflow-v134.md).
 
 The [public examples](examples/README.md) provide originals, screenshots and details. See [evidence notes](validation.md) for their scope and this version's qualification status.

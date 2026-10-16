@@ -232,7 +232,7 @@ def compile_node(task, state, row, node):
 
 def prepare(task, state, contract, scene, execute=True):
     """Called before native construction. Saved appearance still uses evaluate."""
-    if contract.get('workflow_version') != '1.33.0': return scene
+    if contract.get('workflow_version') not in ('1.33.0','1.34.0'): return scene
     from .problem_control import bind
     nodes = {o['id']: o for o in scene['objects']}
     for row in contract['components']:

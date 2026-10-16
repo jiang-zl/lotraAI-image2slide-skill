@@ -14,6 +14,8 @@ def validate_metrics(row):
     for metric in row.get('metrics',[]):
         if not metric.get('applicable',True):continue
         spec=metric.get('measurement',{});adapter=spec.get('adapter',metric['id'])
+        from .surface_metrics import validate as validate_surface
+        if validate_surface(metric): continue
         if not spec and metric['id'] in GENERIC:continue
         if adapter not in GEOMETRIC:raise ValueError('Unsupported metric producer: '+metric['id'])
         if metric.get('unit')!='source_px' or spec.get('coordinate_space')!='component_roi' or not spec.get('source_evidence'):
@@ -56,7 +58,12 @@ def geometric(actual,component,support=None,source=None):
     for metric in component.get('metrics',[]):
         spec=metric.get('measurement')
         if not spec or not metric.get('applicable',True):continue
-        adapter=spec.get('adapter',metric['id']);x,y,w,h=spec['window']
+        adapter=spec.get('adapter',metric['id'])
+        from .surface_metrics import UNITS, measure as measure_surface
+        if adapter in UNITS:
+            result[metric['id']] = measure_surface(source_pixels,actual,metric) if source_pixels is not None else {'valid':False,'reason':'Independent original pixels required'}
+            continue
+        x,y,w,h=spec['window']
         left,top=math.floor(x),math.floor(y);right,bottom=math.ceil(x+w),math.ceil(y+h)
         if left<0 or top<0 or right>actual.shape[1] or bottom>actual.shape[0]:
             result[metric['id']]={'valid':False,'reason':'Original measurement window outside ROI'};continue

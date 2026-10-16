@@ -111,7 +111,7 @@ def _fetch(record, cache, *, attempts=3):
         span=record.get('range')
         first=int(span['offset']) if span else 0
         whole=int(span['archive_bytes']) if span else size
-        headers={'User-Agent':'lotraAI-installer/1.33.0'}
+        headers={'User-Agent':'lotraAI-installer/1.34.0'}
         if span or offset:headers['Range']='bytes='+str(first+offset)+'-'+(str(first+size-1) if span else '')
         request=urllib.request.Request(record['url'],headers=headers)
         try:

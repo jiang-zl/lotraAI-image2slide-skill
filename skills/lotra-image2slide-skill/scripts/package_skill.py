@@ -21,7 +21,7 @@ from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 NAME = "lotra-image2slide-skill"
-VERSION = "1.33.0"
+VERSION = "1.34.0"
 SOURCE = Path(__file__).resolve().parents[1]
 MANIFEST = "MANIFEST.json"
 RECEIPT = ".lotraai-image2slide-install.json"
@@ -74,7 +74,7 @@ def allowed(name):
     if parts[0] == "scripts":
         if parts[-1].startswith('regression_') and name!='scripts/regression_contracts.py':
             return False
-        return path.suffix in (".py", ".ps1", ".mjs")
+        return path.suffix in (".py", ".ps1", ".sh", ".mjs")
     if parts[0] == "references":
         if name=='references/release-notes.md':return False
         return path.suffix in (".md", ".json")

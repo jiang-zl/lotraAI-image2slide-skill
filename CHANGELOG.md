@@ -1,3 +1,12 @@
+## 1.34.0
+
+Independent original-only recursive unit/feature observation; native capability
+preflight and simplest adequate representation; source-declared shared 2.5D
+surfaces; typed actual-image probes; distinct source/native/appearance checks;
+complete original-unit omission review and scoped repairs. Retains v1.33 curves,
+private methods and finite shared budgets. See docs/v1.34.0/Release-report.md and
+Validation-report.md for actual checks and limits.
+
 ## 1.33.0
 
 Functional source-bound curves, shared problem budgets, private knowledge lifecycle, compact one-click incremental install. Static source review only; tests/validation/measurements not run per user request.

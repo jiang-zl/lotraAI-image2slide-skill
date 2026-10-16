@@ -63,7 +63,7 @@ if(-not $python){
  $base=Join-Path $projectRoot '.lotraAI-build/bootstrap/e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42'
  $archive=Join-Path $projectRoot '.lotraAI-build/install-entry/e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42.zip'
  New-Item -ItemType Directory -Path $base -Force|Out-Null
- Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0/windows-amd64-cp312.zip' -Destination $archive -Sha256 'e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42' -Bytes 23135647
+ Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/windows-amd64-cp312.zip' -Destination $archive -Sha256 'e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42' -Bytes 23135647
  $python=Join-Path $base 'python/python.exe'
  if(-not(Test-Path -LiteralPath $python)){
   Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -83,10 +83,10 @@ if(-not $python){
  }
  if((Get-FileHash -LiteralPath $python -Algorithm SHA256).Hash.ToLowerInvariant() -ne '86c4690be87a6bb6be1affe24b3c1b67ceedc86b477d6cde9f812fafd0f6d3b9'){throw 'Python executable differs.'}
 }
-$entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59'
+$entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/27d3561ba365f5676107287a7de9a734a823c7b1e69f1f407f1e31f555ebd82f'
 New-Item -ItemType Directory -Path $entryRoot -Force|Out-Null
 $entry=Join-Path $entryRoot 'install_lotra.py'
-Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0/install_lotra.py' -Destination $entry -Sha256 '5fbb9c7a326e873c65eced5a5de76bae4c6c9ca3f02569e5d3dd620b5a37fc59' -Bytes 8595
+Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/install_lotra.py' -Destination $entry -Sha256 '27d3561ba365f5676107287a7de9a734a823c7b1e69f1f407f1e31f555ebd82f' -Bytes 8595
 $entryArgs=@('--project',$projectRoot)
 if($DownloadBundle -and $BundleRoot){throw 'Choose bundle download or local installation.'}
 if($DownloadBundle){$entryArgs+=@('--download-bundle',$DownloadBundle)}

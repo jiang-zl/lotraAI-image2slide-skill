@@ -1,4 +1,4 @@
-function Get-LotraResource {
+﻿function Get-LotraResource {
  param([string]$Uri,[string]$Destination,[string]$Sha256,[long]$Bytes)
  $ErrorActionPreference='Stop'
  if($Sha256 -notmatch '^[a-f0-9]{64}$' -or $Bytes -le 0){throw 'Invalid pinned resource.'}

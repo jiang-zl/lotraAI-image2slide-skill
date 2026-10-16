@@ -47,7 +47,7 @@ if [ ! -f "$archive" ] && [ -f "$root/Update-manifest.json" ]; then
     mkdir -p "$project/.lotraAI-build/downloads/bootstrap"
     archive="$project/.lotraAI-build/downloads/bootstrap/$expected.tar.gz"
     if [ ! -f "$archive" ]; then
-        curl --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - --output "$archive.part" "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.33.0/$key.tar.gz"
+        curl --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - --output "$archive.part" "https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/$key.tar.gz"
         if [ "$(hash_file "$archive.part")" != "$expected" ]; then echo 'Bootstrap hash mismatch; partial retained' >&2; exit 2; fi
         mv -- "$archive.part" "$archive"
     fi

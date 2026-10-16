@@ -2,7 +2,7 @@
 
 [简体中文](download.zh-CN.md) · [Installation](installation.md)
 
-The current complete file is `lotraAI-image2slide-v1.33.0-bundle.zip`. Its size, whole-archive SHA-256 and 18 ordered parts are recorded in the [runtime bundle manifest](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/releases/v1.33.0-bundle.json).
+The current complete file is `lotraAI-image2slide-v1.34.0-bundle.zip`. Its size, whole-archive SHA-256 and 18 ordered parts are recorded in the [runtime bundle manifest](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/releases/v1.34.0-bundle.json).
 
 ## Ask Codex to download and assemble
 

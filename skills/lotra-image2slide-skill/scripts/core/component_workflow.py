@@ -15,7 +15,7 @@ from .component_protocol import validate_contract, metric_result, impact, ready_
 from .component_solver import rank_actions
 
 VERSION = 'component-workflow-1.32.0'
-REFERENCE = 'references/component-workflow-v132.md'
+REFERENCE = 'references/workflow-v134.md'
 
 
 def implementation():
@@ -29,7 +29,7 @@ def implementation():
              'font_contract','font_embedding','geometry','mathml','presets','semantic_curves',
              'render','host_render','office_bridge','tool_router','native_commit',
              'agent_runtime','quality_loop','workflow_control','execution_contract','build',
-             'curve_functions','problem_control','knowledge_flow')
+             'curve_functions','problem_control','knowledge_flow','component_source_features','native_surfaces','surface_metrics')
     files={name:digest(ROOT/'scripts/core'/(name+'.py')) for name in names}
     for name in ('config/component-workflow.json','config/font-collections.json','schemas/component-contract.schema.json'):
         files[name]=digest(ROOT/name)
@@ -117,7 +117,12 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
     contract = copy.deepcopy(request['contract'])
     previous, _ = _load(task, state) if state.get('component_workflow') else (None, None)
     # Old contracts keep their policy until an explicit migration request.
-    contract.setdefault('workflow_version', (previous or {}).get('workflow_version', '1.33.0'))
+    contract.setdefault('workflow_version', (previous or {}).get('workflow_version', '1.34.0'))
+    if (not previous or previous.get('workflow_version')=='1.34.0') and contract['workflow_version']!='1.34.0':
+        raise ValueError('New v1.34 tasks cannot bypass feature contracts by selecting a legacy policy')
+    from .native_surfaces import expand as expand_surfaces
+    if contract.get('workflow_version') == '1.34.0':
+        scene = expand_surfaces(scene, contract)
     from .curve_functions import prepare as prepare_curves
     from .problem_control import bind as bind_problems
     scene = prepare_curves(task, state, contract, scene, execute=False)
@@ -148,6 +153,8 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
                 if frozen['status']!='FROZEN_SOURCE_TOLERANCE':raise ValueError('SOURCE_DECISION_REQUIRED: original uncertainty exceeds its allowed range')
                 if metric.get('threshold') is not None and metric['threshold']!=frozen['value']:raise ValueError('Target conflicts with source calibration')
                 metric['threshold']=frozen['value'];metric['calibration_result']=frozen
+    from .component_source_features import bind as bind_features
+    bind_features(task, state, contract, scene)
     validate_contract(contract, scene, state['source']['sha256'])
     for component in contract['components']:
         for ref in component['source_refs']: _resource(task, ref)
@@ -246,10 +253,14 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
         state['component_workflow'] = {'schema': VERSION, 'contract': ref,
                                        'ledger_path': ledger_path, 'revision_reason': request.get('revision_reason')}
         state['objectives']['component_first'] = True
+        state.pop('source_observation_rebind_required', None)
         from .state_repository import Repository
         repository=Repository(task)
         repository.index_rows('component_contract:'+ref['sha256'],{row['id']:row for row in contract['components']})
         repository.index_rows('source_unit:'+ref['sha256'],{row['id']:row for row in contract['source_inventory']})
+        if contract.get('source_observation'):
+            observation = read_json(_resource(task, contract['source_observation']))
+            repository.index_rows('source_feature:'+ref['sha256'],{f['id']:f for f in observation['features']})
         repository.index_rows('native_owner:'+ref['sha256'],{owner:{'component':row['id']} for row in contract['components'] for owner in row['owners']})
         _save_ledger(task, state, ledger, 'contract_bound', {'components': len(components), 'source_hash': source_ref['sha256']})
     return {'status': 'COMPONENT_CONTRACT_BOUND', 'components': len(components),
@@ -482,6 +493,15 @@ def evaluate(task, request=None):
                       'route': row['route']}
         else:
             result = {'passed': False, 'status': 'SPECIALIST_OR_INSTANCE_EVIDENCE_REQUIRED', 'route': row['route']}
+        if contract.get('workflow_version') == '1.34.0':
+            from .component_source_features import source_check
+            source_basis = source_check(row)
+            result['source_basis'] = source_basis
+            result['qualification_channels'] = {'source_basis':source_basis['passed'],
+                'native_consistency':result.get('native_checks',{}).get('status')=='PASS' if row['route']=='local_fit' else result.get('passed',False),
+                'appearance':'DEFERRED_TO_ASSEMBLY_AND_FINAL' if row['route']=='fixed_parameters' else result.get('passed',False)}
+            result['passed'] = result['passed'] and source_basis['passed']
+            if not source_basis['passed']: result['status'] = source_basis['status']
         record['current'] = {'signature': sig, 'result': result, 'candidate_hash': candidate['pptx']['sha256']}
         record['history'].append(copy.deepcopy(record['current']))
         if result['passed']:
@@ -525,7 +545,7 @@ def qualify(task, request):
     checks = program_checks(task,state,candidate,contract,row)
     if not all(check.get('passed') is True for check in checks.values()):
         return {'status':'COMPONENT_CHECKS_UNMET','component':name,'checks':checks}
-    if row.get('visual_review_required', True):
+    if row.get('visual_review_required', True) or contract.get('workflow_version') == '1.34.0':
         actual_render(task,state,candidate)
         if not candidate.get('preview') or actual.get('preview_hash') != candidate['preview']['sha256']:
             raise ValueError('Assembly visual evidence must bind the actual current preview')
@@ -533,6 +553,12 @@ def qualify(task, request):
             raise ValueError('Actual original/current local visual observations required')
         if actual.get('verdict') != 'PASS':
             return {'status':'LOCAL_VISUAL_WORK_REQUIRED','component':name,'evidence':evidence}
+        if contract.get('workflow_version') == '1.34.0':
+            from .component_source_features import local_review
+            feature_review = local_review(row, actual)
+            if not feature_review['passed']:
+                return {'status':'LOCAL_FEATURE_WORK_REQUIRED','component':name,'feature_review':feature_review}
+            checks['feature_appearance'] = feature_review
     sig = _component_signature(row, signatures, body=row['route'] not in ('assembly', 'instance'),contract=contract)
     record = ledger['components'][name]
     current = {'signature': sig, 'evidence': evidence, 'program_checks':checks,'candidate_hash': candidate['pptx']['sha256']}
@@ -601,7 +627,21 @@ def next_action(task, state, candidate=None):
     """Called by the ordinary next/quality entry, not a parallel task engine."""
     from . import agent_runtime as a
     contract, ledger = _load(task, state); candidate = candidate or _candidate(state)
+    if state.get('source_observation_rebind_required'):
+        packet=a._packet(task,state,'component_contract_source','component_contract',
+            'Rebind only the affected source-feature correspondences; retain prior work, budgets and locks.',
+            extra={'source_observation':state['source_feature_observation'],
+                   'previous_contract':state['component_workflow']['contract'],
+                   'action_references':[REFERENCE],'whole_audit_allowed':False})
+        return {'status':'WORK_PACKET','packet':packet}
     if not contract:
+        if not state.get('source_feature_observation'):
+            packet=a._packet(task,state,'component_contract_source','source_features',
+                'Observe the unchanged original before native owners. Submit recursive units, located visible features, uncertainty and decomposition stops; do not derive the inventory from a candidate.',
+                extra={'source_hash':state['source']['sha256'],'source':state['source'],
+                       'canvas':state['source_size'],'action':'component-workflow observe_source',
+                       'action_references':[REFERENCE],'whole_audit_allowed':False})
+            return {'status':'WORK_PACKET','packet':packet}
         from .knowledge_flow import has_candidates
         if not state.get('knowledge_menu') and has_candidates(state):
             packet=a._packet(task,state,'component_contract_source','knowledge_outline',
@@ -615,7 +655,8 @@ def next_action(task, state, candidate=None):
                   'instruction': 'Compile original-read parts and relations. Freeze semantic_class and observed view for every assembly. For an uploaded partial PPT use actual native owner names and target_width_inches and include missing image parts. Keep source uncertainty explicit; uncertain curves use source-bound function_spec.',
                   'knowledge_menu':state.get('knowledge_menu'),
                   'recipe_selection':'Optional recipe_bindings expands selected data-only constructors before Scene validation; all generated owners require current source contract ownership.',
-                  'action_references': ['references/workflow-v133.md',REFERENCE]}
+                  'source_observation':state.get('source_feature_observation'),
+                  'action_references': [REFERENCE,'references/workflow-v133.md']}
         packet = a._packet(task, state, 'component_contract_source', 'component_contract',
                             'Bind the component-first source contract before local qualification.', extra=extra)
         return {'status': 'WORK_PACKET', 'packet': packet}
@@ -701,10 +742,18 @@ def next_action(task, state, candidate=None):
                 extra={'action':'component-workflow final','whole_audit_allowed':True,'action_references':[REFERENCE]})
             return {'status':'WORK_PACKET','packet':packet}
     kind = 'component_final_visual' if readiness['ready'] else 'component_layout_work'
+    feature_extra = {}
+    if readiness['ready'] and contract.get('workflow_version') == '1.34.0':
+        from .component_source_features import diagnostics
+        actual_render(task,state,candidate)
+        feature_extra = {'source_observation':contract['source_observation'],
+            'feature_bindings_hash':identity(contract['feature_bindings']),
+            'feature_diagnostics':diagnostics(task,state,candidate,contract),
+            'feature_review_required':'Compare every required feature and independently check every original unit for omissions; diagnostics are suspicions, not semantic verdicts.'}
     packet = a._packet(task, state, kind, 'final_visual' if readiness['ready'] else 'final_layout',
                         'Review the actual complete page.' if readiness['ready'] else 'Complete instance placement and actual relation evidence.',
                         extra={'readiness': readiness, 'action_references': [REFERENCE],
-                               'whole_audit_allowed': readiness['ready']})
+                               'whole_audit_allowed': readiness['ready'],**feature_extra})
     return {'status': 'WORK_PACKET', 'packet': packet}
 
 
@@ -717,7 +766,14 @@ def program_checks(task,state,candidate,contract,row):
     if set(required)-{'native_structure','relations','connection_geometry','numeric_targets','visual'}:
         raise ValueError('Unknown executable check; use a supported source-bound specialist route')
     checks={'native_structure':{'passed':native['status']=='PASS','result':native}}
+    if contract.get('workflow_version') == '1.34.0':
+        from .component_source_features import source_check
+        checks['source_basis'] = source_check(row)
     checks['source_fixed_paint']=fixed_style_checks(task,candidate,contract,row,scene)
+    if contract.get('workflow_version') == '1.34.0' and any(f.get('metrics') for f in row.get('source_features',[])):
+        from .component_source_features import probes
+        actual_render(task,state,candidate)
+        checks['source_feature_probes'] = probes(task,state,candidate,row['source_features'])
     from .component_protocol import qualification_relations
     relation_ids=qualification_relations(contract,row)
     if 'relations' in required or row['route']=='instance':
@@ -837,6 +893,9 @@ def submit_result(task,result,packet):
     kind=packet['kind'];request=result.get('component_request',result.get('request'))
     if not isinstance(request,dict): raise ValueError('Submit an explicit component_request with the packet')
     if kind=='component_contract_source':
+        if packet['target']=='source_features':
+            from .component_source_features import observe
+            return observe(task,request)
         if packet['target']=='knowledge_outline':
             from .knowledge_flow import outline
             from . import agent_runtime as a
@@ -902,6 +961,9 @@ def guard_changes(task,state,scene,allowed,revision_components=()):
 def dispatch(task, operation, request=None):
     if request and any(str(key).startswith('_') for key in request):
         raise ValueError('Private transaction fields are not public workflow inputs')
+    if operation=='observe_source':
+        from .component_source_features import observe
+        return observe(task,request)
     if operation in ('source_or_measurement_decision','repair','lock','unlock','edit'):
         from .component_revision import decide,repair,locks,edit_native
         if operation=='source_or_measurement_decision':return decide(task,request)
