@@ -1,53 +1,41 @@
 # lotraAI Image2Slide v1.33.0
 
-将科研图片重建成分层、可编辑的 PowerPoint。支持原图＋一次性半成品 PPT 导入。
-本版接入函数曲线、同一原图问题的共享收敛预算、个人知识库闭环和增量安装。
-当前发布状态：IMPLEMENTED_STATICALLY_REVIEWED_NOT_TESTED_PER_USER_REQUEST。
+**English** | [简体中文](README.zh-CN.md)
 
-## Quick start：让 Agent 安装
+Rebuild scientific images as layered, natively editable PowerPoint slides. You can also supply a partial PPT to continue from once.
 
-把下面一段交给当前项目中的 Agent 即可。只需读取本 README 的当前入口，程序
-自行下载、续传、校验和准备环境；不需要让模型逐段下载或通读 runtime 清单。
+## Quick start
 
-首次安装提示词：
+Send this to your agent in the target project. The same entry installs the skill or updates an older version:
 
-> 将 lotraAI Image2Slide v1.33.0 安装到当前项目。使用官方 install-lotra.ps1（Windows）或 install-lotra.sh（Linux）一键入口，自动准备匹配的 Python、OCR 和 Math runtime。安装完成后只报告 skill 入口、实际就绪状态和详细日志位置，不展开安装日志，不创建 Setup skill，不修改全局环境。
+> Use the official one-click installer to install or update lotraAI Image2Slide v1.33.0 in this project: https://github.com/jiang-zl/lotraAI-image2slide-skill
 
-已安装旧版的增量更新提示词：
+Then attach your image:
 
-> 将当前项目的 lotraAI Image2Slide 增量更新到 v1.33.0。使用官方相同的一键入口，优先复用经哈希与资源兼容性确认的现有 runtime，只下载技能更新包和缺失资源；保留个人知识库、字体、任务、原图、旧版本和项目其他指令。完成后只报告版本、skill 入口、runtime 实际状态和日志位置。
+> Use $lotra-image2slide-skill to rebuild this image as a natively editable PPT.
 
-官方固定版本发布入口：[v1.33.0 release](https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.33.0)。
-下载该 release 的 `install-lotra.ps1` 或 `install-lotra.sh`，在已有项目目录运行：
+## Install manually
+
+Download `install-lotra.ps1` (Windows) or `install-lotra.sh` (Linux) from the [v1.33.0 Release](https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.33.0), then run it for your project:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install-lotra.ps1 -Project "C:\path\to\project"
-# 已安装旧版时，执行相同命令；程序自动走增量更新。
 ```
 
 ```sh
 sh install-lotra.sh /path/to/project
 ```
 
-Windows AMD64 和 Linux x86_64 提供完整 runtime 路线。其他平台未提供完整 Math
-资源时会明确停止，不会注册一个缺少环境的 skill。首次安装需下载对应平台资源；
-同 runtime 的更新主要下载小体积 update ZIP。断点和已校验文件保存在项目私有目录，
-失败后重跑同一命令。网络资源需要所在 Agent/宿主允许访问 GitHub。
+Windows AMD64 and Linux x86_64 have complete runtime packages. GitHub access is required for online installation. The installer prepares Python, OCR and Math resources, reuses compatible resources, and returns a short result with a log location. After an interrupted download, rerun the same command.
 
-离线方式：下载完整 `lotraAI-image2slide-v1.33.0-bundle.zip` 解压，运行其中
-`installer/install.ps1 -Project PROJECT` 或 `sh installer/install.sh PROJECT`。
-`lotraAI-image2slide-v1.33.0-update.zip` 是源代码/安装器增量包，首次安装时会联网补齐
-所需 runtime；它不是完整离线包。不要单独安装内层技能 ZIP 后把环境准备留给模型。
+Updates replace the active skill with the new version's complete file set, including removal of retired files from the active directory. Personal knowledge, fonts, tasks, source images and PPT files are preserved; previous skill versions are archived.
 
-## 重建
+The small update ZIP downloads missing runtime resources. For offline use, obtain the full bundle and run its `installer/install.ps1 -Project PROJECT` or `sh installer/install.sh PROJECT`.
 
-> 使用 $lotra-image2slide-skill 将这张原图重建为原生可编辑 PPT。按正常工作包完成部件、母件复用、排版和最终一次字体及整图复核。优先使用与当前原图兼容的个人方法；曲线按语义函数化，未知曲线使用分段低阶拟合，语义不变且差异在冻结的可接受范围内即可。
+## Workflow and status
 
-已存在任务先恢复，不重新从头生成。新旧任务状态与源图证据保持独立；旧任务只有
-显式迁移后才使用 v1.33 新合同。个人库首次为空，使用后逐步建立自己的可复用方法，
-不附带开发者的小车模型或私人历史。中文、英文按对应语言字体集合选择。
+v1.33.0 adds function-based curves, shared convergence budgets and private knowledge reuse. The personal library starts empty. Parts and layout precede the final font and whole-slide review.
 
-使用 [SKILL.md](skills/lotra-image2slide-skill/SKILL.md)，完整当前数据约定见 [v1.33 工作流](skills/lotra-image2slide-skill/references/workflow-v133.md)。
-模型只处理当前源图语义与必要决策，程序处理几何、有限搜索、状态、引用和资源准备。
-默认工具回执简短，完整证据保留在项目 .lotraAI-build。发布时未运行测试、验证、
-重建、渲染或性能/效果测量；代码接入和静态审查不能证明实际节省百分比。
+See [SKILL.md](https://github.com/jiang-zl/lotraAI-image2slide-skill/blob/release/skills/lotra-image2slide-skill/SKILL.md) and the [v1.33 workflow](https://github.com/jiang-zl/lotraAI-image2slide-skill/blob/release/skills/lotra-image2slide-skill/references/workflow-v133.md) for details.
+
+Implemented and statically reviewed. Tests, reconstruction, rendering and performance/effect measurements were not run for this release.
