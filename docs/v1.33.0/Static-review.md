@@ -1,3 +1,7 @@
+> Publication update: this is the original reconstruction call-chain static review.
+> Subsequent Windows x64 and WSL/Linux x64 installation checks are recorded in
+> Release-report.md. Those checks do not qualify reconstruction or Office editing.
+
 # v1.33.0 静态调用链审查
 
 范围：实际 Python/PowerShell/shell 源代码与发布清单阅读。未运行测试、语法编译、
