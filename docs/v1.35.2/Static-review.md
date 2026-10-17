@@ -19,6 +19,11 @@ Group-container follow-through additionally traces actual native descendants
 when assigning transform phases. The complete measured batch is gated before
 its first activation as well as between saves, so a child can discharge an
 assembly obligation without forcing unrelated group fields into that phase.
+Post-save journaling retains every completed batch member, including a member
+whose obligation was resolved by another owner's edit in the same batch.
+Global invalid measurements use the existing full-contract decision packet;
+local decisions stay scoped to their component. This preserves a repair route
+when independent roots participate in the failed measurement.
 
 Static follow-through covered bind/compile, fit/search/commit, actual saved
 measurement, local qualification, source decisions/rebind, repair plan/activation,

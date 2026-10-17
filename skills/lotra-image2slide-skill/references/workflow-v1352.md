@@ -53,7 +53,10 @@ decision and current checks in the ordinary ledger. Invalid measurements go to
 measurement diagnosis before drawing. The next packet permits the corresponding
 source/measurement decision and a validated rebind, instead of repeating a failed
 qualification or repair-only packet. Rebinding keeps the prior best and requires
-current native rechecks. Previous contracts/ledgers retain superseded repair
+current native rechecks. Local failures retain component scope; a global invalid
+measurement uses the existing full-contract rebind packet so independent root
+components are not trapped behind another root's local decision scope.
+Previous contracts/ledgers retain superseded repair
 plans; current layout/visual checks create a replacement plan only for remaining
 failures, rather than requiring a no-op edit for an obsolete failure list.
 

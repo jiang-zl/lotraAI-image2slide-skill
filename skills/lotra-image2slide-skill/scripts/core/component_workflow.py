@@ -121,7 +121,7 @@ def failure_decision(task, state, contract, ledger, candidate, checks, row=None,
         names = [r['id'] for r in contract['components'] if not r.get('parent')][:1]
     file=task/'component-workflow'/('Failure-checks-'+identity(checks)+'.json')
     if not file.exists():write_json(file,checks)
-    decision = {'status':status,'components':names,'checks':_ref(task,file),
+    decision = {'status':status,'components':names,'global':row is None,'checks':_ref(task,file),
         'source_hash':state['source']['sha256'],'pptx_hash':candidate['pptx']['sha256'],
         'reason':reason or 'Resolve the located source/native/measurement failure before another drawing action'}
     for name in names:
@@ -797,10 +797,13 @@ def next_action(task, state, candidate=None):
         return {'status':'WORK_PACKET','packet':packet}
     if ledger and ledger.get('pending_decision'):
         decision=ledger['pending_decision'];name=decision['components'][0]
-        packet=a._packet(task,state,'component_local_work',name,
+        global_decision=decision.get('global',False)
+        packet=a._packet(task,state,'component_contract_source' if global_decision else 'component_local_work',
+            'component_contract' if global_decision else name,
             'Resolve the retained source/measurement failure; drawing and acceptance remain blocked until a valid rebind.',
             extra={'component_batch':[name],'submit_operation':'source_or_measurement_decision',
-                'source_decision':decision,'action_references':[reference(contract)],
+                'source_decision':decision,'previous_contract':state['component_workflow']['contract'],
+                'source_scene':contract['source_scene'],'action_references':[reference(contract)],
                 'component_action':{'operation':'source_or_measurement_decision'},'whole_audit_allowed':False})
         return {'status':'WORK_PACKET','packet':packet}
     if not contract:

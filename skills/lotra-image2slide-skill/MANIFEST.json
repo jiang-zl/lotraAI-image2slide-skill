@@ -409,8 +409,8 @@
       "size": 12032
     },
     "references/workflow-v1352.md": {
-      "sha256": "c4a81ff5f7611b0e7ba5bb7d82a4ac41d0c89d9eae25e47a30f104b49abae8e0",
-      "size": 5448
+      "sha256": "e6b557f611e51e5e3f7ccbaaeab0074602b0ba26b6a72ed191a9dcb20f1db0f9",
+      "size": 5653
     },
     "requirements.txt": {
       "sha256": "d3d976e2d1f96b0d67122c2b9257a0909d16ff9bd6b2af09fdd11900b8aa5e59",
@@ -677,8 +677,8 @@
       "size": 6923
     },
     "scripts/core/component_workflow.py": {
-      "sha256": "0654a5dda65e16c88cb16b28ae8787e85034ec59baa8f1e1961c5990c17c1d26",
-      "size": 82862
+      "sha256": "97d1fbe4b2e320700510671ea0e233086acd35a0492afc51904397b4dfe00cfd",
+      "size": 83166
     },
     "scripts/core/components.py": {
       "sha256": "276b9f806f30998c42e77290f329e635f423db654ba7f5273683791ba38be245",
