@@ -272,8 +272,9 @@ def repair(task,request):
     batch.update(status='LOCAL_REPAIR',items=copy.deepcopy(items))
     ledger.update(layout_ready=False,final_dirty=True,final_result=None)
     if contract.get('workflow_version') in ('1.35.1','1.35.2'):
-        from .spatial_repair import activate
-        activate(ledger,candidate,read_json(c._resource(task,candidate['scene'])),contract)
+        from .spatial_repair import advance as advance_phases
+        advance_phases(task,state,candidate,contract,ledger,
+            read_json(c._resource(task,candidate['scene'])),report=spatial)
     with writer(task):c._save_ledger(task,state,ledger,'final_repair_scoped',{'affected':affected})
     return {'status':'LOCAL_REPAIR_REQUIRED','components':sorted(changed),'whole_audit_executed':False}
 

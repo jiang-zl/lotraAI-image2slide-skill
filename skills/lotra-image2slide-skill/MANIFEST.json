@@ -409,8 +409,8 @@
       "size": 12032
     },
     "references/workflow-v1352.md": {
-      "sha256": "ab0fee68080e00a54787ff554bf1f9c1a5887931823996bcb7b7d8642bd2ece7",
-      "size": 5288
+      "sha256": "c4a81ff5f7611b0e7ba5bb7d82a4ac41d0c89d9eae25e47a30f104b49abae8e0",
+      "size": 5448
     },
     "requirements.txt": {
       "sha256": "d3d976e2d1f96b0d67122c2b9257a0909d16ff9bd6b2af09fdd11900b8aa5e59",
@@ -645,8 +645,8 @@
       "size": 13602
     },
     "scripts/core/component_revision.py": {
-      "sha256": "1fca578056b85d768d4f7f260738dfd94655eeddea6a36255254553f94539cad",
-      "size": 23767
+      "sha256": "3857f5fcd8d27e39a690193a03cc9618931fcde4e9831c1fcac38ceabafb611e",
+      "size": 23830
     },
     "scripts/core/component_roundtrip.py": {
       "sha256": "d0c56148791ad67a21b68a8f2ddd0d7ffbfdb1ee3a89b34de76e6ab8ad60e6e9",
@@ -1505,8 +1505,8 @@
       "size": 7557
     },
     "scripts/core/spatial_repair.py": {
-      "sha256": "7f791294570e788c511f4c0b77935d44583b3b4bbe09e20deea0e334039ae687",
-      "size": 15074
+      "sha256": "8880a18fc260c20ae3c9883529b638f275a2a06def47c2b165aa84f7d4f374b8",
+      "size": 15300
     },
     "scripts/core/state.py": {
       "sha256": "73017014abcc621076a0d59b83495a7b5792f772c34f68a9fd6760d42f4797af",

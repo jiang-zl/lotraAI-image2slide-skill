@@ -15,6 +15,11 @@ Status: IMPLEMENTED_STATICALLY_REVIEWED_UNTESTED. This is not a runtime PASS.
 | Sibling over-invalidation | component signatures use actual saved world transforms, not absolute XML indices or serialized ancestor boxes. Relevant occludes/layer_before pairs separately compare actual relative painter order; unrelated anatomy signatures and retained bests remain independent. True parent transforms still invalidate descendants. |
 | Perspective domain validity | Frames.project_domain validates finite homogeneous values of each visible face/edge before division. Planar projected contours validate their bounded control hulls. Horizon crossings/unresolved hulls return source/representation decisions. Existing matrix-family, unit, typed-subject, full-domain and canonical-topology guards remain. |
 
+Group-container follow-through additionally traces actual native descendants
+when assigning transform phases. The complete measured batch is gated before
+its first activation as well as between saves, so a child can discharge an
+assembly obligation without forcing unrelated group fields into that phase.
+
 Static follow-through covered bind/compile, fit/search/commit, actual saved
 measurement, local qualification, source decisions/rebind, repair plan/activation,
 native journal post-save/recovery/rollback, next/submit/advance and final review/

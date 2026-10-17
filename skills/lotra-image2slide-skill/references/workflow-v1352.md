@@ -36,6 +36,8 @@ Finish a retained source-apply plan before another mutation.
 
 Derive geometry phases from the changed owner and measured anchors/footprints,
 including explicitly shared constructor parts. A component's unrelated geometry
+does not set a group's phase: a real group transform uses its actual descendant
+anchors and footprints. Geometry outside that actual native subtree or resource
 does not inherit another owner's earliest failure phase. Material/text and painter
 order remain separate. Before later grants activate, remeasure all earlier
 obligations, including phases omitted from the submitted field plan. If these

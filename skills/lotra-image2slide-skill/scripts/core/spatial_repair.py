@@ -75,14 +75,19 @@ def guard_scene(contract, ledger, before, after):
     return guard_fields(contract,ledger,writes)
 
 
-def _owner_phases(contract, targets, owner):
+def _owner_phases(contract, targets, owner, nodes):
     points = {b['landmark']:b['owner'] for b in contract['spatial_bindings']}
     domains = {b['footprint']:set(b['owners']) for b in contract.get('spatial_footprint_bindings',[])}
     relations = {r['id']:r for r in contract['spatial']['relations']}
     coupled = {owner}
+    if nodes[owner]['render_type']=='group':
+        while True:
+            descendants=coupled|{name for name,node in nodes.items() if node.get('parent') in coupled}
+            if descendants==coupled:break
+            coupled=descendants
     for manifest in contract.get('construction_manifests',[]):
         parts = {p['owner'] for p in manifest['parts']}
-        if owner in parts:coupled.update(parts)
+        if coupled & parts:coupled.update(parts)
     result = []
     for key, phase in targets.items():
         channel, name = key.split(':',1)
@@ -123,7 +128,7 @@ def prepare_item(contract, report, row, item, candidate, scene):
     nodes = {n['id']:n for n in scene['objects']}
     buckets = {}
     for grant in item['fields']:
-        phases = [p for p in _owner_phases(contract,targets,grant['owner']) if p<=3]
+        phases = [p for p in _owner_phases(contract,targets,grant['owner'],nodes) if p<=3]
         geometric_phase = min(phases,default=3)
         phase = _field_phase(grant,nodes,geometric_phase)
         if 'phase' in grant and grant['phase'] != phase:
@@ -139,8 +144,8 @@ def prepare_item(contract, report, row, item, candidate, scene):
         expected = [{'owner':g['owner'],'field':g['field'],'value':lookup(nodes[g['owner']],g['field'])} for g in fields]
         stages.append({'phase':phase,'fields':fields,'expected':expected,'status':'WAITING',
                        'targets':{k:v for k,v in targets.items() if v <= phase}})
-    if targets and stages[0]['phase'] > min(targets.values()):
-        raise ValueError('Earlier measured geometry/pose failures must be addressed before material/text changes')
+    # Another item can repair an assembly's earlier obligation. Gate the
+    # complete measured batch before activation, not each item in isolation.
     return {'source_hash':contract['source_hash'],'spatial_basis':contract['spatial_basis'],
             'planned_native':candidate['pptx'],'stages':stages,'measured_targets':targets,
             'failures':copy.deepcopy(item['failures'])}
@@ -187,11 +192,11 @@ def saved(ledger, names, candidate):
                 stage['status']='SAVED';stage['saved_native']=copy.deepcopy(candidate['pptx'])
 
 
-def advance(task,state,candidate,contract,ledger,scene):
+def advance(task,state,candidate,contract,ledger,scene,report=None):
     """Advance only after current saved geometry certifies the earlier phase."""
     schedules = {k:r['spatial_repair_schedule'] for k,r in ledger['components'].items() if r.get('spatial_repair_schedule')}
     if not schedules:return False
-    changed = False;report = None
+    changed = False
     for name, schedule in schedules.items():
         record = ledger['components'][name]
         if schedule.get('status')=='DECISION_REQUIRED':continue
