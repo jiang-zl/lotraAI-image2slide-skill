@@ -24,7 +24,10 @@
       "if": {
         "properties": {
           "workflow_version": {
-            "const": "1.34.0"
+            "enum": [
+              "1.34.0",
+              "1.35.0"
+            ]
           }
         },
         "required": [
@@ -35,6 +38,26 @@
         "required": [
           "source_observation",
           "feature_bindings"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "workflow_version": {
+            "const": "1.35.0"
+          }
+        },
+        "required": [
+          "workflow_version"
+        ]
+      },
+      "then": {
+        "required": [
+          "spatial",
+          "spatial_bindings",
+          "spatial_basis",
+          "spatial_units"
         ]
       }
     }
@@ -430,6 +453,40 @@
             "type": "array",
             "uniqueItems": true
           },
+          "spatial_instance": {
+            "properties": {
+              "construction_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "constructor_map": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "minProperties": 1,
+                "type": "object"
+              },
+              "route": {
+                "enum": [
+                  "native_affine_copy",
+                  "reproject_constructor"
+                ]
+              },
+              "source_evidence": {
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "route",
+              "source_evidence"
+            ],
+            "type": "object"
+          },
           "support_mask": {
             "$ref": "#/$defs/resource"
           },
@@ -594,13 +651,15 @@
           },
           "kind": {
             "enum": [
-              "prism",
-              "extruded_contour",
-              "elliptic_solid",
               "annular_sector",
-              "ellipse_stack",
               "band",
-              "planar_detail"
+              "ellipse_stack",
+              "elliptic_solid",
+              "extruded_contour",
+              "planar_detail",
+              "prism",
+              "spatial_polyhedron",
+              "spatial_prism"
             ]
           },
           "source_evidence": {
@@ -736,10 +795,79 @@
     "source_observation": {
       "$ref": "#/$defs/resource"
     },
+    "spatial": {
+      "properties": {
+        "frames": {
+          "maxItems": 2048,
+          "minItems": 1,
+          "type": "array"
+        },
+        "landmarks": {
+          "maxItems": 50000,
+          "type": "array"
+        },
+        "relations": {
+          "maxItems": 20000,
+          "type": "array"
+        },
+        "schema": {
+          "const": "spatial-1.35.0"
+        }
+      },
+      "required": [
+        "schema",
+        "frames",
+        "landmarks",
+        "relations"
+      ],
+      "type": "object"
+    },
+    "spatial_bindings": {
+      "items": {
+        "properties": {
+          "anchor": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "frame_point",
+                  "path_point"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "type": "object"
+          },
+          "landmark": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "owner": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "source_evidence": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "landmark",
+          "owner",
+          "anchor",
+          "source_evidence"
+        ],
+        "type": "object"
+      },
+      "maxItems": 50000,
+      "type": "array"
+    },
     "workflow_version": {
       "enum": [
         "1.33.0",
-        "1.34.0"
+        "1.34.0",
+        "1.35.0"
       ]
     }
   },

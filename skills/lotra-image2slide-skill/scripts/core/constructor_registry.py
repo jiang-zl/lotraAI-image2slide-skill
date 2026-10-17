@@ -39,7 +39,7 @@ def select(row,nodes):
 
 
 def work_units(row,operation):
-    if operation in ('evaluate','instantiate'): return 1
+    if operation in ('evaluate','instantiate','reproject'): return 1
     if operation=='fit':
         active=sum(p.get('state')=='tunable' for p in row.get('parameters',{}).values())
         return 1+math.ceil(min(active,6)/3)

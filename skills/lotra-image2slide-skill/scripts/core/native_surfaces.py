@@ -299,7 +299,17 @@ def expand(scene, contract):
         raise ValueError('Distinct bounded native construction declarations required')
     owners = {o['id']:o for o in result['objects']}
     for spec in specs:
-        objects, manifest = construct(spec)
+        from .spatial_frames import enabled as spatial_enabled
+        from .spatial_constructors import prepare, construct as construct_spatial, KINDS as SPATIAL_KINDS
+        if spec.get('frame_ref') or spec.get('kind') in SPATIAL_KINDS:
+            if not spatial_enabled(contract) or not contract.get('spatial'):
+                raise ValueError('Spatial construction requires the frozen v1.35 original reference frames')
+            prepared = prepare(spec, contract['spatial'])
+            objects, manifest = (construct_spatial(prepared, contract['spatial']) if spec['kind'] in SPATIAL_KINDS else construct(prepared))
+            manifest['canonical_geometry'] = __import__(__package__+'.spatial_constructors', fromlist=['canonical']).canonical(spec)
+            manifest['frame_ref'] = spec.get('frame_ref')
+        else:
+            objects, manifest = construct(spec)
         for obj in objects:
             if obj['id'] in owners:
                 existing = owners[obj['id']]

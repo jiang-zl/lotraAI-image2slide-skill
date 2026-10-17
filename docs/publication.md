@@ -1,7 +1,8 @@
-# Publication
+# v1.35.0 publication
 
-The skill and runtime repositories use the 1.34.0 version branch, the release
-installation branch and the v1.34.0 tag. Runtime resources are uploaded with the
-maintained WSL publisher. The release installation branch is activated after all
-required resources match the prepared manifest. See the runtime repository's
-docs/publishing-v133.md and [installation evidence](v1.34.0/Release-report.md).
+The skill source and installation catalogs are version 1.35.0. Runtime binaries
+remain 1.14.0 and all runtime resource URLs/hashes are inherited unchanged.
+No v1.35 runtime tag or binary release is produced. Installation channel
+metadata points to the current source catalog; unchanged full-bundle ranges
+reuse immutable v1.34 release parts. See docs/v1.35.0/Validation-report.md for the
+explicit no-test/no-reconstruction scope. Publication is not runtime acceptance.

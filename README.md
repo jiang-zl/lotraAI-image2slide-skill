@@ -23,7 +23,7 @@ Codex runs the maintained installer, prepares Python, dependencies, OCR and Math
 Already have the complete ZIP? Supply the file or its absolute local path, then send:
 
 ~~~text
-Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.34.0-bundle.zip.
+Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.35.0-bundle.zip.
 ~~~
 
 Runtime resources and private task state stay in the project's `.lotraAI-build` directory. See the [installation guide](docs/installation.md) for manual commands and platform requirements, or the [download guide](docs/download.md) for complete bundles.
@@ -72,7 +72,7 @@ The skill package also includes `scripts/install-runtime.ps1` and `scripts/insta
 - **Builds your own reusable methods.** Eligible constructions from accepted work enter a private local knowledge library for later retrieval. Every new figure is still judged against its own original.
 - **Prepares dependencies locally.** The installer prepares Python, OCR and supporting resources inside the project, without an additional model API key. The host controls how the current agent service runs.
 
-Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority; source-declared surfaces and bounded native curves cover projection, thickness, holes and occlusion. Original feature coverage, native structure and actual appearance are checked separately.
+Complex icons are observed recursively before construction. Native shapes, fills and outlines take priority. Source-owned spatial frames connect recursive recognition, 3D pose, face-local centering, support, projected native surfaces and saved-result checks. Original feature coverage, native structure and actual appearance are checked separately.
 
 ## Examples
 
@@ -129,15 +129,15 @@ Use $lotra-image2slide-skill to continue rebuilding from this partial PPT, follo
 
 After an interruption, ask the agent to resume the existing task in the same working project. Keep the original and `.lotraAI-build` available. See the [usage guide](docs/usage.md).
 
-## v1.34.0
+## v1.35.0
 
-Complex icons now begin with a recursive observation of the original's parts, visible features and relations. Native shapes, fills and outlines take priority; shared surfaces and finite native curves preserve projection, thickness, inner walls and variable-width detail. Feature coverage, native consistency and actual appearance are checked separately. Functional curves, finite shared convergence and private method reuse continue from 1.34.0.
+Spatial type is recognized recursively from the original to its parts. Source-owned frames, observable pose and original landmarks connect native construction, face-local aggregate centering, base support, shared edges, occlusion and saved-result checks. Native shapes, fills and outlines take priority. Functional curves, finite convergence, private method reuse and deferred font/whole review remain.
 
 Installation and updates use the same entry and managed-file synchronization: add new files, replace changed contents and remove retired managed files. Unchanged active files are neither downloaded nor rewritten. Personal knowledge, fonts, tasks, originals and PPTs stay local; public packages do not preload the author's personal knowledge library.
 
 Resources cover Windows x64, Linux x64, and macOS on Apple Silicon and Intel. macOS requires 13 or later and a separate initial Math download. Linux ARM64 still lacks a complete Math package. See the [installation guide](docs/installation.md) for the supplied routes.
 
-Windows x64 and WSL/Linux x64 installation/startup and local HTTP update/repeat checks passed. Focused counterexamples, actual native-constructor rendering and a synthetic accepted workflow were also exercised. These checks do not accept external user art or establish general reconstruction effects. Installation, actual rendering and artwork acceptance remain separate; historical gallery screenshots are not v1.34.0 benchmarks. See the [changelog](CHANGELOG.md) and [validation notes](docs/validation.md).
+This release implements and statically reviews spatial frames, 3D pose, face-local centering, support and occlusion checks. Tests, syntax/import/CLI checks, reconstruction and rendering were not run at the maintainer's request. Earlier gallery and validation records do not qualify this release. Runtime binaries remain 1.14.0 with existing resources reused. See the [changelog](CHANGELOG.md) and [validation notes](docs/validation.md).
 
 ## Documentation and source
 
@@ -146,8 +146,8 @@ Windows x64 and WSL/Linux x64 installation/startup and local HTTP update/repeat 
 | [Installation](docs/installation.md) | Automatic setup, differential updates, bundles and platform requirements |
 | [Usage](docs/usage.md) | Image reconstruction, partial-slide import and resuming work |
 | [Examples](docs/examples/README.md) | Originals, reconstruction screenshots and component details |
-| [Workflow](skills/lotra-image2slide-skill/references/workflow-v134.md) | The 1.34.0 reconstruction and reuse rules |
-| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.34.0 main-skill payload |
+| [Workflow](skills/lotra-image2slide-skill/references/workflow-v135.md) | The 1.35.0 reconstruction and reuse rules |
+| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.35.0 main-skill payload |
 | [Provenance and licensing](NOTICE.md) | Project source, third-party components, and example assets |
 
 For feedback, include the operating system, product version, attempted operation, and relevant diagnostic. Share a reviewed reference image or excerpt when needed. Private task data remains under your control in the working project.

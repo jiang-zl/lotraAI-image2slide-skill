@@ -1,3 +1,12 @@
+## 1.35.0
+
+Spatial reference frames, source-observed projected pose, recursive face-local
+centering, contact footprints, typed support/occlusion, canonical-constructor
+reprojection, saved-native spatial checks and independent spatial review now
+follow the normal component workflow. Native shape priority remains. Runtime
+binaries are unchanged. Tests, syntax/import/CLI checks, reconstruction and
+rendering were not run at the user's explicit request.
+
 ## 1.34.0
 
 Independent original-only recursive unit/feature observation; native capability

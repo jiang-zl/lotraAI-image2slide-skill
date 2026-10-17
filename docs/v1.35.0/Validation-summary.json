@@ -1,0 +1,12 @@
+{
+  "office_behavior": "NOT_RUN",
+  "performance_effect": "NOT_RUN",
+  "reconstruction": "NOT_RUN_PER_USER_REQUEST",
+  "rendering": "NOT_RUN_PER_USER_REQUEST",
+  "runtime_validation": "INHERITED_NOT_REVALIDATED",
+  "runtime_version": "1.14.0",
+  "syntax_import_cli": "NOT_RUN_PER_USER_REQUEST",
+  "tests": "NOT_RUN_PER_USER_REQUEST",
+  "version": "1.35.0",
+  "whole_drawing_acceptance": false
+}

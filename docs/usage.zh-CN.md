@@ -28,6 +28,6 @@
 
 复杂部件先局部完成，再统一排版；随后集中复核字体、整图和最终输出，不在每次局部改动后重做整图检查。中文字使用中文字体候选，英文字使用英文字体候选；公式保留结构化 Office Math。
 
-本地个性化知识库积累适合复用的构造方法，不把其他图的内容或验收结果直接套到新图。实际流程见[工作流说明](../skills/lotra-image2slide-skill/references/workflow-v134.md)。
+本地个性化知识库积累适合复用的构造方法，不把其他图的内容或验收结果直接套到新图。实际流程见[工作流说明](../skills/lotra-image2slide-skill/references/workflow-v135.md)。
 
 [公开案例](examples/README.md)提供原图、重建截图与细节；案例素材和本版本的验证范围见[证据说明](validation.md)。

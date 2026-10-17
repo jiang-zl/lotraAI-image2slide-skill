@@ -86,7 +86,7 @@ def validate_contract(value, scene, source_hash):
     if required_units!=covered_units:raise ValueError('Complete source-unit/component reconciliation required')
     coverage = defaultdict(list)
     for row in components:
-        if value.get('workflow_version') in ('1.33.0','1.34.0') and row.get('route')=='assembly' and (not row.get('semantic_class') or not row.get('view')):
+        if value.get('workflow_version') in ('1.33.0','1.34.0','1.35.0') and row.get('route')=='assembly' and (not row.get('semantic_class') or not row.get('view')):
             raise ValueError('SOURCE_DECISION_REQUIRED: freeze assembly semantic_class and observed view for the private method lifecycle')
         if row.get('route') not in ROUTES: raise ValueError('Unsupported component route')
         if not row.get('source_evidence') or not row.get('source_refs'):
@@ -99,7 +99,7 @@ def validate_contract(value, scene, source_hash):
         if row.get('mother'):
             if row['mother'] not in ids or row['mother'] == row['id']:
                 raise ValueError('Unknown or cyclic mother')
-            if row['route'] != 'instance' or not row.get('instance_transform'):
+            if row['route'] != 'instance' or not (row.get('instance_transform') or row.get('spatial_instance',{}).get('route')=='reproject_constructor'):
                 raise ValueError('Instances require an explicit original-supported transform')
         if row.get('variant'):
             variant=row['variant']
@@ -259,6 +259,33 @@ def impact(contract, changed):
                 affected.add(related)
                 # Moving a child changes its parent's internal assembly.
                 queue.append((related, True))
+    if contract.get('workflow_version') == '1.35.0':
+        # Typed spatial neighbours share placement/occlusion dependencies, not
+        # intrinsic mother anatomy. Their native checks must be refreshed.
+        unit_components = defaultdict(set)
+        for row in components.values():
+            for unit in row.get('spatial_context', {}).get('units', []):
+                unit_components[unit].add(row['id'])
+        seeds = set(affected)
+        for relation in contract.get('spatial', {}).get('relations', []):
+            neighbours = set().union(*(unit_components[u] for u in relation['units']))
+            if neighbours & seeds:
+                affected.update(neighbours)
+                relations.add('spatial:'+relation['id'])
+        # A newly affected child also dirties containing assemblies and copies;
+        # unrelated sibling anatomy and its retained best remain untouched.
+        pending = deque(affected-seeds)
+        seen = set()
+        while pending:
+            owner = pending.popleft()
+            if owner in seen:continue
+            seen.add(owner)
+            parent = components[owner].get('parent')
+            if parent:
+                affected.add(parent);pending.append(parent)
+                for copy_row in components.values():
+                    if copy_row.get('mother') == parent:
+                        affected.add(copy_row['id']);pending.append(copy_row['id'])
     return {'components': sorted(affected), 'relations': sorted(relations),
             'final_dirty': bool(changed), 'run_final_now': False}
 

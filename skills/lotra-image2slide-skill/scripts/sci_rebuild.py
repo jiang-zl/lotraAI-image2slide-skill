@@ -22,7 +22,7 @@ def parser():
         parser=sub.add_parser(command);parser.add_argument('task',type=Path);parser.add_argument('operation',choices=operations)
         parser.add_argument('--request',type=Path);parser.add_argument('--out',type=Path,required=True)
     components=sub.add_parser('component-workflow');components.add_argument('task',type=Path)
-    components.add_argument('operation',choices=('observe_source','bind','migrate','build','instantiate','evaluate','qualify','layout','status','review','fit','source_prepare','source_or_measurement_decision','repair','lock','unlock','edit','fonts','commit','recover','rollback','advance','final','export'))
+    components.add_argument('operation',choices=('observe_source','bind','migrate','build','instantiate','reproject','evaluate','qualify','layout','status','review','fit','source_prepare','source_or_measurement_decision','repair','lock','unlock','edit','fonts','commit','recover','rollback','advance','final','export'))
     components.add_argument('--request',type=Path);components.add_argument('--out',type=Path,required=True)
     batch=sub.add_parser('batch');batch.add_argument('task',type=Path);batch.add_argument('--request',type=Path,required=True);batch.add_argument('--out',type=Path,required=True)
     neighbors=sub.add_parser('neighbor-check')

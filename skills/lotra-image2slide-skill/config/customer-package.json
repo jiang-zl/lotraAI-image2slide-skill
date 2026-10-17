@@ -101,6 +101,7 @@
     "references/workflow-optimization.md",
     "references/workflow-v133.md",
     "references/workflow-v134.md",
+    "references/workflow-v135.md",
     "requirements.txt",
     "schemas/component-contract.schema.json",
     "schemas/frame-plan.json",
@@ -368,6 +369,9 @@
     "scripts/core/source_structure_actions.py",
     "scripts/core/source_surfaces.py",
     "scripts/core/source_text_actions.py",
+    "scripts/core/spatial_checks.py",
+    "scripts/core/spatial_constructors.py",
+    "scripts/core/spatial_frames.py",
     "scripts/core/state.py",
     "scripts/core/state_repository.py",
     "scripts/core/surface_metrics.py",
@@ -425,7 +429,7 @@
   ],
   "offline_resources": "Separately verified immutable runtime companion; never replace resources with user downloads.",
   "personal_data_policy": {
-    "automatic_component_learning": "NOT_CONNECTED",
+    "automatic_component_learning": "SOURCE_FREE_CONSTRUCTOR_CAPTURE_RETRIEVAL_FEEDBACK",
     "default_catalog_previews": "DISABLED_WHEN_EMPTY",
     "personal_data_redistribution": false,
     "private_root": ".lotraAI-build/library",
@@ -434,9 +438,9 @@
   },
   "private_data": "No task states, actual host font archives, observations, databases, user files or release histories.",
   "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
-  "publication_revision": 9,
+  "publication_revision": 1,
   "release_status": "IMPLEMENTED_STATICALLY_REVIEWED_NOT_TESTED_PER_USER_REQUEST",
-  "runtime_regressions": "Not executed for revision 8 per explicit user request; no tests, syntax/import/CLI/runtime checks or performance/effect measurements.",
+  "runtime_regressions": "NOT_RUN_PER_USER_REQUEST: v1.35 tests, syntax/import/CLI, reconstruction, rendering and performance checks were not executed.",
   "schema": "lotra-customer-package-1",
-  "version": "1.34.0"
+  "version": "1.35.0"
 }

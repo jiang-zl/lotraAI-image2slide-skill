@@ -3,6 +3,23 @@ import math
 from .common import read_json, safe_path, digest, identity, read_json
 
 
+def _source_frame_bounds(node, ranges):
+    """Compare rotated frames in the same domain; keep frozen uncertainty."""
+    from itertools import product
+    # Imported snapshot boxes already use the saved world AABB. Generated
+    # recipes use unrotated local frames; do not rotate an imported AABB twice.
+    imported = bool(node.get('content',{}).get('native_snapshot'))
+    angle = 0. if imported else math.radians(float(node.get('style', {}).get('rotation', 0)))
+    cosine, sine = abs(math.cos(angle)), abs(math.sin(angle))
+    def frame(box):
+        x, y, width, height = box
+        w, h = cosine*width+sine*height, sine*width+cosine*height
+        return [x+(width-w)/2, y+(height-h)/2, w, h]
+    target = frame(node['bbox'])
+    corners = [frame(box) for box in product(*(ranges.get(i, (v, v)) for i, v in enumerate(node['bbox'])))]
+    return target, [(min(c[i] for c in corners), max(c[i] for c in corners)) for i in range(4)]
+
+
 def source_placement(task,state,candidate,contract):
     """Final layout compares actual leaf frames with the frozen source plan.
 
@@ -27,9 +44,12 @@ def source_placement(task,state,candidate,contract):
         for owner in component['owners']:
             if expected[owner]['render_type']=='group':continue
             actual=frames.get(owner,{}).get('frame');wanted=expected[owner]['bbox'];checks=[]
+            intervals = None
+            if contract.get('workflow_version') == '1.35.0':
+                wanted, intervals = _source_frame_bounds(expected[owner], {i:v for (name,i),v in ranges.items() if name==owner})
             if actual is not None:
                 for index,(observed,target) in enumerate(zip(actual,wanted)):
-                    low,high=ranges.get((owner,index),(target,target))
+                    low,high=intervals[index] if intervals is not None else ranges.get((owner,index),(target,target))
                     checks.append(low-tolerance<=observed<=high+tolerance)
             rows.append({'owner':owner,'component':component['id'],'passed':bool(checks) and all(checks),
                          'actual_native_frame':actual,'original_frame':wanted,'tolerance_source_px':tolerance})
@@ -69,6 +89,10 @@ def evaluate(task, state, candidate, contract, relation_ids=None, expected_insta
     paint = None; rows = {}; connection_report = None
     for relation in relations:
         key = relation['id']; kind = relation['kind']
+        if kind == 'instance_of' and components[relation['components'][1]].get('spatial_instance',{}).get('route') == 'reproject_constructor':
+            from .spatial_constructors import instance_check
+            rows[key] = instance_check(task,state,candidate,contract,components[relation['components'][1]])
+            continue
         owners = relation.get('owners')
         if owners is None:
             owners = [components[name]['owners'][0] for name in relation['components']]

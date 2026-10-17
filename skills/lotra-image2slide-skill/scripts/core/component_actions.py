@@ -4,18 +4,23 @@ from .constructor_registry import work_units
 
 DECISIONS = {'MODEL_OR_SOURCE_DECISION_REQUIRED','SEARCH_BOUND_REACHED','MODEL_RESELECT_REQUIRED',
              'SOURCE_DECISION_REQUIRED','MEASUREMENT_DIAGNOSIS_REQUIRED',
-             'SOURCE_AMBIGUITY_REQUIRED','REPRESENTATION_DECISION_REQUIRED','REPRESENTATION_INSUFFICIENT'}
+             'SOURCE_AMBIGUITY_REQUIRED','REPRESENTATION_DECISION_REQUIRED','REPRESENTATION_INSUFFICIENT',
+             'SPATIAL_SOURCE_DECISION_REQUIRED', 'SPATIAL_FRAME_DECISION_REQUIRED', 'SPATIAL_RELATIONS_UNMET'}
 
 
 def available(contract,ledger,candidate):
     order={name:index for index,name in enumerate(contract['policy']['stage_order'])}
     rows={r['id']:r for r in contract['components']}; actions=[]
-    repairs=sorted(key for key,record in ledger['components'].items()
-        if record['status'] in ('REPAIR_REQUIRED','SOURCE_DECISION_APPLY_REQUIRED') and record.get('repair_grant'))
+    repairs=sorted((key for key,record in ledger['components'].items()
+        if record['status'] in ('REPAIR_REQUIRED','SOURCE_DECISION_APPLY_REQUIRED') and record.get('repair_grant')),
+        key=lambda key:(ledger['components'][key].get('repair_phase',5),key))
     structural=ledger.get('structural_grant') or {}
     applying=[key for key in repairs if key in structural.get('components',[])
               and ledger['components'][key]['status']=='SOURCE_DECISION_APPLY_REQUIRED']
     if applying:repairs=applying
+    elif contract.get('workflow_version')=='1.35.0' and repairs:
+        phase=min(ledger['components'][key].get('repair_phase',5) for key in repairs)
+        repairs=[key for key in repairs if ledger['components'][key].get('repair_phase',5)==phase]
     for row in rows.values():
         record=ledger['components'][row['id']]; status=record['status']; route=row['route']
         if status=='QUALIFIED': continue
@@ -54,7 +59,7 @@ def available(contract,ledger,candidate):
                 if row['parameters'][name]['state']=='tunable':
                     write_set.append({'owner':binding['owner'],'field':binding['field']})
         elif route=='instance' and status in ('PENDING','RECHECK_REQUIRED'):
-            operation='instantiate'; automatic=True
+            operation='reproject' if row.get('spatial_instance',{}).get('route')=='reproject_constructor' else 'instantiate'; automatic=True
             write_set=[{'owner':owner,'field':[]} for owner in row['owners']]
         reuse=sum(part.get('mother')==row['id'] for part in rows.values())
         dependency_unknown=bool(row.get('unresolved_dependencies'))

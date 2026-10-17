@@ -18,7 +18,7 @@ TIERS = {'native_text':0,'native_math':0,'native_connector':0,'preset':1,
 
 
 def enabled(contract):
-    return contract.get('workflow_version') == '1.34.0'
+    return contract.get('workflow_version') in ('1.34.0', '1.35.0')
 
 
 def _box(roi, size):
@@ -30,7 +30,7 @@ def _box(roi, size):
 def validate_observation(value, source_hash, size):
     from .component_protocol import finite
     finite(value)
-    if (value.get('schema') != VERSION or value.get('source_hash') != source_hash or
+    if (value.get('schema') not in (VERSION, 'source-features-1.35.0') or value.get('source_hash') != source_hash or
             value.get('canvas') != list(size) or value.get('basis') != 'unchanged_original' or
             value.get('observer') not in ('host_model','human') or not value.get('observations')):
         raise ValueError('SOURCE_OBSERVATION_REQUIRED: independent located original observations')
@@ -80,6 +80,9 @@ def validate_observation(value, source_hash, size):
     for unit in units:
         if not any(f['unit']==unit['id'] for f in features):
             raise ValueError('Every observed source unit needs a feature, including assembly structure')
+    if value['schema'] == 'source-features-1.35.0':
+        from .spatial_frames import validate_observation as validate_spatial
+        validate_spatial(value)
     return value
 
 
@@ -98,6 +101,8 @@ def observe(task, request):
             return {'status':'SOURCE_OBSERVATION_RETAINED','observation':prior,'acceptance':False}
         if not request.get('revision_reason'):
             raise ValueError('Explain and retain an original-observation revision')
+        from .spatial_frames import correction_guard
+        correction_guard(old, value, request)
         old_features = {f['id']:f for f in old['features']}
         new_features = {f['id']:f for f in value['features']}
         removed = [key for key,f in old_features.items() if f.get('required', True) and key not in new_features]
@@ -182,7 +187,7 @@ def _capabilities(nodes):
                 if contour.get('points') or any(p.get('op') == 'lnTo' for p in contour.get('commands', [])): caps.add('corners')
         if style.get('gradient'): caps.add('surface_shading')
         surface = c.get('source_surface', {})
-        if surface.get('version') == 'native-surfaces-1.34.0':
+        if surface.get('version') in ('native-surfaces-1.34.0', 'native-surfaces-1.35.0'):
             caps.update(surface.get('capabilities', []))
     return caps
 
@@ -241,7 +246,7 @@ def bind(task, state, contract, scene):
     units = {u['id']:u for u in observed['units']}
     declared = {u['id']:u for u in contract['source_inventory']}
     if set(units) != set(declared) or any(any(declared[k].get(f) != units[k].get(f)
-            for f in ('parent','roi','decomposition','source_evidence')) for k in units):
+            for f in (('parent','roi','decomposition','source_evidence','spatial') if contract.get('workflow_version')=='1.35.0' else ('parent','roi','decomposition','source_evidence'))) for k in units):
         raise ValueError('Source inventory must retain the independent recursive observation')
     features = {f['id']:f for f in observed['features']}
     bindings = contract.get('feature_bindings', [])
@@ -288,14 +293,19 @@ def bind(task, state, contract, scene):
             'units':{f['unit']:units[f['unit']] for f in row['source_features']}})
         row['unresolved_source_units'] = sorted({f['unit'] for f in row['source_features']
             if units[f['unit']]['decomposition']['state']=='unresolved'})
+    from .spatial_frames import bind as bind_spatial
+    bind_spatial(contract, observed, scene)
 
 
 def source_check(row):
     features = row.get('source_features', [])
     unresolved = [f['id'] for f in features if f.get('required', True) and f['observability']=='unresolved']
     unresolved += row.get('unresolved_source_units', [])
-    return {'passed':not unresolved,'status':'SOURCE_AMBIGUITY_REQUIRED' if unresolved else 'SOURCE_BASIS_CHECKED',
+    from .spatial_frames import source_check as spatial_source
+    spatial = spatial_source(row)
+    return {'passed':not unresolved and spatial['passed'],'status':'SOURCE_AMBIGUITY_REQUIRED' if unresolved else spatial['status'] if not spatial['passed'] else 'SOURCE_BASIS_CHECKED',
             'unresolved_features':unresolved,'feature_basis':row.get('feature_basis'),
+            'spatial': spatial,
             'basis':'Host/human located original decisions; not program proof of semantic truth'}
 
 
@@ -308,7 +318,11 @@ def local_review(row, evidence):
     failed = [key for key in required if checks[key].get('verdict') != 'PASS' or not checks[key].get('observations')]
     if evidence.get('feature_basis') != row.get('feature_basis'):
         raise ValueError('Feature review belongs to a different source/representation decision')
-    return {'passed':not failed,'failed_features':sorted(failed),'checked_features':sorted(required),
+    spatial = {'passed': True, 'applicable': False}
+    if row.get('spatial_basis'):
+        from .spatial_frames import review as spatial_review
+        spatial = spatial_review({'workflow_version':'1.35.0','spatial':{'relations':row['spatial_context']['relations']}}, evidence, row)
+    return {'passed':not failed and spatial['passed'],'spatial':spatial,'failed_features':sorted(failed),'checked_features':sorted(required),
             'feature_basis':row.get('feature_basis'),'observer':evidence.get('observer')}
 
 

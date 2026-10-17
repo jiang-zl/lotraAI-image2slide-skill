@@ -46,6 +46,8 @@ def consumer(row,policy,state=None):
     if row.get('curve_spec_hash'): modules.add('curve_functions')
     if row.get('feature_basis'):
         modules.update(('component_source_features','native_surfaces','surface_metrics'))
+    if row.get('spatial_basis'):
+        modules.update(('spatial_frames', 'spatial_checks', 'spatial_constructors'))
     if row.get('route')=='assembly': modules.update(('knowledge','knowledge_flow'))
     source_adapter=row.get('model',{}).get('source_adapter')
     if source_adapter:
@@ -66,7 +68,8 @@ def consumer(row,policy,state=None):
             'modules':{name:version(name) for name in sorted(modules)},
             'schema':digest(ROOT/'schemas/component-contract.schema.json'),
             'policy':selected_policy,
-            'model':row.get('model'),'design_revision':8}
+            'model':row.get('model'),'design_revision':8,
+            'spatial_basis':row.get('spatial_basis')}
 
 
 def source_region(task,state,row):

@@ -75,9 +75,10 @@ def decide(task,request):
     if request.get('source_hash')!=state['source']['sha256'] or request.get('pptx_hash')!=(candidate or {}).get('pptx',{}).get('sha256'):
         raise ValueError('Decision must bind current original and native revision')
     if not request.get('revision_reason'):raise ValueError('Describe the original/model/measurement correction')
-    if contract.get('workflow_version') == '1.34.0' and request.get('decision_kind') not in (
+    if contract.get('workflow_version') in ('1.34.0','1.35.0') and request.get('decision_kind') not in (
             'source_omission','representation_insufficient','parameter_error','measurement_invalid',
-            'native_mismatch','relation_error','source_ambiguity'):
+            'native_mismatch','relation_error','source_ambiguity','spatial_frame','spatial_pose',
+            'face_alignment','support_relation','spatial_occlusion'):
         raise ValueError('Classify the located source/model/measurement failure before repairing')
     from .problem_control import reserve
     reserve(task,state,c.component_row(task,state,contract,request['component']),'source_reads',token=identity(request))
@@ -178,12 +179,30 @@ def repair(task,request):
     if not batch or batch['status']!='PLAN_REQUIRED':raise ValueError('Current located repair decision required')
     if request.get('source_hash')!=state['source']['sha256'] or request.get('pptx_hash')!=candidate['pptx']['sha256']:
         raise ValueError('Final repair plan is stale')
+    if contract.get('workflow_version') == '1.35.0':
+        from .spatial_checks import evaluate as spatial_evaluate
+        spatial = spatial_evaluate(task,state,candidate,contract)
+        if not spatial['valid']:
+            return {'status':'MEASUREMENT_DIAGNOSIS_REQUIRED','spatial':spatial,
+                    'acceptance':False,'native_writes_granted':False}
     rows={r['id']:r for r in contract['components']};items=request.get('items',[])
     if not items:raise ValueError('Locate final failures to nonempty component field grants')
+    if contract.get('workflow_version')=='1.35.0' and any(item.get('frame_pose_diagnosis')=='shared_frame' for item in items):
+        return {'status':'SPATIAL_SOURCE_DECISION_REQUIRED','acceptance':False,'best_retained':True,
+                'next':'Revise the source-owned common frame with located spatial_corrections, then rebind all consumers. Local drawing patches cannot repair a shared projection definition.'}
     if len({v['component'] for v in items})!=len(items):raise ValueError('Merge fields for the same component into one repair item')
     covered=set();changed={}
     for item in items:
         row=rows[item['component']];record=ledger['components'][row['id']]
+        if contract.get('workflow_version') == '1.35.0':
+            from .spatial_frames import PHASE
+            source_relations = {r['id']:r for r in contract['spatial']['relations']}
+            selected_relations = item.get('spatial_relations', [])
+            if not set(selected_relations) <= set(source_relations):
+                raise ValueError('Repair references unknown source spatial relations')
+            record['repair_phase'] = min((PHASE[source_relations[k]['kind']] for k in selected_relations), default=5)
+            if any(source_relations[k]['kind'] in ('axis_direction','pose_projection') for k in selected_relations) and not item.get('frame_pose_diagnosis'):
+                raise ValueError('Distinguish shared projection from local pose before drawing an orientation repair')
         if not item.get('reason') or not item.get('failures'):raise ValueError('Link each correction to a final failure')
         if not set(item['failures'])<=set(batch['failures']):raise ValueError('Unknown final failure')
         covered.update(item['failures'])

@@ -30,6 +30,9 @@ def observe(task,request):
     from .component_source_features import final_review
     feature_review = final_review(task,contract,value)
     if not feature_review['passed']: failed.append('source_feature_correspondence')
+    from .spatial_frames import review as spatial_review
+    spatial = spatial_review(contract,value)
+    if not spatial['passed']: failed.append('spatial_visual_correspondence')
     if failed:
         from .component_revision import queue_final_repair
         queue_final_repair(ledger,failed,evidence)
@@ -51,8 +54,12 @@ def _visual(task,state,candidate,ledger):
     contract,_ = c._load(task,state)
     feature_review = final_review(task,contract,value)
     good = good and feature_review['passed']
+    from .spatial_frames import review as spatial_review
+    spatial = spatial_review(contract,value)
+    good = good and spatial['passed']
     return {'passed':bool(good),'binding_current':binding,'evidence':evidence,'dimensions':dims,
             'source_feature_review':feature_review,
+            'spatial_review':spatial,
             'basis':'Explicit host/human original/current visual judgments; no program semantic-confidence claim'}
 
 
@@ -99,6 +106,10 @@ def audit(task,state=None,candidate=None,persist=True):
            'actual_render':{'passed':True,'backend':receipt['backend'],'receipt':candidate['render']},
            'source_feature_basis':feature_basis,'source_feature_probes':feature_probes,
            'final_visual':visual}
+    if contract.get('workflow_version') == '1.35.0':
+        from .spatial_checks import evaluate as spatial_evaluate
+        # Independent final gate recomputes from saved bytes, not local hits.
+        gates['spatial_native'] = spatial_evaluate(task,state,candidate,contract)
     failures=[key for key,value in gates.items() if value.get('passed') is not True]
     exclusions=contract.get('scope',{}).get('excluded_checks',[])
     result={'schema':'component-final-1.32.0','status':'ACCEPTED' if not failures else 'WORK_REQUIRED',
@@ -164,6 +175,12 @@ def report(result,compact,render):
         for key,check in current.get('program_checks',{}).items():scores.append(key+' = '+('PASS' if check['passed'] else 'FAIL'))
         if not scores:scores.append('资格由当前保存属性签名及所附原图/实际局部观察支持')
         lines.append('| '+name.replace('|','/')+' | '+value.get('route','assembly/instance/specialist')+'；QUALIFIED | '+'；'.join(scores)+' |')
+    spatial=result['gates'].get('spatial_native')
+    if spatial:
+        lines.extend(['','| 空间关系 | 实测值 | 原图允许上限 | 结果 |','|---|---|---|---|'])
+        for name,item in spatial.get('relations',{}).items():
+            lines.append('| '+name.replace('|','/')+' | '+str(item.get('value'))+' '+str(item.get('unit',''))+' | '+str(item.get('threshold'))+' | '+('PASS' if item['passed'] else 'FAIL')+' |')
+        lines.extend(['','空间验收针对原图可观察的投影关系；未确定的隐藏三维几何不在已验证结论内。'])
     lines.extend(['','整图视觉判断：'])
     for key,value in result['gates']['final_visual'].get('dimensions',{}).items():
         lines.append('- '+key+'：'+('PASS' if value['passed'] else 'FAIL')+'；'+str(value['observations']))
