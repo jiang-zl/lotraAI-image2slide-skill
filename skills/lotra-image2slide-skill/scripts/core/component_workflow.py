@@ -15,7 +15,7 @@ from .component_protocol import validate_contract, metric_result, impact, ready_
 from .component_solver import rank_actions
 
 VERSION = 'component-workflow-1.32.0'
-REFERENCE = 'references/workflow-v135.md'
+from .spatial_frames import reference
 
 
 def implementation():
@@ -109,6 +109,30 @@ def _save_ledger(task, state, ledger, event, details=None):
     a._save(task, state)
 
 
+def failure_decision(task, state, contract, ledger, candidate, checks, row=None, reason=None):
+    """Persist the failure and its next legal source/measurement operation together."""
+    def invalid(value):
+        if isinstance(value,dict):
+            return value.get('valid') is False or value.get('status') in ('MEASUREMENT_REQUIRED','MEASUREMENT_INVALID') or any(invalid(v) for v in value.values())
+        return isinstance(value,list) and any(invalid(v) for v in value)
+    status = 'MEASUREMENT_DIAGNOSIS_REQUIRED' if invalid(checks) else 'SOURCE_DECISION_REQUIRED'
+    names = [row['id']] if row else []
+    if not names:
+        names = [r['id'] for r in contract['components'] if not r.get('parent')][:1]
+    file=task/'component-workflow'/('Failure-checks-'+identity(checks)+'.json')
+    if not file.exists():write_json(file,checks)
+    decision = {'status':status,'components':names,'checks':_ref(task,file),
+        'source_hash':state['source']['sha256'],'pptx_hash':candidate['pptx']['sha256'],
+        'reason':reason or 'Resolve the located source/native/measurement failure before another drawing action'}
+    for name in names:
+        ledger['components'][name].update(status=status,source_decision=copy.deepcopy(decision))
+    ledger.update(pending_decision=decision,layout_ready=False,final_dirty=True,final_result=None)
+    if ledger.get('repair_batch'):
+        ledger['repair_batch']['status']='DIAGNOSIS_REQUIRED' if status=='MEASUREMENT_DIAGNOSIS_REQUIRED' else 'SOURCE_DECISION_REQUIRED'
+    with writer(task):_save_ledger(task,state,ledger,'failure_decision_required',decision)
+    return {**decision,'acceptance':False,'best_retained':True,'native_writes_granted':False}
+
+
 def bind(task, request, *, prepare_only=False, native_apply=None):
     from . import agent_runtime as a
     task, state = a._state(task)
@@ -119,21 +143,21 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
     contract = copy.deepcopy(request['contract'])
     previous, _ = _load(task, state) if state.get('component_workflow') else (None, None)
     # Old contracts keep their policy until an explicit migration request.
-    contract.setdefault('workflow_version', (previous or {}).get('workflow_version', '1.35.1'))
-    if not previous and contract['workflow_version'] != '1.35.1':
+    contract.setdefault('workflow_version', (previous or {}).get('workflow_version', '1.35.2'))
+    if not previous and contract['workflow_version'] != '1.35.2':
         raise ValueError('New v1.35 tasks cannot bypass spatial/feature contracts with a legacy policy')
     if previous and previous.get('workflow_version') != contract['workflow_version']:
-        if not request.get('migrate_spatial') or contract['workflow_version'] != '1.35.1':
+        if not request.get('migrate_spatial') or contract['workflow_version'] != '1.35.2':
             raise ValueError('Old tasks retain policy; an explicit migrate_spatial source rebind is required')
     from .spatial_frames import prepare_binding
     prepare_binding(task, state, contract)
     recompiled_owners=set()
-    if previous and contract.get('workflow_version')=='1.35.1':
+    if previous and contract.get('workflow_version') in ('1.35.1','1.35.2'):
         from .native_surfaces import revise_scene
         permitted={o for r in previous['components']+contract['components'] for o in r['owners']}
         scene,recompiled_owners=revise_scene(scene,previous,contract,permitted)
     from .native_surfaces import expand as expand_surfaces
-    if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
+    if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2'):
         scene = expand_surfaces(scene, contract)
     from .curve_functions import prepare as prepare_curves
     from .problem_control import bind as bind_problems
@@ -167,13 +191,13 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
                 metric['threshold']=frozen['value'];metric['calibration_result']=frozen
     from .component_source_features import bind as bind_features
     bind_features(task, state, contract, scene)
-    if contract.get('workflow_version')=='1.35.1':
+    if contract.get('workflow_version') in ('1.35.1','1.35.2'):
         from .spatial_fit import prepare as prepare_spatial_fit
         previous_spatial_rows={r['id']:r for r in (previous or {}).get('components',[])}
         for row in contract['components']:
             prepare_spatial_fit(contract,row,scene,previous_spatial_rows.get(row['id']))
             select(row,nodes)
-    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2'):
         from .spatial_constructors import validate_instances
         validate_instances(contract)
     validate_contract(contract, scene, state['source']['sha256'])
@@ -266,10 +290,20 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
     for key,record in components.items():record['user_locks']=[copy.deepcopy(v) for v in all_locks if owned.get(v['owner'])==key]
     if previous_ledger:
         ledger['repair_batch']=copy.deepcopy(previous_ledger.get('repair_batch'))
-        if ledger['repair_batch'] and any(r.get('spatial_repair_schedule') for r in previous_ledger['components'].values()):
-            ledger['repair_batch']['status']='PLAN_REQUIRED'
-            ledger['repair_batch']['replan_reason']='Source revision changed an active phased repair; preserve the previous ledger and replan current failures.'
+        if previous_ledger.get('pending_decision'):
+            ledger['repair_batch']=None
+            for name in previous_ledger['pending_decision'].get('components',[]):
+                if name in components:
+                    components[name]['status']='RECHECK_REQUIRED'
+                    components[name].pop('source_decision',None)
+        if any(r.get('spatial_repair_schedule') for r in previous_ledger['components'].values()):
+            # Old plans remain in the retained previous ledger. Current checks
+            # generate replacement failures instead of forcing a no-op edit.
+            ledger['repair_batch']=None
             for record in components.values():
+                if record.get('spatial_repair_schedule'):
+                    record['status']='RECHECK_REQUIRED'
+                    record.pop('source_decision',None)
                 record.pop('spatial_repair_schedule',None)
                 record.pop('repair_grant',None)
         ledger['user_reconciliation']=copy.deepcopy(previous_ledger.get('user_reconciliation'))
@@ -314,18 +348,24 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
         repository.index_rows('native_owner:'+ref['sha256'],{owner:{'component':row['id']} for row in contract['components'] for owner in row['owners']})
         _save_ledger(task, state, ledger, 'contract_bound', {'components': len(components), 'source_hash': source_ref['sha256']})
     return {'status': 'COMPONENT_CONTRACT_BOUND', 'components': len(components),
-            'contract': ref, 'acceptance': False, 'action_references': [REFERENCE]}
+            'contract': ref, 'acceptance': False, 'action_references': [reference(contract)]}
 
 
 def _signatures(task, state, candidate):
     from .native_core_checks import snapshots
+    from .boundary_geometry import saved_nodes
     scene = read_json(_resource(task, candidate['scene']))
     native = snapshots(_resource(task, candidate['pptx']), component_mode=True)
+    world = saved_nodes(_resource(task,candidate['pptx']),state['source_size'])
     result = {}
     for node in scene['objects']:
         values = facets(node)
         values['native_body'] = native.get(node['id'], {}).get('body')
-        values['native_placement'] = native.get(node['id'], {}).get('placement')
+        entry=world.get(node['id'],{})
+        matrix=entry.get('matrix')
+        values['native_placement'] = identity({'matrix':matrix.tolist() if matrix is not None else None,
+            'error':entry.get('error'),'parent':entry.get('parent_name')})
+        values['native_order'] = native.get(node['id'], {}).get('paint_order')
         values['bbox'] = node.get('bbox')
         if node['render_type']=='trace':
             children={name:{k:value[k] for k in ('body','placement')} for name,value in native.items()
@@ -403,7 +443,8 @@ def refresh(task, state, contract, ledger, candidate):
     for row in contract['components']:
         record = ledger['components'][row['id']]
         current = _component_signature(row, signatures, body=row['route'] not in ('assembly', 'instance'),contract=contract)
-        if previous_facets and any(previous_facets.get(owner)!=signatures.get(owner) for owner in row['owners']):
+        if previous_facets and any(any(previous_facets.get(owner,{}).get(key)!=signatures.get(owner,{}).get(key)
+                for key in ('pose','assembly','native_placement')) for owner in row['owners']):
             pose_changes[row['id']]=['pose']
             if row.get('spatial_basis') and record['status']=='QUALIFIED':
                 record['status']='RECHECK_REQUIRED'
@@ -443,6 +484,20 @@ def refresh(task, state, contract, ledger, candidate):
                     ledger['components'][name].pop('instantiation',None)
         for name in affected['relations']: ledger['relations'].pop(name,None)
         ledger['layout_ready']=False
+    if previous_facets:
+        points={b['landmark']:b['owner'] for b in contract.get('spatial_bindings',[])}
+        pairs=[('spatial:'+r['id'],[points[p] for p in r['landmarks']])
+               for r in contract.get('spatial',{}).get('relations',[]) if r['kind']=='occludes']
+        components={r['id']:r for r in contract['components']}
+        pairs += [(r['id'],r.get('owners') or [components[k]['owners'][0] for k in r['components']])
+                  for r in contract.get('relations',[]) if r['kind']=='layer_before']
+        for name,owners in pairs:
+            if len(owners)!=2:continue
+            old=[previous_facets.get(o,{}).get('native_order') for o in owners]
+            now=[signatures.get(o,{}).get('native_order') for o in owners]
+            if None not in old+now and (old[0]<old[1])!=(now[0]<now[1]):
+                ledger['relations'].pop(name,None)
+                ledger.update(layout_ready=False,final_dirty=True,final_result=None)
     ledger['last_facets']=signatures
     return scene, signatures
 
@@ -551,7 +606,7 @@ def evaluate(task, request=None):
                       'route': row['route']}
         else:
             result = {'passed': False, 'status': 'SPECIALIST_OR_INSTANCE_EVIDENCE_REQUIRED', 'route': row['route']}
-        if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
+        if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2'):
             from .component_source_features import source_check
             source_basis = source_check(row)
             result['source_basis'] = source_basis
@@ -560,13 +615,15 @@ def evaluate(task, request=None):
                 'appearance':'DEFERRED_TO_ASSEMBLY_AND_FINAL' if row['route']=='fixed_parameters' else result.get('passed',False)}
             result['passed'] = result['passed'] and source_basis['passed']
             if not source_basis['passed']: result['status'] = source_basis['status']
-        if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
+        if contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2'):
             from .spatial_checks import evaluate as spatial_evaluate
             spatial = spatial_evaluate(task, state, candidate, contract, row)
             result['spatial_native'] = spatial
             result['passed'] = result['passed'] and spatial['passed']
             if not spatial['passed']:
-                result['status'] = 'MEASUREMENT_REQUIRED' if not spatial['valid'] else 'SPATIAL_RELATIONS_UNMET'
+                if not spatial['valid']:result['status']='MEASUREMENT_REQUIRED'
+                elif result.get('status') not in ('HARD_CONSTRAINT_FAILED','SOURCE_AMBIGUITY_REQUIRED','SPATIAL_SOURCE_DECISION_REQUIRED'):
+                    result['status']='SPATIAL_RELATIONS_UNMET'
         record['current'] = {'signature': sig, 'result': result, 'candidate_hash': candidate['pptx']['sha256']}
         record['history'].append(copy.deepcopy(record['current']))
         if result['passed']:
@@ -579,10 +636,15 @@ def evaluate(task, request=None):
         record['component_id']=name
         local_result(task,record,result['passed'])
         report.append({'id': name, 'status': record['status'], 'result': result, 'measured': True})
+    invalid=[item for item in report if item.get('status') in ('MEASUREMENT_REQUIRED','MEASUREMENT_INVALID','MEASUREMENT_DIAGNOSIS_REQUIRED')]
+    if invalid:
+        item=invalid[0]
+        decision=failure_decision(task,state,contract,ledger,candidate,item['result'],by_id[item['id']])
+        return dict(decision,items=report,whole_audit_executed=False)
     with writer(task): _save_ledger(task, state, ledger, 'local_evaluated', {'components': sorted(selected)})
     return {'schema': VERSION, 'status': 'LOCAL_EVALUATED', 'items': report,
             'whole_audit_executed': False, 'office_behavior_executed': False,
-            'ready': ready_for_final(contract, ledger)}
+            'ready': ready_for_final(contract, ledger, state)}
 
 
 def qualify(task, request):
@@ -609,20 +671,21 @@ def qualify(task, request):
         raise ValueError('Evidence does not describe this actual component')
     checks = program_checks(task,state,candidate,contract,row)
     if not all(check.get('passed') is True for check in checks.values()):
-        return {'status':'COMPONENT_CHECKS_UNMET','component':name,'checks':checks}
-    if row.get('visual_review_required', True) or contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
+        return failure_decision(task,state,contract,ledger,candidate,checks,row)
+    if row.get('visual_review_required', True) or contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2'):
         actual_render(task,state,candidate)
         if not candidate.get('preview') or actual.get('preview_hash') != candidate['preview']['sha256']:
             raise ValueError('Assembly visual evidence must bind the actual current preview')
         if actual.get('observer') not in ('host_model', 'human') or not actual.get('observations'):
             raise ValueError('Actual original/current local visual observations required')
         if actual.get('verdict') != 'PASS':
-            return {'status':'LOCAL_VISUAL_WORK_REQUIRED','component':name,'evidence':evidence}
-        if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
+            return failure_decision(task,state,contract,ledger,candidate,{'visual':actual,'evidence':evidence},row,
+                'Revise the located source/native decision from this current local visual failure')
+        if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2'):
             from .component_source_features import local_review
             feature_review = local_review(row, actual)
             if not feature_review['passed']:
-                return {'status':'LOCAL_FEATURE_WORK_REQUIRED','component':name,'feature_review':feature_review}
+                return failure_decision(task,state,contract,ledger,candidate,{'feature_review':feature_review},row)
             checks['feature_appearance'] = feature_review
     sig = _component_signature(row, signatures, body=row['route'] not in ('assembly', 'instance'),contract=contract)
     record = ledger['components'][name]
@@ -654,22 +717,26 @@ def layout(task, request):
     evaluated=evaluate_relations(task,state,candidate,contract)
     checks=evaluated['items']
     if not evaluated['passed']:
+        if any(item.get('valid') is False for item in checks.values()):
+            return failure_decision(task,state,contract,ledger,candidate,evaluated)
         from .component_revision import queue_final_repair
         queue_final_repair(ledger,['layout_relation:'+key for key,value in checks.items() if not value['passed']],evidence)
         with writer(task):_save_ledger(task,state,ledger,'layout_repair_required',{'checks':evaluated})
         return {'status':'LAYOUT_RELATIONS_UNMET','checks':evaluated,'next':'component repair plan'}
     placed=source_placement(task,state,candidate,contract)
     if not placed['passed']:
+        if not placed.get('valid',True):
+            return failure_decision(task,state,contract,ledger,candidate,placed)
         from .component_revision import queue_final_repair
         queue_final_repair(ledger,['layout_owner:'+v['owner'] for v in placed['items'] if not v['passed']],evidence)
         with writer(task):_save_ledger(task,state,ledger,'layout_repair_required',{'checks':placed})
         return {'status':'SOURCE_LAYOUT_UNMET','checks':placed,'next':'component repair plan'}
-    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2'):
         from .spatial_checks import evaluate as spatial_evaluate
         spatial = spatial_evaluate(task,state,candidate,contract)
         if not spatial['passed']:
             if not spatial['valid']:
-                return {'status':'MEASUREMENT_DIAGNOSIS_REQUIRED','spatial':spatial,'acceptance':False}
+                return failure_decision(task,state,contract,ledger,candidate,spatial)
             from .component_revision import queue_final_repair
             failures=['spatial_relation:'+k for k,v in spatial['relations'].items() if not v['passed']]
             failures += ['spatial_anchor:'+k for k,v in spatial['anchors'].items() if not v['passed']]
@@ -684,7 +751,7 @@ def layout(task, request):
     ledger['layout_evidence']=evidence
     ledger['layout_placement']=placed
     with writer(task): _save_ledger(task, state, ledger, 'layout_ready', {'relations': len(checks)})
-    return {'status': 'LAYOUT_READY', 'ready': ready_for_final(contract, ledger)}
+    return {'status': 'LAYOUT_READY', 'ready': ready_for_final(contract, ledger, state)}
 
 
 def status(task):
@@ -697,9 +764,9 @@ def status(task):
             'counts': {key: sum(row['status'] == key for row in ledger['components'].values())
                        for key in sorted({row['status'] for row in ledger['components'].values()})},
             'pending': [key for key, row in ledger['components'].items() if row['status'] != 'QUALIFIED'],
-            'ready': ready_for_final(contract, ledger), 'final_dirty': ledger['final_dirty'],
+            'ready': ready_for_final(contract, ledger, state), 'final_dirty': ledger['final_dirty'],
             'excluded_checks': contract.get('scope', {}).get('excluded_checks', []),
-            'action_references': [REFERENCE]}
+            'action_references': [reference(contract)]}
 
 
 def next_action(task, state, candidate=None):
@@ -711,7 +778,7 @@ def next_action(task, state, candidate=None):
             'Rebind only the affected source-feature correspondences; retain prior work, budgets and locks.',
             extra={'source_observation':state['source_feature_observation'],
                    'previous_contract':state['component_workflow']['contract'],
-                   'action_references':[REFERENCE],'whole_audit_allowed':False})
+                   'action_references':[reference(contract)],'whole_audit_allowed':False})
         return {'status':'WORK_PACKET','packet':packet}
     if state.get('spatial_source_decision'):
         from .problem_control import remaining
@@ -726,7 +793,15 @@ def next_action(task, state, candidate=None):
             extra={'source_hash':state['source']['sha256'],'source':state['source'],
                    'source_observation':state.get('source_feature_observation'),
                    'spatial_source_decision':state['spatial_source_decision'],
-                   'action_references':[REFERENCE],'whole_audit_allowed':False})
+                   'action_references':[reference(contract)],'whole_audit_allowed':False})
+        return {'status':'WORK_PACKET','packet':packet}
+    if ledger and ledger.get('pending_decision'):
+        decision=ledger['pending_decision'];name=decision['components'][0]
+        packet=a._packet(task,state,'component_local_work',name,
+            'Resolve the retained source/measurement failure; drawing and acceptance remain blocked until a valid rebind.',
+            extra={'component_batch':[name],'submit_operation':'source_or_measurement_decision',
+                'source_decision':decision,'action_references':[reference(contract)],
+                'component_action':{'operation':'source_or_measurement_decision'},'whole_audit_allowed':False})
         return {'status':'WORK_PACKET','packet':packet}
     if not contract:
         if not state.get('source_feature_observation'):
@@ -734,7 +809,7 @@ def next_action(task, state, candidate=None):
                 'Observe the unchanged original before native owners. Submit source-features-1.35.1 recursive units, visible features, hierarchical spatial classifications, frames, observable pose/support/face-centering targets, uncertainty and decomposition stops; do not derive targets from a candidate.',
                 extra={'source_hash':state['source']['sha256'],'source':state['source'],
                        'canvas':state['source_size'],'action':'component-workflow observe_source',
-                       'action_references':[REFERENCE],'whole_audit_allowed':False,
+                       'action_references':[reference(contract)],'whole_audit_allowed':False,
                        'spatial_requirements':__import__(__package__+'.spatial_frames',fromlist=['packet']).packet()})
             return {'status':'WORK_PACKET','packet':packet}
         from .knowledge_flow import has_candidates
@@ -751,7 +826,7 @@ def next_action(task, state, candidate=None):
                   'knowledge_menu':state.get('knowledge_menu'),
                   'recipe_selection':'Optional recipe_bindings expands selected data-only constructors before Scene validation; all generated owners require current source contract ownership.',
                   'source_observation':state.get('source_feature_observation'),
-                  'action_references': [REFERENCE,'references/workflow-v133.md']}
+                  'action_references': [reference(contract),'references/workflow-v133.md']}
         packet = a._packet(task, state, 'component_contract_source', 'component_contract',
                             'Bind the component-first source contract before local qualification.', extra=extra)
         return {'status': 'WORK_PACKET', 'packet': packet}
@@ -759,32 +834,32 @@ def next_action(task, state, candidate=None):
         packet=a._packet(task,state,'component_recovery_work','transaction',
             'Resume the registered transaction before construction or local work.',
             extra={'transaction':ledger['pending_transaction'],'action':'component-workflow recover',
-                   'action_references':[REFERENCE],'whole_audit_allowed':False})
+                   'action_references':[reference(contract)],'whole_audit_allowed':False})
         return {'status':'WORK_PACKET','packet':packet}
     if contract.get('design_revision',0)<8:
         packet=a._packet(task,state,'component_contract_source','component_migration',
             'Explicitly migrate the retained source contract to revision 8; preserve source decisions, native work and existing protections.',
             extra={'previous_contract':state['component_workflow']['contract'],'source_scene':contract['source_scene'],
-                   'action':'component-workflow migrate','action_references':[REFERENCE],'whole_audit_allowed':False})
+                   'action':'component-workflow migrate','action_references':[reference(contract)],'whole_audit_allowed':False})
         return {'status':'WORK_PACKET','packet':packet}
     if ledger.get('user_reconciliation'):
         packet=a._packet(task,state,'component_user_mapping','user_owner_mapping',
             'Map adopted user native additions, removals or aliases to an explicit revised component contract; preserve user locks.',
-            extra={'reconciliation':ledger['user_reconciliation'],'action_references':[REFERENCE],'whole_audit_allowed':False})
+            extra={'reconciliation':ledger['user_reconciliation'],'action_references':[reference(contract)],'whole_audit_allowed':False})
         return {'status':'WORK_PACKET','packet':packet}
     if not candidate:
         packet=a._packet(task,state,'component_build_work','native_construction',
             'Construct the frozen source Scene once, then qualify local parts.',
-            extra={'action':'component-workflow build','action_references':[REFERENCE],'whole_audit_allowed':False})
+            extra={'action':'component-workflow build','action_references':[reference(contract)],'whole_audit_allowed':False})
         return {'status':'WORK_PACKET','packet':packet}
     if state.get('component_import_pending'):
         packet=a._packet(task,state,'component_build_work','partial_ppt_completion',
             'Resume the retained partial PPT completion plan through the ordinary constructor.',
-            extra={'action':'component-workflow build','whole_audit_allowed':False,'action_references':[REFERENCE]})
+            extra={'action':'component-workflow build','whole_audit_allowed':False,'action_references':[reference(contract)]})
         return {'status':'WORK_PACKET','packet':packet}
     refresh(task, state, contract, ledger, candidate)
     write_json(safe_path(task, state['component_workflow']['ledger_path']), ledger)
-    if contract.get('workflow_version')=='1.35.1':
+    if contract.get('workflow_version') in ('1.35.1','1.35.2'):
         from .spatial_repair import advance as advance_repair_phases
         scene=read_json(_resource(task,candidate['scene']))
         if advance_repair_phases(task,state,candidate,contract,ledger,scene):
@@ -796,11 +871,11 @@ def next_action(task, state, candidate=None):
                          'next':'Finite automatic work stopped. Inspect retained source/model/measurement diagnosis; no targets were loosened.'}
     if ledger.get('pending_transaction'):
         return {'status':'COMPONENT_TRANSACTION_RECOVERY_REQUIRED','transaction':ledger['pending_transaction'],
-                'whole_audit_allowed':False,'action':'component-workflow recover','action_references':[REFERENCE]}
+                'whole_audit_allowed':False,'action':'component-workflow recover','action_references':[reference(contract)]}
     if (ledger.get('repair_batch') or {}).get('status')=='PLAN_REQUIRED':
         packet=a._packet(task,state,'component_repair_work','final_repairs',
             'Locate each final failure to component fields and submit one scoped repair batch.',
-            extra={'repair_batch':ledger['repair_batch'],'action_references':[REFERENCE],'whole_audit_allowed':False})
+            extra={'repair_batch':ledger['repair_batch'],'action_references':[reference(contract)],'whole_audit_allowed':False})
         return {'status':'WORK_PACKET','packet':packet}
     final=ledger.get('final_result')
     if not ledger['final_dirty'] and final and read_json(_resource(task,final)).get('status')=='ACCEPTED':
@@ -817,13 +892,13 @@ def next_action(task, state, candidate=None):
         packet = a._packet(task, state, 'component_local_work', chosen['id'],
                             'Execute the selected source-bound local action; retain fixed parts and do not run the whole audit.',
                             roi=component.get('roi'), extra={'component_action': chosen,
-                            'action_references': [REFERENCE], 'whole_audit_allowed': False,
-                            'spatial_requirements': __import__(__package__+'.spatial_frames',fromlist=['packet']).packet(contract,component) if contract.get('workflow_version') in ('1.35.0','1.35.1') else None,
+                            'action_references': [reference(contract)], 'whole_audit_allowed': False,
+                            'spatial_requirements': __import__(__package__+'.spatial_frames',fromlist=['packet']).packet(contract,component) if contract.get('workflow_version') in ('1.35.0','1.35.1','1.35.2') else None,
                              'source_decision':ledger['components'][chosen['id']].get('source_decision'),
                             'submit_operation':chosen['operation'],'component_batch':batch_ids,
                             'repair_atomic':bool(chosen.get('repair_components'))})
         return {'status': 'WORK_PACKET', 'packet': packet}
-    readiness = ready_for_final(contract, ledger)
+    readiness = ready_for_final(contract, ledger, state)
     if readiness['ready'] and not (candidate.get('preview') and candidate.get('render')):
         state.update(active_candidate=candidate,stage='host_render',packet=None)
         with writer(task):a._save(task,state)
@@ -841,11 +916,11 @@ def next_action(task, state, candidate=None):
         if _visual(task,state,candidate,ledger)['passed']:
             packet=a._packet(task,state,'component_final_audit','final_audit',
                 'All parts, layout, fonts and current visual review are ready; close the final audit and acceptance.',
-                extra={'action':'component-workflow final','whole_audit_allowed':True,'action_references':[REFERENCE]})
+                extra={'action':'component-workflow final','whole_audit_allowed':True,'action_references':[reference(contract)]})
             return {'status':'WORK_PACKET','packet':packet}
     kind = 'component_final_visual' if readiness['ready'] else 'component_layout_work'
     feature_extra = {}
-    if readiness['ready'] and contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
+    if readiness['ready'] and contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2'):
         from .component_source_features import diagnostics
         actual_render(task,state,candidate)
         feature_extra = {'source_observation':contract['source_observation'],
@@ -854,7 +929,7 @@ def next_action(task, state, candidate=None):
             'feature_review_required':'Compare every required feature and independently check every original unit for omissions; diagnostics are suspicions, not semantic verdicts.'}
     packet = a._packet(task, state, kind, 'final_visual' if readiness['ready'] else 'final_layout',
                         'Review the actual complete page.' if readiness['ready'] else 'Complete instance placement and actual relation evidence.',
-                        extra={'readiness': readiness, 'action_references': [REFERENCE],
+                        extra={'readiness': readiness, 'action_references': [reference(contract)],
                                'whole_audit_allowed': readiness['ready'],**feature_extra})
     return {'status': 'WORK_PACKET', 'packet': packet}
 
@@ -868,14 +943,14 @@ def program_checks(task,state,candidate,contract,row):
     if set(required)-{'native_structure','relations','connection_geometry','numeric_targets','visual'}:
         raise ValueError('Unknown executable check; use a supported source-bound specialist route')
     checks={'native_structure':{'passed':native['status']=='PASS','result':native}}
-    if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
+    if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2'):
         from .component_source_features import source_check
         checks['source_basis'] = source_check(row)
-    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2'):
         from .spatial_checks import evaluate as spatial_evaluate
         checks['spatial_native'] = spatial_evaluate(task, state, candidate, contract, row)
     checks['source_fixed_paint']=fixed_style_checks(task,candidate,contract,row,scene)
-    if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1') and any(f.get('metrics') for f in row.get('source_features',[])):
+    if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2') and any(f.get('metrics') for f in row.get('source_features',[])):
         from .component_source_features import probes
         actual_render(task,state,candidate)
         checks['source_feature_probes'] = probes(task,state,candidate,row['source_features'])
@@ -918,7 +993,7 @@ def run(task):
     if not contract or not candidate: return next_action(task,state,candidate)
     refresh(task,state,contract,ledger,candidate)
     write_json(safe_path(task,state['component_workflow']['ledger_path']),ledger)
-    if not ready_for_final(contract,ledger)['ready'] or not candidate.get('preview') or not candidate.get('render'):
+    if not ready_for_final(contract,ledger,state)['ready'] or not candidate.get('preview') or not candidate.get('render'):
         return next_action(task,state,candidate)
     from .component_fonts import current as font_review_current
     scene=read_json(_resource(task,candidate['scene']))
@@ -955,6 +1030,8 @@ def advance(task,request=None):
     while len(steps)<limit:
         task,state=a._state(task);contract,ledger=_load(task,state);candidate=_candidate(state)
         if not contract or not candidate or contract.get('design_revision',0)<8:break
+        if (state.get('spatial_source_decision') or state.get('source_observation_rebind_required') or
+                ledger.get('pending_decision') or (ledger.get('repair_batch') or {}).get('status')=='PLAN_REQUIRED'):break
         if ledger.get('pending_transaction'):
             if request.get('recover'):
                 from .component_fit import recover
@@ -1026,6 +1103,9 @@ def submit_result(task,result,packet):
     if kind=='component_local_work':
         operation=result.get('operation')
         if operation not in ('evaluate','fit','qualify','instantiate','reproject','source_prepare','rollback','source_or_measurement_decision','commit','edit'): raise ValueError('Choose the actual local operation')
+        expected_operation=packet.get('submit_operation') or packet.get('component_action',{}).get('operation')
+        if expected_operation and operation not in (expected_operation,'source_or_measurement_decision'):
+            raise ValueError('Submit the packet-selected operation; alternative writes require a focused source decision')
         expected=packet['target']
         selected=request.get('components',[request.get('component')])
         scope=packet.get('component_batch',[expected])
@@ -1049,9 +1129,20 @@ def guard_changes(task,state,scene,allowed,revision_components=()):
     """Qualified intrinsic properties cannot be overwritten by a layout action."""
     contract,ledger=_load(task,state)
     if not contract: return
+    if state.get('spatial_source_decision') or state.get('source_observation_rebind_required') or ledger.get('pending_decision'):
+        raise ValueError('Resolve/rebind the pending source or measurement decision before native writes')
     from .component_revision import guard_user_locks
     guard_user_locks(task,state,scene,allowed)
     before=read_json(_resource(task,_candidate(state)['scene']))
+    structural=ledger.get('structural_grant')
+    if structural:
+        from .component_fields import canonical_node
+        decided=read_json(_resource(task,structural['scene']))
+        nodes=lambda value:{n['id']:canonical_node(n) for n in value['objects']}
+        if nodes(scene)!=nodes(decided):
+            raise ValueError('Finish the retained source-apply plan before another native write')
+    from .spatial_repair import guard_scene
+    guard_scene(contract,ledger,before,scene)
     old={n['id']:n for n in before['objects']};new={n['id']:n for n in scene['objects']}
     for row in contract['components']:
         if ledger['components'][row['id']]['status']!='QUALIFIED': continue

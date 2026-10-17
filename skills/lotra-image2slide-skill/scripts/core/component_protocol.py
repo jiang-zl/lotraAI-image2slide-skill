@@ -86,7 +86,7 @@ def validate_contract(value, scene, source_hash):
     if required_units!=covered_units:raise ValueError('Complete source-unit/component reconciliation required')
     coverage = defaultdict(list)
     for row in components:
-        if value.get('workflow_version') in ('1.33.0','1.34.0','1.35.0','1.35.1') and row.get('route')=='assembly' and (not row.get('semantic_class') or not row.get('view')):
+        if value.get('workflow_version') in ('1.33.0','1.34.0','1.35.0','1.35.1','1.35.2') and row.get('route')=='assembly' and (not row.get('semantic_class') or not row.get('view')):
             raise ValueError('SOURCE_DECISION_REQUIRED: freeze assembly semantic_class and observed view for the private method lifecycle')
         if row.get('route') not in ROUTES: raise ValueError('Unsupported component route')
         if not row.get('source_evidence') or not row.get('source_refs'):
@@ -260,7 +260,7 @@ def impact(contract, changed):
                 # Moving a child changes its parent's internal assembly.
                 queue.append((related, True))
     spatial_neighbours = set()
-    if contract.get('workflow_version') == '1.35.1':
+    if contract.get('workflow_version') in ('1.35.1', '1.35.2'):
         # Only directly changed resources seed relation invalidation. An
         # assembly becoming dirty does not mean every descendant changed.
         unit_components = defaultdict(set)
@@ -318,17 +318,20 @@ def impact(contract, changed):
             'final_dirty': bool(changed), 'run_final_now': False}
 
 
-def ready_for_final(contract, ledger):
+def ready_for_final(contract, ledger, state=None):
     required = [row['id'] for row in contract['components']]
     pending = [name for name in required if ledger.get('components', {}).get(name, {}).get('status') != 'QUALIFIED']
     relation_pending = [r['id'] for r in contract.get('relations', [])
                         if ledger.get('relations', {}).get(r['id'], {}).get('status') != 'QUALIFIED']
-    return {'ready': not pending and not relation_pending and ledger.get('layout_ready') is True and
+    obligations = bool(ledger.get('pending_decision') or ledger.get('structural_grant') or
+        (state or {}).get('spatial_source_decision') or (state or {}).get('source_observation_rebind_required') or
+        (ledger.get('repair_batch') or {}).get('status') in ('PLAN_REQUIRED','DIAGNOSIS_REQUIRED','SOURCE_DECISION_REQUIRED'))
+    return {'ready': not obligations and not pending and not relation_pending and ledger.get('layout_ready') is True and
                     not any(r.get('spatial_repair_schedule') for r in ledger.get('components',{}).values()) and
                     not ledger.get('pending_transaction') and not ledger.get('user_reconciliation') and
                     not ledger.get('source_observation_dirty') and
                     (ledger.get('repair_batch') or {}).get('status')!='PLAN_REQUIRED',
-            'components_pending': pending, 'relations_pending': relation_pending,
+            'components_pending': pending, 'relations_pending': relation_pending, 'decision_pending':obligations,
             'layout_ready': ledger.get('layout_ready') is True}
 
 

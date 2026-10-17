@@ -1,6 +1,8 @@
 # lotraAI
 
-本补丁修复九处空间工作流问题：统一构建与修订入口，完整逻辑足迹与对象归属检查，有限空间参数拟合，持久决策和分阶段修复，母件面拓扑以及投影与单位约束。原生形状、填色和边框继续优先。本轮仅静态审查，未运行产品测试、重建或渲染。
+本补丁修复八类空间流程遗漏：统一拟合与布局验收、原生写入阶段授权、失败决策和未决义务门槛，补齐规则引用、三维提取、局部依赖和透视几何域检查。原生形状、填色和边框继续优先。本轮仅静态审查，未运行产品测试、重建或渲染。
+
+
 
 **将科研参考图重建为分层、可编辑的 PowerPoint。**
 
@@ -25,7 +27,7 @@ Codex 调用维护好的安装程序，按平台准备 Python、依赖、OCR 和
 如果已有完整 ZIP，提供文件或本地绝对路径，再发送：
 
 ~~~text
-请用提供的 lotraAI-image2slide-v1.35.1-bundle.zip 在当前项目安装或更新 Image2Slide。
+请用提供的 lotraAI-image2slide-v1.35.2-bundle.zip 在当前项目安装或更新 Image2Slide。
 ~~~
 
 运行资源和私有任务状态保存在项目 `.lotraAI-build`。手动命令与平台要求见[安装说明](docs/installation.zh-CN.md)，完整包获取方式见[下载说明](docs/download.zh-CN.md)。
@@ -130,7 +132,7 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 
 任务中断后，在同一个工作项目中要求继续原来的任务。保留原图和 `.lotraAI-build`，具体操作见[使用指南](docs/usage.zh-CN.md)。
 
-## v1.35.1
+## v1.35.2
 
 从原图到部件逐层识别空间类型，冻结参考系、可观察姿态和原图锚点；按所在表面检查内容整体居中、底座承载、共享边和遮挡。优先使用原生形状、填色和边框。曲线函数、有限收敛控制、私有方法复用及排版后的字体和整图复核继续保留。
 
@@ -147,8 +149,8 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 | [安装](docs/installation.zh-CN.md) | 自动安装、差分更新、完整包与平台要求 |
 | [使用](docs/usage.zh-CN.md) | 图片重建、半成品导入与恢复任务 |
 | [案例](docs/examples/README.md) | 原图、重建截图与部件细节 |
-| [工作流](skills/lotra-image2slide-skill/references/workflow-v1351.md) | 1.35.1 的重建流程与复用规则 |
-| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.35.1 的完整主载荷 |
+| [工作流](skills/lotra-image2slide-skill/references/workflow-v1351.md) | 1.35.2 的重建流程与复用规则 |
+| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.35.2 的完整主载荷 |
 | [来源与许可](NOTICE.md) | 项目源码、第三方组件和案例素材 |
 
 需要反馈时，请描述系统、产品版本、具体操作和相关诊断；按需提供经过检查的原图或片段。项目内的私有任务数据由你管理。

@@ -103,6 +103,7 @@
     "references/workflow-v134.md",
     "references/workflow-v135.md",
     "references/workflow-v1351.md",
+    "references/workflow-v1352.md",
     "requirements.txt",
     "schemas/component-contract.schema.json",
     "schemas/frame-plan.json",
@@ -447,5 +448,5 @@
   "release_status": "IMPLEMENTED_STATICALLY_REVIEWED_NOT_TESTED_PER_USER_REQUEST",
   "runtime_regressions": "NOT_RUN_PER_USER_REQUEST: tests, syntax/import/CLI, reconstruction and rendering excluded",
   "schema": "lotra-customer-package-1",
-  "version": "1.35.1"
+  "version": "1.35.2"
 }

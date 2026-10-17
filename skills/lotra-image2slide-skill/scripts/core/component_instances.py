@@ -18,6 +18,10 @@ def instantiate(task,request):
     if ledger.get('pending_transaction') and not request.get('_transaction'):
         raise ValueError('Recover the pending native transaction first')
     rows={row['id']:row for row in contract['components']};row=c.component_row(task,state,contract,request['component'])
+    from .spatial_repair import guard_fields
+    if state.get('spatial_source_decision') or ledger.get('pending_decision') or ledger.get('structural_grant'):
+        raise ValueError('Resolve the pending source/measurement decision before instance copying')
+    guard_fields(contract,ledger,[{'owner':owner,'field':[]} for owner in row['owners']])
     if ledger['components'][row['id']].get('user_locks'):raise ValueError('USER_LOCK_CONFLICT: instance body is protected')
     if row['route']!='instance' or ledger['components'][row['mother']]['status']!='QUALIFIED':
         raise ValueError('An instance must reference a qualified source mother')

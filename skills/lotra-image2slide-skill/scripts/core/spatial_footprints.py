@@ -155,6 +155,8 @@ def validate_bindings(contract, observed, scene):
 
 
 def _native_contours(entry, method):
+    from .boundary_geometry import require_projected
+    require_projected(entry)
     if entry.get('error') or entry.get('matrix') is None or entry['tag'] == 'grpSp':
         raise ValueError(entry.get('error') or 'Saved leaf footprint required')
     if method == 'native_text_frame':

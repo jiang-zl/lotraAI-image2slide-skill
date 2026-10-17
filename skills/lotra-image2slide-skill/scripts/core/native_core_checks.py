@@ -85,6 +85,7 @@ def snapshots(pptx, component_mode=False):
             for key in ('id','name'):
                 props.attrib.pop(key, None)
         result[owner] = {'body': identity([E.tostring(node).decode(), children]),
+                         'paint_order':len(result),
                          'placement': identity([placement, entry['parent'],orders[entry['parent']].index(owner),
                              [E.tostring(a).decode() for a in ancestors]]),
                          'node': entry['node'], 'parent': entry['parent']}

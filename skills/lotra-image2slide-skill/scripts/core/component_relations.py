@@ -33,6 +33,18 @@ def source_placement(task,state,candidate,contract):
         raise ValueError('Original layout plan changed')
     expected={n['id']:n for n in source['objects']};rows=[]
     for component in contract['components']:
+        constructor = None
+        from .spatial_fit import is_spatial, layout_scene
+        if is_spatial(component):
+            from .component_workflow import _load
+            _,ledger=_load(task,state)
+            try:
+                projected,constructor=layout_scene(task,state,candidate,contract,ledger,component,source)
+                expected.update({n['id']:n for n in projected['objects'] if n['id'] in component['owners']})
+            except (ValueError,KeyError,TypeError,IndexError) as error:
+                rows.extend({'owner':owner,'component':component['id'],'passed':False,'valid':False,
+                    'reason':str(error)} for owner in component['owners'])
+                continue
         tolerance=component.get('pose_tolerance_source_px',.5)
         if tolerance<0 or tolerance>1.5 or tolerance!=.5 and not component.get('pose_tolerance_evidence'):
             raise ValueError('Original-supported final placement tolerance required, within 1.5 source pixels')
@@ -45,15 +57,16 @@ def source_placement(task,state,candidate,contract):
             if expected[owner]['render_type']=='group':continue
             actual=frames.get(owner,{}).get('frame');wanted=expected[owner]['bbox'];checks=[]
             intervals = None
-            if contract.get('workflow_version') in ('1.35.0','1.35.1'):
+            if contract.get('workflow_version') in ('1.35.0','1.35.1','1.35.2'):
                 wanted, intervals = _source_frame_bounds(expected[owner], {i:v for (name,i),v in ranges.items() if name==owner})
             if actual is not None:
                 for index,(observed,target) in enumerate(zip(actual,wanted)):
                     low,high=intervals[index] if intervals is not None else ranges.get((owner,index),(target,target))
                     checks.append(low-tolerance<=observed<=high+tolerance)
-            rows.append({'owner':owner,'component':component['id'],'passed':bool(checks) and all(checks),
+            rows.append({'owner':owner,'component':component['id'],'passed':bool(checks) and all(checks) and (constructor is None or constructor['passed']),
+                          'valid':actual is not None and not frames.get(owner,{}).get('error'),'spatial_constructor':constructor,
                          'actual_native_frame':actual,'original_frame':wanted,'tolerance_source_px':tolerance})
-    return {'passed':bool(rows) and all(r['passed'] for r in rows),'items':rows,
+    return {'passed':bool(rows) and all(r['passed'] for r in rows),'valid':all(r.get('valid',True) for r in rows),'items':rows,
             'measurement':'Actual transformed native frames in original coordinates; painted visibility is a separate final visual judgment'}
 
 

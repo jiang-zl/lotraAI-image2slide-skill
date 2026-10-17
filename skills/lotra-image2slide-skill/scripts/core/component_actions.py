@@ -9,6 +9,8 @@ DECISIONS = {'MODEL_OR_SOURCE_DECISION_REQUIRED','SEARCH_BOUND_REACHED','MODEL_R
 
 
 def available(contract,ledger,candidate):
+    if ledger.get('pending_decision'):return []
+    phased=any(r.get('spatial_repair_schedule') for r in ledger['components'].values())
     order={name:index for index,name in enumerate(contract['policy']['stage_order'])}
     rows={r['id']:r for r in contract['components']}; actions=[]
     repairs=sorted((key for key,record in ledger['components'].items()
@@ -18,7 +20,7 @@ def available(contract,ledger,candidate):
     applying=[key for key in repairs if key in structural.get('components',[])
               and ledger['components'][key]['status']=='SOURCE_DECISION_APPLY_REQUIRED']
     if applying:repairs=applying
-    elif contract.get('workflow_version') in ('1.35.0','1.35.1') and repairs:
+    elif contract.get('workflow_version') in ('1.35.0','1.35.1','1.35.2') and repairs:
         phase=min(ledger['components'][key].get('repair_phase',5) for key in repairs)
         repairs=[key for key in repairs if ledger['components'][key].get('repair_phase',5)==phase]
     for row in rows.values():
@@ -30,7 +32,7 @@ def available(contract,ledger,candidate):
         # Finish the retained source-apply scope before offering a different repair batch.
         if status in ('REPAIR_REQUIRED','SOURCE_DECISION_APPLY_REQUIRED') and not repairing:continue
         if repairing and row['id']!=repairs[0]:continue
-        if not repairing:
+        if not repairing and status not in DECISIONS and status not in ('USER_INTENT_REQUIRED','MEASUREMENT_INVALID','MEASUREMENT_REQUIRED'):
             if route=='assembly' and any(ledger['components'][key]['status']!='QUALIFIED' for key in children): continue
             if row.get('mother') and ledger['components'][row['mother']]['status']!='QUALIFIED': continue
         stage='assembly' if route=='assembly' else 'instance' if route=='instance' else 'fit'
@@ -42,7 +44,7 @@ def available(contract,ledger,candidate):
             operation='source_or_measurement_decision';stage='source'
         elif status in ('MEASUREMENT_INVALID','MEASUREMENT_REQUIRED','MEASUREMENT_DIAGNOSIS_REQUIRED'):
             stage='measurement'; operation='source_or_measurement_decision'
-        elif status=='SPATIAL_RELATIONS_UNMET' and row.get('fit',{}).get('adapter')=='spatial_parameters':
+        elif status=='SPATIAL_RELATIONS_UNMET' and row.get('fit',{}).get('adapter')=='spatial_parameters' and not record.get('spatial_repair_schedule'):
             stage='fit';operation='fit';automatic=True
             from .spatial_fit import writes
             write_set=writes(row)
@@ -70,6 +72,8 @@ def available(contract,ledger,candidate):
         if operation in ('fit','commit') and row.get('fit',{}).get('adapter')=='spatial_parameters':
             from .spatial_fit import writes
             write_set=writes(row)
+        if phased and operation in ('fit','commit','instantiate','reproject'):
+            continue
         dependency_unknown=bool(row.get('unresolved_dependencies'))
         locked_fields=([lock for key in repairs for lock in ledger['components'][key].get('user_locks',[])]
                        if repairing else record.get('user_locks',[]))

@@ -117,6 +117,12 @@ def fit(task,request):
     if ledger.get('pending_transaction'):return {'status':'RECOVERY_REQUIRED','transaction':ledger['pending_transaction']}
     row=c.component_row(task,state,contract,request['component']);record=ledger['components'][row['id']]
     if row['route']!='local_fit' or record['status']=='QUALIFIED':raise ValueError('Fit only a pending tunable local part')
+    if state.get('spatial_source_decision') or ledger.get('pending_decision') or ledger.get('structural_grant'):
+        raise ValueError('Resolve the current source/measurement decision before numerical fitting')
+    from .spatial_repair import guard_fields
+    from .spatial_fit import is_spatial, writes as spatial_writes
+    guard_fields(contract,ledger,spatial_writes(row) if is_spatial(row) else
+        [v for name,v in row.get('fit',{}).get('bindings',{}).items() if row['parameters'][name]['state']=='tunable'])
     if request.get('pptx_hash')!=candidate['pptx']['sha256'] or request.get('source_hash')!=state['source']['sha256']:
         raise ValueError('Fit request must bind the actual source/current candidate')
     if record['status']=='ACTUAL_NATIVE_CONFIRMATION_REQUIRED' and candidate['pptx']['sha256']!=record.get('numeric_baseline_hash'):

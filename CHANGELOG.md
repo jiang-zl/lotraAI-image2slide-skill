@@ -1,3 +1,12 @@
+## 1.35.2
+
+Close eight spatial workflow gaps: unify source-bounded fitting and layout,
+enforce active native write grants and journal transitions, persist failure
+decisions and pending-obligation gates, select current rules, guard unsupported
+3D extraction and projective domains, and scope transform/order invalidation. Native shape priority remains. Runtime
+binaries are unchanged. Tests, syntax/import/CLI checks, reconstruction and
+rendering were not run at the user's explicit request.
+
 ## 1.35.1
 
 Repair the nine spatial static-review findings across construction, complete

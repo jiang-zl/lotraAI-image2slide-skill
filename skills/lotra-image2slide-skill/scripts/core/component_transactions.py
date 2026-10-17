@@ -16,6 +16,11 @@ def begin(task,state,scene,baseline,allowed,reason):
     if ledger.get('pending_transaction'):
         raise ValueError('Resume the registered transaction before native mutation')
     before=read_json(c._resource(task,baseline['scene'])) if baseline else {'objects':[]}
+    from .spatial_repair import guard_scene
+    repair_names=guard_scene(contract,ledger,before,scene)
+    if (allowed and any(r.get('spatial_repair_schedule') for r in ledger['components'].values())
+            and not repair_names):
+        raise ValueError('REPAIR_PHASE_AUTHORITY_REQUIRED: no active semantic field change authorizes this native replacement')
     old={node['id']:node for node in before['objects']};new={node['id']:node for node in scene['objects']}
     patches=[]
     for owner in sorted(set(old)|set(new)):
@@ -31,6 +36,10 @@ def begin(task,state,scene,baseline,allowed,reason):
           'contract':state['component_workflow']['contract'],'post_save':copy.deepcopy((reason or {}).get('post_save',{}))}
     if (reason or {}).get('kind')=='component_numeric_batch':
         plan['post_save']['statuses']={key:'ACTUAL_NATIVE_CONFIRMATION_REQUIRED' for key in reason['components']}
+    if repair_names:
+        plan['post_save']['repair_phase_saved']=repair_names
+        plan['post_save']['consume_grants']=repair_names
+        plan['post_save'].setdefault('statuses',{}).update({name:'RECHECK_REQUIRED' for name in repair_names})
     key=identity(plan);folder=task/'transactions'/key;folder.mkdir(parents=True,exist_ok=True)
     file=folder/'Transaction.json'
     if file.exists():
@@ -217,6 +226,8 @@ def rollback(task,request):
     from . import agent_runtime as a,component_workflow as c
     from .component_constructor import construct
     task,state=a._state(task);contract,ledger=c._load(task,state);candidate=c._candidate(state)
+    if state.get('spatial_source_decision') or ledger.get('pending_decision') or ledger.get('structural_grant'):
+        raise ValueError('Resolve the retained source/measurement obligation before rollback')
     tx=read_json(safe_path(task,request['transaction']))
     scene=read_json(c._resource(task,candidate['scene']));nodes={n['id']:n for n in scene['objects']}
     conflicts=[]
@@ -240,6 +251,8 @@ def rollback(task,request):
     present={n['id'] for n in scene['objects']}
     scene['objects'].extend(value for key,value in nodes.items() if key not in present)
     affected=set(p['owner'] for p in tx['patches'])
+    from .spatial_repair import guard_scene
+    guard_scene(contract,ledger,read_json(c._resource(task,candidate['scene'])),scene)
     for row in contract['components']:
         if affected.intersection(row['owners']):
             record=ledger['components'][row['id']]
@@ -310,7 +323,8 @@ def apply_post_save(task,state,ledger,tx,candidate):
     if (tx.get('reason') or {}).get('kind')=='component_numeric_batch':
         for name in tx['reason']['components']:
             record=ledger['components'][name]
-            record['numeric_saved_result']={'candidate':copy.deepcopy(candidate),'fit':record.get('last_fit')}
+            record['numeric_saved_result']={'candidate':copy.deepcopy(candidate),'fit':record.get('last_fit'),
+                'input_signature':copy.deepcopy(record.get('numeric_input_signature'))}
     for name,expectation in tx.get('instance_expectations',{}).items():
         ledger['components'][name].update(status='INSTANCE_NATIVE_CONFIRMATION_REQUIRED',
             instantiation={'candidate':candidate['pptx'],'expectation':expectation})

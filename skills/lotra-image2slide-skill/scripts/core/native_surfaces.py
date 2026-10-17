@@ -114,6 +114,11 @@ def _project_commands(commands, frame, precision=.05):
     # coordinates instead of transforming control points as if affine.
     if not .001 <= precision <= .25:
         raise ValueError('Freeze a bounded source-pixel representation precision')
+    import numpy as np
+    controls = np.asarray([p for command in commands for p in command['points']], float)
+    weights = np.c_[controls, np.ones(len(controls))] @ np.asarray(frame['homography'], float)[2]
+    if not np.isfinite(weights).all() or not len(weights) or not (np.all(weights > 1e-10) or np.all(weights < -1e-10)):
+        raise ValueError('SPATIAL_SOURCE_DECISION_REQUIRED: contour/control hull crosses the projective horizon')
     result = [{'op': 'moveTo', 'points': [project(commands[0]['points'][0], frame)]}]
     for start, command in _segments(commands):
         if command['op'] == 'lnTo':

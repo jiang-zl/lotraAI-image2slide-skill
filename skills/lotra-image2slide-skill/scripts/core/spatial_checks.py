@@ -7,6 +7,8 @@ from .spatial_frames import frames, enabled, strict, PHASE
 
 def _anchor(entry, binding):
     from .mathml import NS
+    from .boundary_geometry import require_projected
+    require_projected(entry)
     if entry.get('error') or entry.get('matrix') is None or entry['tag'] == 'grpSp':
         raise ValueError(entry.get('error') or 'Actual saved leaf transform required')
     props = entry['node'].find('p:spPr', NS)

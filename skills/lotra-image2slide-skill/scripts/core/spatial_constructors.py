@@ -86,7 +86,6 @@ def construct(spec, spatial):
         raise ValueError('Finite shared local 3D semantic vertices required')
     if not 1 <= len(faces) <= 128:
         raise ValueError('Bounded explicitly observed faces required')
-    projected = [graph.project(frame, p) for p in vertices]
     objects, parts = [], []
     def append(name, indices, style, role, closed):
         if not name or name in {p['part'] for p in parts} or any(type(i) is not int or not 0 <= i < len(vertices) for i in indices):
@@ -95,7 +94,8 @@ def construct(spec, spatial):
             raise ValueError('Compact face/edge indices required')
         if closed and not style.get('fill'):
             raise ValueError('Every observed native face needs explicit material')
-        obj = path(spec['id']+'.'+name, [projected[i] for i in indices], spec.get('parent'),
+        projected = graph.project_domain(frame, vertices[indices])
+        obj = path(spec['id']+'.'+name, projected, spec.get('parent'),
                    style.get('stroke'), style.get('fill') if closed else None,
                    style.get('line_width', 0), closed, role)
         obj['style'].update(copy.deepcopy(style))
@@ -209,6 +209,10 @@ def reproject(task, request):
     contract, ledger = c._load(task, state)
     candidate = c._candidate(state)
     row = c.component_row(task, state, contract, request['component'])
+    from .spatial_repair import guard_fields
+    if state.get('spatial_source_decision') or ledger.get('pending_decision') or ledger.get('structural_grant'):
+        raise ValueError('Resolve the pending source/measurement decision before reprojection')
+    guard_fields(contract,ledger,[{'owner':owner,'field':[]} for owner in row['owners']])
     if (request.get('source_hash') != state['source']['sha256'] or request.get('pptx_hash') != candidate['pptx']['sha256'] or
             row['route'] != 'instance' or row.get('spatial_instance', {}).get('route') != 'reproject_constructor'):
         raise ValueError('Current source-bound spatial constructor instance required')

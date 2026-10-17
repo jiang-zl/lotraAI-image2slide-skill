@@ -61,7 +61,7 @@ def submit(task,request):
     from . import agent_runtime as a,component_workflow as c,font_contract as fonts
     from .component_protocol import ready_for_final,impact
     task,state=a._state(task);contract,ledger=c._load(task,state);candidate=c._candidate(state)
-    if not ready_for_final(contract,ledger)['ready']:raise ValueError('Font review is deferred until parts and layout are ready')
+    if not ready_for_final(contract,ledger,state)['ready']:raise ValueError('Font review is deferred until parts and layout are ready')
     if request.get('source_hash')!=state['source']['sha256'] or request.get('pptx_hash')!=candidate['pptx']['sha256']:
         raise ValueError('Final font review must bind current original and native candidate')
     scene=read_json(c._resource(task,candidate['scene']))

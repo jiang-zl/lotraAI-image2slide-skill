@@ -1,24 +1,24 @@
 {
   "files": {
     "README.md": {
-      "sha256": "a0193312437adc1ab6991d85f5dd1f2f9aa264b3f387800d74073f51d339a635",
+      "sha256": "d760ef73a38ac91b6fe778f39f505759bfb5673fa50968b4c58faf1ce68ff369",
       "size": 785
     },
     "README.zh-CN.md": {
-      "sha256": "570305efc5fcc76f4eb5a5e3f1ec838e0f5d06128941d829be79aebd1bf857fb",
+      "sha256": "762e23ec3eaac438f690fe62fff46a2b7a5eee2905eba452c22c9f99a5e01efe",
       "size": 716
     },
     "SKILL.md": {
-      "sha256": "7b939aa5873f4f6129f729e5f7008c0326306f01e0c24bcfd3bd8fd997cba763",
-      "size": 8311
+      "sha256": "85a437fd7aaa9bdfbb3b46e4ddc96198b99ec17046c2752779985db230fdaf6a",
+      "size": 8860
     },
     "agents/openai.yaml": {
-      "sha256": "6861389fe2c247abfe4218ef7fa7f1476516ccf24761b8d40948e1568513de58",
+      "sha256": "c5055b5887ff48913c8289972410d122dc1dfb460ee5966b7481875716de7311",
       "size": 430
     },
     "config/component-workflow.json": {
-      "sha256": "01fa12774e930c2d05b2a2efb32c52ccc4fb48cb245fb1c188ed5f990c32e6d6",
-      "size": 3691
+      "sha256": "01055ea31735ebfd5c46eeeb44aee4ad03326ac3cfb03b96fc55240f3505a3da",
+      "size": 3814
     },
     "config/context-policy.json": {
       "sha256": "d21ee1d7ecc3361d6e5c497c35fb901945da4cd4b708f0d5b4d571819edb9a6a",
@@ -29,8 +29,8 @@
       "size": 61397
     },
     "config/customer-package.json": {
-      "sha256": "4bbde827e8e7011768ef7d783f344e96f26d387160e984b2d3a5e2af5a880835",
-      "size": 17831
+      "sha256": "04bb954ccafbb18b04dbc36fd25bfeb72fd9fdb7d5cb209dd9608f1e1f85e729",
+      "size": 17868
     },
     "config/font-collections.json": {
       "sha256": "1c90aa23438be48260f8479ce1a31f96edceaeb0cbeb19ac3ae9729025d3c7ce",
@@ -408,13 +408,17 @@
       "sha256": "464beeb077e353dcc8cad826129553ec5cf54c2b8aaabb096fb28f72f2ecae6a",
       "size": 12032
     },
+    "references/workflow-v1352.md": {
+      "sha256": "ab0fee68080e00a54787ff554bf1f9c1a5887931823996bcb7b7d8642bd2ece7",
+      "size": 5288
+    },
     "requirements.txt": {
       "sha256": "d3d976e2d1f96b0d67122c2b9257a0909d16ff9bd6b2af09fdd11900b8aa5e59",
       "size": 214
     },
     "schemas/component-contract.schema.json": {
-      "sha256": "2cabb6032f8ec43a470b15214fda2bf7f2e9868584baec95963dd2d9b588af8a",
-      "size": 27523
+      "sha256": "c2389a6176405f6011a437eab35258c559e651b66ec04702d977486bcb26dc45",
+      "size": 27623
     },
     "schemas/frame-plan.json": {
       "sha256": "03a67bddba72972fb8224a2de0f080b54c3e75ce87d2bf77effb7b6ff508b8aa",
@@ -457,7 +461,7 @@
       "size": 683
     },
     "scripts/core/__init__.py": {
-      "sha256": "9ba1034ec2b98a6fa1b68b6ad73bb8eadbcabb637101f56c49fc328d5989ffc4",
+      "sha256": "6063bd42cda7652638edeb48f2e99e077e7892bf7d3e87325fb23d02fc555240",
       "size": 102
     },
     "scripts/core/action_journal.py": {
@@ -517,8 +521,8 @@
       "size": 5090
     },
     "scripts/core/boundary_geometry.py": {
-      "sha256": "9d0912dd9b137be40f1158bfe7e804641369eda09e3af636a0acbfeca41c9aad",
-      "size": 14336
+      "sha256": "37e164d967fdb74c5c8a16c8b6631b9c8e7a2dd06ffc075cbe8b69fe1a33aa9f",
+      "size": 14957
     },
     "scripts/core/build.py": {
       "sha256": "baae09fb8996394bafec2fde33656fa70b37e8d644541f4a6ac298694e4ca947",
@@ -565,12 +569,12 @@
       "size": 12039
     },
     "scripts/core/component_actions.py": {
-      "sha256": "e6ffba285300761e337bcfe4c899f969c377f8806cd609fef02111bbf932ea57",
-      "size": 7390
+      "sha256": "caff5880784f5190d01fd4db39875ebf4e994865812e02b38c69db15cfd3bfd3",
+      "size": 7801
     },
     "scripts/core/component_batch.py": {
-      "sha256": "df3c034ef5cbc7aca89ad4319d56c34e564428c786f27a4a230250a8638078d2",
-      "size": 8574
+      "sha256": "8f573ddf1f2b63ebfa1b468dab5c0f9d48433e501bb6a0e938ea94543ce8f8d4",
+      "size": 8882
     },
     "scripts/core/component_calibration.py": {
       "sha256": "24efc89c93f281ad14e564846681d4c75056c7e9b7a50a9af009cd177c4fd664",
@@ -593,28 +597,28 @@
       "size": 4332
     },
     "scripts/core/component_final.py": {
-      "sha256": "2bf3825586b4522fffe35694d42b2edcf7d18fa03cc1ce4e57006db880eedb3a",
-      "size": 16136
+      "sha256": "1df4b121b1102a656b0cb39c328d5402ed5b6c84af09390f7c2c3e65f541b381",
+      "size": 16383
     },
     "scripts/core/component_fit.py": {
-      "sha256": "d71e6c59b9ac0ffb19c673a1b2a95c2d957bd24c52bcbef2bccf6f3ecf2d5342",
-      "size": 18306
+      "sha256": "d1818a98e8aaff2ca1a50c840b5e22f14b9b623b86fe8ebf156b8fef54b0e511",
+      "size": 18833
     },
     "scripts/core/component_font_instances.py": {
       "sha256": "b2972309dcc5c4597d8c44d4216c7f227086f10cc8690bd440d291cecd3bcf87",
       "size": 4459
     },
     "scripts/core/component_fonts.py": {
-      "sha256": "f9f211603e9f1434ddb8cf50b35f920c0d771c0e57166b263ab61eca82774fa9",
-      "size": 10883
+      "sha256": "7889b31f16966da2c6daa11d574a20c136a20ed574e514619b46fe043db92088",
+      "size": 10889
     },
     "scripts/core/component_import.py": {
       "sha256": "f3c7042ed160ad9abd5135db59b57758b1343fd7cdabab1a5ec09162e56ec970",
       "size": 6698
     },
     "scripts/core/component_instances.py": {
-      "sha256": "9985cfa8df8d3be17b8e75d46b225718ca77a5acac18ec27f54c3417951a2e04",
-      "size": 11005
+      "sha256": "10ba132836cb9fdb41c327adc5d21bec294ad43fc15fa17ad0c035b67700fb40",
+      "size": 11357
     },
     "scripts/core/component_metric_adapters.py": {
       "sha256": "0c47aaec2a76fd6b96a5faf628efc4f8c7669869c59725275c4cf99b2965df30",
@@ -629,20 +633,20 @@
       "size": 3529
     },
     "scripts/core/component_protocol.py": {
-      "sha256": "9d0ac20d7dd8ffa60a94ef33e9729a9073b6ca1f19ab476732adf8939f320630",
-      "size": 21992
+      "sha256": "55d0e9e99f29c43fee96f05f64f5724f1aedeeb66435bdd44141852a9abd54d5",
+      "size": 22413
     },
     "scripts/core/component_relations.py": {
-      "sha256": "66e84c4ec83d052ae5b99ce8b6635c6e440b0348ff00728fe788621fbb91b84a",
-      "size": 17223
+      "sha256": "6d892465dd34f947074bc5b15e9a753b3d7925824f773b6d12ec861365618176",
+      "size": 18186
     },
     "scripts/core/component_report.py": {
       "sha256": "10aacb2d47f401762bb144e00837daebff8805c820d1a4f74d65edde2bb6eee6",
       "size": 13602
     },
     "scripts/core/component_revision.py": {
-      "sha256": "ef89047e4af4bd1b1d06d88dbd07e1cf3f350100693c08d9cbdc7ee943bf4602",
-      "size": 23668
+      "sha256": "1fca578056b85d768d4f7f260738dfd94655eeddea6a36255254553f94539cad",
+      "size": 23767
     },
     "scripts/core/component_roundtrip.py": {
       "sha256": "d0c56148791ad67a21b68a8f2ddd0d7ffbfdb1ee3a89b34de76e6ab8ad60e6e9",
@@ -657,12 +661,12 @@
       "size": 3066
     },
     "scripts/core/component_source_features.py": {
-      "sha256": "991409106e0442af1a8bb1adbeadd7e6b7e1b01f5527eaa1c62e7ba1deb67ba2",
-      "size": 27107
+      "sha256": "e431a03d3dbb2eecc4c7f4d79529cc005e36913118730fdd070f23f50bd110a7",
+      "size": 27125
     },
     "scripts/core/component_transactions.py": {
-      "sha256": "e59b095504942082379721c8127845f6a80f3ea1831bb15f892659cd7300398c",
-      "size": 20591
+      "sha256": "0c96980c253e1016b449d705b4cdee8ad707f26397da817269eb6c6ccef99e45",
+      "size": 21645
     },
     "scripts/core/component_user_sync.py": {
       "sha256": "65c8432a3c75027bcfb96c23f31b2ba8ca6e0b25269f996c7b85d69cec41f8fc",
@@ -673,8 +677,8 @@
       "size": 6923
     },
     "scripts/core/component_workflow.py": {
-      "sha256": "d41f57408e025b052495c1342df0a0f4797590742a820aaf7111a29130693a0a",
-      "size": 75960
+      "sha256": "0654a5dda65e16c88cb16b28ae8787e85034ec59baa8f1e1961c5990c17c1d26",
+      "size": 82862
     },
     "scripts/core/components.py": {
       "sha256": "276b9f806f30998c42e77290f329e635f423db654ba7f5273683791ba38be245",
@@ -733,8 +737,8 @@
       "size": 5369
     },
     "scripts/core/curve_functions.py": {
-      "sha256": "aa34d9077ba268bd778a2902a7547ae290e2c6ceea2817095dadd5d0f810eb68",
-      "size": 20561
+      "sha256": "715e817802af0ef7e33708028a72cc2588aaa912948d5a7134957ea275f203e9",
+      "size": 20570
     },
     "scripts/core/cutout_quality.py": {
       "sha256": "f781e1f225952ccd2507da2e92ffa7311ce1f0dc298b3b291c462004dec4d076",
@@ -893,8 +897,8 @@
       "size": 14473
     },
     "scripts/core/knowledge_flow.py": {
-      "sha256": "8c81fb58e2d4ddc0d15789aef539ce2d2af2cca3454e5c810f9d68305887cb85",
-      "size": 18178
+      "sha256": "5ab86a730f9afbc3c2b6690cb41abfc327216801526663efe7f00a95f6c6cb07",
+      "size": 18196
     },
     "scripts/core/layout_ink.py": {
       "sha256": "72a3b8c7e8ae4df1171e4a7b1521c77f1a64fc5f8313492c9470614c2aa0daa8",
@@ -969,8 +973,8 @@
       "size": 11570
     },
     "scripts/core/native_core_checks.py": {
-      "sha256": "80c6aaaa938abf76c48976ee947af9e8131e796850766471b8fd3c15a6d75479",
-      "size": 19749
+      "sha256": "08fc812b6540709ca78b1307ecec3dc901e89762d7f8101e24f9347ff21f0b92",
+      "size": 19802
     },
     "scripts/core/native_core_inspect.py": {
       "sha256": "4769ce0aba6ad59165f36f2d461d446c36444d3a6793bb6011c604a72bb12b08",
@@ -1025,8 +1029,8 @@
       "size": 2628
     },
     "scripts/core/native_surfaces.py": {
-      "sha256": "a25026ee78075678fd95c6cd38c7957a263adfcd16bdc1061e59853487fa113c",
-      "size": 19759
+      "sha256": "fb125659e3ed659de30650fecf41f1f3d9254627719c3e2f6f4362ffb433f683",
+      "size": 20203
     },
     "scripts/core/native_task.py": {
       "sha256": "e08cee66202622006a7c4c3d0dda4d39886ee7c4f1cbcb865ce259df1a69201f",
@@ -1137,8 +1141,8 @@
       "size": 9342
     },
     "scripts/core/problem_control.py": {
-      "sha256": "c742dfc934d22c01d2309d6fc41daeec483708fd8bf3870a0a26c7d1ae79dd70",
-      "size": 6336
+      "sha256": "26fe1c7e69bdca9aec216188ce516b51dbda0bf54de390bfcba1072d4bb743b1",
+      "size": 6345
     },
     "scripts/core/projection_gc.py": {
       "sha256": "de6a78aff86d197c17d2169a91983ecc1046193908f10078c15c819d7e9626d3",
@@ -1477,32 +1481,32 @@
       "size": 9533
     },
     "scripts/core/spatial_checks.py": {
-      "sha256": "894556b59543cce2c9e962b65131ded69bf71bf87a78dc06d4ec3a7c8b2c6779",
-      "size": 17928
+      "sha256": "b1697fedf5043ab8f58f0431dacf4d1bfae5e2f6265b1b0443bd1e7baefb676e",
+      "size": 18010
     },
     "scripts/core/spatial_constructors.py": {
-      "sha256": "9a57c9c15f4d52d2d26690760baa8bf1d3bd69ae0f58d6768841ef830e806baf",
-      "size": 16573
+      "sha256": "32f98c9268ba5118898117d078bd1c2fade91729b5ea65acdc0760ce6c7432ec",
+      "size": 17166
     },
     "scripts/core/spatial_fit.py": {
-      "sha256": "104fd7d4131d6ea39840ad9801286a5a5c77ef5974aea4dd481dd456e9d1e807",
-      "size": 10680
+      "sha256": "1819893733bed75c2ce9704b34066d4e0f82e39bd2daeca4f15d642864fc2a9f",
+      "size": 11983
     },
     "scripts/core/spatial_footprints.py": {
-      "sha256": "a77aa009706c256320d78172064c7df53fb487c40666959634e55599725a31a3",
-      "size": 14228
+      "sha256": "a3684ddbe2ffb2b5b1fb5c9d141718c5aa40ab48be3795cf92c0d9b83ee1ac29",
+      "size": 14310
     },
     "scripts/core/spatial_frames.py": {
-      "sha256": "79f7149f2616338be55ad7bfdced4e35cb320330d3688becbaceecd45332856c",
-      "size": 26552
+      "sha256": "cefbf6c1c25c4b67289d90c13b810e6d53aaf8edf48ec601a12eb337de148c79",
+      "size": 28187
     },
     "scripts/core/spatial_observation.py": {
       "sha256": "4b5e4df0daf8d1b266e26b1d114120145dd4d15005b7efe98ac60e21144aacd3",
       "size": 7557
     },
     "scripts/core/spatial_repair.py": {
-      "sha256": "8d9b6954fb25bff6c19c45d6936851a44c60bab9ba228c437257fd0d7f29b4ed",
-      "size": 9081
+      "sha256": "7f791294570e788c511f4c0b77935d44583b3b4bbe09e20deea0e334039ae687",
+      "size": 15074
     },
     "scripts/core/state.py": {
       "sha256": "73017014abcc621076a0d59b83495a7b5792f772c34f68a9fd6760d42f4797af",
@@ -1723,5 +1727,5 @@
   },
   "format_version": 1,
   "name": "lotra-image2slide-skill",
-  "version": "1.35.1"
+  "version": "1.35.2"
 }

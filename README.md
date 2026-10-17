@@ -1,6 +1,8 @@
 # lotraAI
 
-This patch repairs nine spatial workflow findings: shared build/revision dispatch, complete logical domains and measured subjects, bounded spatial parameter fitting, persistent decisions and phased repair, canonical face topology, and projection/unit guards. Native shapes, fills and outlines retain priority. This release received static review only; product tests, reconstruction and rendering were not run.
+This patch closes eight spatial workflow gaps: source-bounded fit/layout consistency, shared write-phase authority, persistent failure decisions and pending-obligation gates, versioned rules, native 3D extraction guards, scoped transform/order dependencies, and finite projective domains. Native shapes, fills and outlines retain priority. This release received static review only; product tests, reconstruction and rendering were not run.
+
+
 
 **Reconstruct scientific figures as layered, editable PowerPoint slides.**
 
@@ -25,7 +27,7 @@ Codex runs the maintained installer, prepares Python, dependencies, OCR and Math
 Already have the complete ZIP? Supply the file or its absolute local path, then send:
 
 ~~~text
-Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.35.1-bundle.zip.
+Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.35.2-bundle.zip.
 ~~~
 
 Runtime resources and private task state stay in the project's `.lotraAI-build` directory. See the [installation guide](docs/installation.md) for manual commands and platform requirements, or the [download guide](docs/download.md) for complete bundles.
@@ -131,7 +133,7 @@ Use $lotra-image2slide-skill to continue rebuilding from this partial PPT, follo
 
 After an interruption, ask the agent to resume the existing task in the same working project. Keep the original and `.lotraAI-build` available. See the [usage guide](docs/usage.md).
 
-## v1.35.1
+## v1.35.2
 
 Spatial type is recognized recursively from the original to its parts. Source-owned frames, observable pose and original landmarks connect native construction, face-local aggregate centering, base support, shared edges, occlusion and saved-result checks. Native shapes, fills and outlines take priority. Functional curves, finite convergence, private method reuse and deferred font/whole review remain.
 
@@ -148,8 +150,8 @@ This release implements and statically reviews spatial frames, 3D pose, face-loc
 | [Installation](docs/installation.md) | Automatic setup, differential updates, bundles and platform requirements |
 | [Usage](docs/usage.md) | Image reconstruction, partial-slide import and resuming work |
 | [Examples](docs/examples/README.md) | Originals, reconstruction screenshots and component details |
-| [Workflow](skills/lotra-image2slide-skill/references/workflow-v1351.md) | The 1.35.1 reconstruction and reuse rules |
-| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.35.1 main-skill payload |
+| [Workflow](skills/lotra-image2slide-skill/references/workflow-v1351.md) | The 1.35.2 reconstruction and reuse rules |
+| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.35.2 main-skill payload |
 | [Provenance and licensing](NOTICE.md) | Project source, third-party components, and example assets |
 
 For feedback, include the operating system, product version, attempted operation, and relevant diagnostic. Share a reviewed reference image or excerpt when needed. Private task data remains under your control in the working project.

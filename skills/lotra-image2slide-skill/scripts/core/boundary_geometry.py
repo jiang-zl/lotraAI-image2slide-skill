@@ -42,6 +42,17 @@ def _transform(xf, group=False, line=False):
     return _translation(x+w/2, y+h/2) @ rotation @ flip @ _translation(-x-w/2, -y-h/2) @ base
 
 
+def require_projected(entry):
+    """No 2D frame may certify unsupported shape, text or ancestor 3D effects."""
+    current = entry['node']
+    while current is not None:
+        for path in ('p:spPr', 'p:grpSpPr', 'p:txBody/a:bodyPr'):
+            props = current.find(path, NS)
+            if props is not None and any(props.find('a:'+key, NS) is not None for key in ('scene3d','sp3d')):
+                raise ValueError('MEASUREMENT_REQUIRED: native shape/text/ancestor 3D needs a qualified extractor; prefer projected native surfaces')
+        current = current.getparent()
+
+
 @geometry
 def saved_nodes(pptx, size):
     """Actual leaf frames and geometry, preserving affine parent transforms."""
@@ -69,6 +80,7 @@ def saved_nodes(pptx, size):
             entry['compatibility']=variants(node)
             result[name] = entry
             try:
+                require_projected(entry)
                 if inherited_error or xf is None:
                     raise ValueError(inherited_error or 'Missing saved transform')
                 preset = props.find('a:prstGeom', NS) if props is not None else None

@@ -21,11 +21,20 @@ PHASE = {'pose_projection': 1, 'axis_direction': 1, 'extent_ratio': 1,
 
 
 def enabled(contract):
-    return contract.get('workflow_version') in ('1.35.0', '1.35.1')
+    return contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2')
 
 
 def strict(value):
-    return value.get('workflow_version') == '1.35.1' or value.get('schema') == VERSION
+    return value.get('workflow_version') in ('1.35.1', '1.35.2') or value.get('schema') == VERSION
+
+
+def reference(contract=None):
+    version = (contract or {}).get('workflow_version', '1.35.2')
+    return {'1.35.2':'references/workflow-v1352.md',
+            '1.35.1':'references/workflow-v1351.md',
+            '1.35.0':'references/workflow-v135.md',
+            '1.34.0':'references/workflow-v134.md',
+            '1.33.0':'references/workflow-v133.md'}.get(version, 'references/component-workflow-v132.md')
 
 
 def frames(value):
@@ -168,6 +177,17 @@ class Frames:
 
     def project(self, name, point):
         return hom(self.matrix(name), array(point, (self.dimension(name),))).tolist()
+
+    def project_domain(self, name, points):
+        """A visible edge/face must stay in one finite projective chart."""
+        value = np.asarray(points, float)
+        if value.ndim != 2 or value.shape[1] != self.dimension(name) or not np.isfinite(value).all():
+            raise ValueError('Finite visible geometry in its declared frame required')
+        projected = np.c_[value, np.ones(len(value))] @ self.matrix(name).T
+        weight = projected[:, -1]
+        if not np.isfinite(projected).all() or not len(weight) or not (np.all(weight > 1e-10) or np.all(weight < -1e-10)):
+            raise ValueError('SPATIAL_SOURCE_DECISION_REQUIRED: visible geometry crosses the projective horizon')
+        return (projected[:, :-1]/weight[:, None]).tolist()
 
     def inverse_plane(self, name, point):
         if self.dimension(name) != 2:
@@ -400,7 +420,7 @@ def review(contract, evidence, row=None):
 
 def packet(contract=None, row=None):
     current = not contract or strict(contract)
-    return {'schema': VERSION if current else LEGACY_VERSION, 'reference': 'references/workflow-v135.md',
+    return {'schema': VERSION if current else LEGACY_VERSION, 'reference': reference(contract),
         'spatial_basis': (row or contract or {}).get('spatial_basis'),
         'recognition': 'Classify every source unit; shared parent frames do not force identical child orientation.',
         'alignment': 'Canvas, face-local content aggregate, and standing-object contact footprint are distinct anchors.',

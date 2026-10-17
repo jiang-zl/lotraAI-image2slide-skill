@@ -75,7 +75,7 @@ def decide(task,request):
     if request.get('source_hash')!=state['source']['sha256'] or request.get('pptx_hash')!=(candidate or {}).get('pptx',{}).get('sha256'):
         raise ValueError('Decision must bind current original and native revision')
     if not request.get('revision_reason'):raise ValueError('Describe the original/model/measurement correction')
-    if contract.get('workflow_version') in ('1.34.0','1.35.0','1.35.1') and request.get('decision_kind') not in (
+    if contract.get('workflow_version') in ('1.34.0','1.35.0','1.35.1','1.35.2') and request.get('decision_kind') not in (
             'source_omission','representation_insufficient','parameter_error','measurement_invalid',
             'native_mismatch','relation_error','source_ambiguity','spatial_frame','spatial_pose',
             'face_alignment','support_relation','spatial_occlusion','constructor_recapture'):
@@ -214,20 +214,20 @@ def repair(task,request):
     if not batch or batch['status']!='PLAN_REQUIRED':raise ValueError('Current located repair decision required')
     if request.get('source_hash')!=state['source']['sha256'] or request.get('pptx_hash')!=candidate['pptx']['sha256']:
         raise ValueError('Final repair plan is stale')
-    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2'):
         from .spatial_checks import evaluate as spatial_evaluate
         spatial = spatial_evaluate(task,state,candidate,contract)
         if not spatial['valid']:
-            return {'status':'MEASUREMENT_DIAGNOSIS_REQUIRED','spatial':spatial,
-                    'acceptance':False,'native_writes_granted':False}
+            return c.failure_decision(task,state,contract,ledger,candidate,spatial)
     rows={r['id']:r for r in contract['components']};items=request.get('items',[])
     if not items:raise ValueError('Locate final failures to nonempty component field grants')
-    if contract.get('workflow_version') in ('1.35.0','1.35.1') and any(item.get('frame_pose_diagnosis')=='shared_frame' for item in items):
-        if contract.get('workflow_version')=='1.35.1':
+    if contract.get('workflow_version') in ('1.35.0','1.35.1','1.35.2') and any(item.get('frame_pose_diagnosis')=='shared_frame' for item in items):
+        if contract.get('workflow_version') in ('1.35.1','1.35.2'):
             state['spatial_source_decision']={'kind':'shared_frame','source_hash':state['source']['sha256'],
                 'pptx_hash':candidate['pptx']['sha256'],'failures':copy.deepcopy(batch['failures']),
                 'components':[item['component'] for item in items]}
             batch['status']='SOURCE_DECISION_REQUIRED'
+            ledger['pending_decision']=copy.deepcopy(state['spatial_source_decision'])
             with writer(task):c._save_ledger(task,state,ledger,'shared_spatial_frame_decision_required',state['spatial_source_decision'])
         return {'status':'SPATIAL_SOURCE_DECISION_REQUIRED','acceptance':False,'best_retained':True,
                 'next':'Revise the source-owned common frame with located spatial_corrections, then rebind all consumers. Local drawing patches cannot repair a shared projection definition.'}
@@ -253,7 +253,7 @@ def repair(task,request):
             if grant['owner'] not in row['owners'] or not isinstance(grant.get('field'),list):raise ValueError('Repair field escaped its component')
             if any(lock['owner']==grant['owner'] and overlap(lock['field'],grant['field']) for lock in record.get('user_locks',[])):
                 raise ValueError('USER_LOCK_CONFLICT: preserve the adopted user field')
-        if contract.get('workflow_version')=='1.35.1':
+        if contract.get('workflow_version') in ('1.35.1','1.35.2'):
             from .spatial_repair import prepare_item
             scene=read_json(c._resource(task,candidate['scene']))
             record['spatial_repair_schedule']=prepare_item(contract,spatial,row,item,candidate,scene)
@@ -271,7 +271,7 @@ def repair(task,request):
     for name in affected['relations']:ledger['relations'].pop(name,None)
     batch.update(status='LOCAL_REPAIR',items=copy.deepcopy(items))
     ledger.update(layout_ready=False,final_dirty=True,final_result=None)
-    if contract.get('workflow_version')=='1.35.1':
+    if contract.get('workflow_version') in ('1.35.1','1.35.2'):
         from .spatial_repair import activate
         activate(ledger,candidate,read_json(c._resource(task,candidate['scene'])),contract)
     with writer(task):c._save_ledger(task,state,ledger,'final_repair_scoped',{'affected':affected})
@@ -312,7 +312,7 @@ def edit_native(task,request):
     scene,allowed,_=prepare(task,state,old,proposed,grants,rebuild)
     if not allowed:raise ValueError('No proposed field correction')
     post={'statuses':{name:'RECHECK_REQUIRED' for name in selected},'consume_grants':sorted(selected),
-           'repair_phase_saved':sorted(selected) if contract.get('workflow_version')=='1.35.1' else [],
+           'repair_phase_saved':sorted(selected) if contract.get('workflow_version') in ('1.35.1','1.35.2') else [],
           'consume_structural_grant':bool(structural and selected<=set(structural['components'])),
           'repair_batch_status':'RECHECK_REQUIRED' if ledger.get('repair_batch') else None}
     saved=construct(task,state,scene,candidate,allowed,{'kind':'component_scoped_repair','components':sorted(selected),'post_save':post})

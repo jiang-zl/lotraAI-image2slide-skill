@@ -12,7 +12,7 @@ def observe(task,request):
     task,state=a._state(task);contract,ledger=c._load(task,state);candidate=c._candidate(state)
     if not contract or not candidate: raise ValueError('Current source contract and candidate required')
     c.refresh(task,state,contract,ledger,candidate)
-    readiness=ready_for_final(contract,ledger)
+    readiness=ready_for_final(contract,ledger,state)
     if not readiness['ready']: return {'status':'FINAL_DEFERRED','readiness':readiness,'whole_audit_executed':False}
     from .component_fonts import current as font_review_current
     if not font_review_current(read_json(c._resource(task,candidate['scene'])),state,ledger):
@@ -68,7 +68,7 @@ def audit(task,state=None,candidate=None,persist=True):
     if state is None:task,state=a._state(task)
     task=Path(task);candidate=candidate or c._candidate(state);contract,ledger=c._load(task,state)
     if not contract or not candidate:return {'status':'COMPONENT_CONTRACT_REQUIRED','whole_audit_executed':False}
-    scene,_=c.refresh(task,state,contract,ledger,candidate);ready=ready_for_final(contract,ledger)
+    scene,_=c.refresh(task,state,contract,ledger,candidate);ready=ready_for_final(contract,ledger,state)
     if not ready['ready']:
         if persist:
             with writer(task):c._save_ledger(task,state,ledger,'final_deferred',ready)
@@ -106,7 +106,7 @@ def audit(task,state=None,candidate=None,persist=True):
            'actual_render':{'passed':True,'backend':receipt['backend'],'receipt':candidate['render']},
            'source_feature_basis':feature_basis,'source_feature_probes':feature_probes,
            'final_visual':visual}
-    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2'):
         from .spatial_checks import evaluate as spatial_evaluate
         # Independent final gate recomputes from saved bytes, not local hits.
         gates['spatial_native'] = spatial_evaluate(task,state,candidate,contract)
@@ -125,6 +125,9 @@ def audit(task,state=None,candidate=None,persist=True):
     file=task/'audits'/('component-final-'+identity(result)+'.json');write_json(file,result)
     ref=c._ref(task,file);state['quality_result']=ref;ledger['final_result']=ref;ledger['final_dirty']=bool(failures)
     if failures and not (failures==['final_visual'] and not visual.get('evidence')):
+        if persist and any(value.get('valid') is False for value in gates.values()):
+            c.failure_decision(task,state,contract,ledger,candidate,{key:gates[key] for key in failures})
+            return result
         from .component_revision import queue_final_repair
         queue_final_repair(ledger,failures,ref)
     if persist:
@@ -137,7 +140,7 @@ def accept(task,state,candidate,measured=None):
     contract,ledger=c._load(task,state)
     if not contract or not candidate: raise ValueError('Current component candidate required')
     c.refresh(task,state,contract,ledger,candidate)
-    if not ready_for_final(contract,ledger)['ready'] or ledger['final_dirty'] or not ledger.get('final_result'):
+    if not ready_for_final(contract,ledger,state)['ready'] or ledger['final_dirty'] or not ledger.get('final_result'):
         raise ValueError('Current components, layout and independent final audit required')
     stored=read_json(c._resource(task,ledger['final_result']))
     if measured is not None and measured!=stored: raise ValueError('Caller cannot replace the immutable final result')

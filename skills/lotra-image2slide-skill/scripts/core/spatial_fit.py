@@ -149,6 +149,28 @@ def metrics(report, row):
     return values
 
 
+def layout_scene(task, state, candidate, contract, ledger, row, source):
+    """Recompile a bounded saved fit; never derive layout targets from the candidate."""
+    from .common import read_json
+    from .component_workflow import _resource
+    from .component_fit import basis
+    record = ledger['components'][row['id']]
+    saved = record.get('numeric_saved_result',{})
+    ref = saved.get('fit')
+    values = {name:p['value'] for name,p in row['parameters'].items()}
+    if ref:
+        result = read_json(_resource(task,ref))
+        if (result.get('status')!='TARGETS_MET' or result.get('source_hash')!=state['source']['sha256'] or
+                result.get('fit_basis')!=basis(row,contract['policy'],state,saved.get('input_signature',record.get('numeric_input_signature')))):
+            raise ValueError('MEASUREMENT_REQUIRED: recapture/reconfirm this spatial fit against its current frozen source basis')
+        values = result['parameters']
+    expected,_ = apply(source,row,values,contract)
+    from .native_core_inspect import check
+    native = check(expected,task,_resource(task,candidate['pptx']),row['owners'],'body')
+    return expected, {'passed':native['status']=='PASS','native':native,'fit':ref,
+        'basis':'frozen_constructor_inputs_and_source_bounded_saved_parameters'}
+
+
 def measured(task, state, candidate, contract, row, scene=None):
     from .spatial_checks import evaluate
     report = evaluate(task,state,candidate,contract,row,scene_override=scene,override_owners=row['owners'] if scene else ())

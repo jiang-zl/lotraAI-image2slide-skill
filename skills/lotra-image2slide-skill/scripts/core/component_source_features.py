@@ -18,7 +18,7 @@ TIERS = {'native_text':0,'native_math':0,'native_connector':0,'preset':1,
 
 
 def enabled(contract):
-    return contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1')
+    return contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2')
 
 
 def _box(roi, size):
@@ -255,7 +255,7 @@ def bind(task, state, contract, scene):
     units = {u['id']:u for u in observed['units']}
     declared = {u['id']:u for u in contract['source_inventory']}
     if set(units) != set(declared) or any(any(declared[k].get(f) != units[k].get(f)
-            for f in (('parent','roi','decomposition','source_evidence','spatial') if contract.get('workflow_version') in ('1.35.0','1.35.1') else ('parent','roi','decomposition','source_evidence'))) for k in units):
+            for f in (('parent','roi','decomposition','source_evidence','spatial') if contract.get('workflow_version') in ('1.35.0','1.35.1','1.35.2') else ('parent','roi','decomposition','source_evidence'))) for k in units):
         raise ValueError('Source inventory must retain the independent recursive observation')
     features = {f['id']:f for f in observed['features']}
     bindings = contract.get('feature_bindings', [])

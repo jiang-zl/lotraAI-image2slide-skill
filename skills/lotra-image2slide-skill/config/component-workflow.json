@@ -88,14 +88,16 @@
     "final_saved_native_and_render_required": true,
     "frames": "original_owned",
     "hidden_3d_acceptance": false,
+    "layout": "source_bounded_spatial_constructor_result",
     "native_priority": true,
+    "pending_decisions": "block_next_advance_and_acceptance",
     "pose": "observable_projection_with_declared_symmetry",
     "relation_subjects": "explicit_measured_ownership",
-    "repair_phases": "measurement_derived_journaled",
+    "repair_phases": "shared_native_write_authority",
     "runtime_dependencies_added": [],
     "spatial_fit": "bounded_constructor_parameters_with_immutable_original_targets",
     "standing_alignment": "contact_footprint",
-    "workflow_version": "1.35.1"
+    "workflow_version": "1.35.2"
   },
   "stage_order": [
     "recovery",

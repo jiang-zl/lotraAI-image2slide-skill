@@ -3,7 +3,7 @@ name: lotra-image2slide-skill
 description: Reconstruct scientific images, optionally continuing a one-shot partial PPT, as faithful native editable slides. Use source-bound functions, qualified icon parts and mothers, private reusable methods, and deferred final review.
 ---
 
-# lotraAI Image2Slide v1.35.1
+# lotraAI Image2Slide v1.35.2
 
 Read project `.lotraAI-build/Active-skill.json` for the selected entry and
 `Bundle-install.json` for actual runtime facts. Keep the current model/reasoning
@@ -22,12 +22,14 @@ PARTIAL.pptx` imports one partial slide once. Resume with `context-control
 TASK_PATH resume`. Follow current packet action_references and their relevant
 continuations; avoid loading entire states, databases or release logs.
 
-For new tasks read [v1.35.1 spatial contracts and repair](references/workflow-v1351.md),
+For new tasks read [v1.35.2 spatial workflow closure](references/workflow-v1352.md),
+the retained [v1.35.1 spatial contracts](references/workflow-v1351.md),
 the retained [spatial reconstruction](references/workflow-v135.md)
 and the retained [source features and surfaces](references/workflow-v134.md).
 The v1.33 functions, shared budgets and private knowledge still apply. The existing
 [component contract](references/component-workflow-v132.md) remains schema
-design_revision 8; new contracts use workflow_version 1.35.1. Old bound tasks
+design_revision 8; new contracts use workflow_version 1.35.2 and retain the
+source-features-1.35.1/spatial-1.35.1 observation schemas. Old bound tasks
 retain their policy until explicit migration; never silently redraw them.
 
 1. Observe the unchanged original before native ownership. Freeze recursive
@@ -86,12 +88,17 @@ retain their policy until explicit migration; never silently redraw them.
    Repair phases come from current saved measurements. Earlier phases must pass
    before later grants activate. Mother recapture and shared-frame decisions are
    persistent packets; do not repeat an unchanged automatic reprojection.
+   All native writers share active phase grants and journaled save transitions.
+   Layout recompiles source-bounded fitted geometry; it never freezes a fitted
+   object's layout to its initial bbox. Persist failed checks as decision packets.
 5. Complete layout, then one deferred language-restricted font review, current
    whole visual review, independent original-to-output omission checks for every
    unit, and final audit/export. Program suspicions cannot replace semantic review.
    Include current spatial_review for each original unit and typed relation;
    independent final spatial measurements reread saved native bytes. Preserve
    separate original-basis, native-projection and actual-render conclusions.
+   Pending source/measurement decisions and source-apply plans block every final
+   entry. Unsupported text/shape/ancestor 3D effects require a measurement decision.
    Missing features or inadequate representation return focused source/model
    decisions; invalid measurement is diagnosed before drawing. Local edits dirty final review;
    do not run whole-page checks after every edit. On acceptance, programs retain

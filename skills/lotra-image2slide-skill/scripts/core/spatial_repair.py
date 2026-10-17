@@ -1,6 +1,6 @@
 """Measurement-derived repair phases inside the existing grant/journal flow."""
 import copy
-from .common import identity
+from .common import identity, write_json
 from .component_fields import lookup
 from .spatial_frames import PHASE
 
@@ -11,6 +11,13 @@ def failures(report):
         for key, value in report.get(channel, {}).items():
             if not value['passed']:result[prefix+key] = value
     return result
+
+
+def _retain_checks(task, report):
+    from .component_workflow import _ref
+    file=task/'component-workflow'/('Spatial-repair-checks-'+identity(report)+'.json')
+    if not file.exists():write_json(file,report)
+    return _ref(task,file)
 
 
 def _targets(contract, report, row):
@@ -31,6 +38,61 @@ def _targets(contract, report, row):
             if footprints[key]['unit'] not in units:continue
             phase = min((PHASE[r['kind']] for r in relations.values() if key in r.get('footprints', [])), default=2)
         result[failure] = phase
+    return result
+
+
+def guard_fields(contract, ledger, writes):
+    """One authority for constructor, numeric, instance and rollback writes."""
+    schedules = {name:r['spatial_repair_schedule'] for name,r in ledger['components'].items()
+                 if r.get('spatial_repair_schedule')}
+    if not schedules or not writes:return []
+    if any(s.get('status')=='DECISION_REQUIRED' for s in schedules.values()):
+        raise ValueError('Resolve the retained repair measurement/source decision before any native write')
+    pending = [s for schedule in schedules.values() for s in schedule['stages'] if s['status']!='DONE']
+    if not pending:raise ValueError('Close the current repair schedule before another native write')
+    phase = min(s['phase'] for s in pending)
+    rows = {owner:row['id'] for row in contract['components'] for owner in row['owners']}
+    names = set()
+    for item in writes:
+        name = rows.get(item['owner']);record = ledger['components'].get(name,{})
+        schedule = schedules.get(name,{})
+        active = [s for s in schedule.get('stages',[]) if s['status']=='ACTIVE' and s['phase']==phase]
+        if (schedule.get('status')=='DECISION_REQUIRED' or len(active)!=1 or not item['field'] or
+                not any(g['owner']==item['owner'] and item['field'][:len(g['field'])]==g['field']
+                        for g in record.get('repair_grant',[]))):
+            raise ValueError('REPAIR_PHASE_AUTHORITY_REQUIRED: use the current active fields or submit a source decision and replan')
+        names.add(name)
+    return sorted(names)
+
+
+def guard_scene(contract, ledger, before, after):
+    from .component_fields import canonical_node, differences
+    old = {n['id']:canonical_node(n) for n in before['objects']}
+    new = {n['id']:canonical_node(n) for n in after['objects']}
+    writes = [dict(p,owner=owner) for owner in set(old)|set(new)
+              for p in differences(old.get(owner),new.get(owner),
+                  before_exists=owner in old,after_exists=owner in new)]
+    return guard_fields(contract,ledger,writes)
+
+
+def _owner_phases(contract, targets, owner):
+    points = {b['landmark']:b['owner'] for b in contract['spatial_bindings']}
+    domains = {b['footprint']:set(b['owners']) for b in contract.get('spatial_footprint_bindings',[])}
+    relations = {r['id']:r for r in contract['spatial']['relations']}
+    coupled = {owner}
+    for manifest in contract.get('construction_manifests',[]):
+        parts = {p['owner'] for p in manifest['parts']}
+        if owner in parts:coupled.update(parts)
+    result = []
+    for key, phase in targets.items():
+        channel, name = key.split(':',1)
+        if channel=='spatial_anchor':owners = {points[name]}
+        elif channel=='spatial_footprint':owners = domains.get(name,set())
+        else:
+            relation=relations[name]
+            owners={points[k] for k in relation['landmarks']}
+            owners.update(o for k in relation.get('footprints',[]) for o in domains.get(k,set()))
+        if owners & coupled:result.append(phase)
     return result
 
 
@@ -59,9 +121,10 @@ def prepare_item(contract, report, row, item, candidate, scene):
         if diagnosis == 'shared_frame':
             raise ValueError('SPATIAL_SOURCE_DECISION_REQUIRED: revise the shared original frame, then rebind its consumers')
     nodes = {n['id']:n for n in scene['objects']}
-    geometric_phase = min(targets.values(), default=3)
     buckets = {}
     for grant in item['fields']:
+        phases = [p for p in _owner_phases(contract,targets,grant['owner']) if p<=3]
+        geometric_phase = min(phases,default=3)
         phase = _field_phase(grant,nodes,geometric_phase)
         if 'phase' in grant and grant['phase'] != phase:
             raise ValueError('Repair field phase conflicts with its measured dependency and native field type')
@@ -84,6 +147,8 @@ def prepare_item(contract, report, row, item, candidate, scene):
 
 
 def activate(ledger, candidate, scene, contract):
+    if any(r.get('spatial_repair_schedule',{}).get('status')=='DECISION_REQUIRED' for r in ledger['components'].values()):
+        return False
     pending = [(name, stage) for name, record in ledger['components'].items()
                for stage in record.get('spatial_repair_schedule',{}).get('stages',[]) if stage['status']!='DONE']
     if not pending:return False
@@ -129,6 +194,7 @@ def advance(task,state,candidate,contract,ledger,scene):
     changed = False;report = None
     for name, schedule in schedules.items():
         record = ledger['components'][name]
+        if schedule.get('status')=='DECISION_REQUIRED':continue
         for stage in schedule['stages']:
             if stage['status'] != 'SAVED':continue
             if stage['phase']==5:
@@ -139,7 +205,12 @@ def advance(task,state,candidate,contract,ledger,scene):
                     report=evaluate(task,state,candidate,contract)
                 if not report['valid']:
                     changed = changed or record['status']!='MEASUREMENT_DIAGNOSIS_REQUIRED'
-                    record['status']='MEASUREMENT_DIAGNOSIS_REQUIRED';continue
+                    changed = changed or schedule.get('status')!='DECISION_REQUIRED'
+                    schedule['status']='DECISION_REQUIRED'
+                    record['status']='MEASUREMENT_DIAGNOSIS_REQUIRED'
+                    record['source_decision']={'reason':'Diagnose the current saved spatial measurement before repair',
+                        'checks':_retain_checks(task,report),'source_hash':state['source']['sha256'],'pptx_hash':candidate['pptx']['sha256']}
+                    continue
                 current = failures(report)
                 # A repaired phase cannot leave a new earlier-phase failure in
                 # its unit scope while progressing to a later paint phase.
@@ -147,11 +218,39 @@ def advance(task,state,candidate,contract,ledger,scene):
                 unresolved = {k:v for k,v in _targets(contract,report,row).items() if v<=stage['phase']}
                 if unresolved or any(k in current for k in stage['targets']):
                     changed = changed or record['status']!='SPATIAL_RELATIONS_UNMET'
-                    record['status']='SPATIAL_RELATIONS_UNMET';continue
+                    changed = changed or schedule.get('status')!='DECISION_REQUIRED'
+                    schedule['status']='DECISION_REQUIRED'
+                    record['status']='SPATIAL_RELATIONS_UNMET'
+                    record['source_decision']={'reason':'Saved repair phase failed; revise the located source/native decision and replan',
+                        'checks':_retain_checks(task,report),'unresolved':unresolved,'source_hash':state['source']['sha256'],
+                        'pptx_hash':candidate['pptx']['sha256']}
+                    continue
             stage['status']='DONE';changed=True
             if any(s['status']=='WAITING' for s in schedule['stages']):record['status']='SPATIAL_REPAIR_WAITING'
         if all(s['status']=='DONE' for s in schedule['stages']):
             record['spatial_repair_completed']=copy.deepcopy(schedule)
             record.pop('spatial_repair_schedule',None)
             if record['status']=='SPATIAL_REPAIR_WAITING':record['status']='RECHECK_REQUIRED'
+    pending = [s for record in ledger['components'].values()
+               for s in record.get('spatial_repair_schedule',{}).get('stages',[]) if s['status']!='DONE']
+    if any(r.get('spatial_repair_schedule',{}).get('status')=='DECISION_REQUIRED' for r in ledger['components'].values()):
+        return changed
+    if pending and any(s['status']=='WAITING' for s in pending):
+        phase=min(s['phase'] for s in pending)
+        if report is None:
+            from .spatial_checks import evaluate
+            report=evaluate(task,state,candidate,contract)
+        blocked=False
+        for row in contract['components']:
+            record=ledger['components'][row['id']]
+            if not record.get('spatial_repair_schedule'):continue
+            earlier={k:v for k,v in _targets(contract,report,row).items() if v<phase}
+            if not report['valid'] or earlier:
+                record['status']='MEASUREMENT_DIAGNOSIS_REQUIRED' if not report['valid'] else 'SOURCE_DECISION_REQUIRED'
+                record['spatial_repair_schedule']['status']='DECISION_REQUIRED'
+                record['source_decision']={'reason':'Earlier measured obligations must pass before the next grant; replan missing repair phases',
+                    'earlier_failures':earlier,'checks':_retain_checks(task,report),'source_hash':state['source']['sha256'],
+                    'pptx_hash':candidate['pptx']['sha256']}
+                blocked=True;changed=True
+        if blocked:return changed
     return activate(ledger,candidate,scene,contract) or changed

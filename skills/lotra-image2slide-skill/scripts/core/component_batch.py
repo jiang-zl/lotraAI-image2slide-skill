@@ -53,6 +53,8 @@ def commit(task,request):
     if not selected or len(selected)>contract['policy']['max_actions_per_advance'] or len(set(selected))!=len(selected):
         raise ValueError('Bounded distinct batch required')
     rows=[c.component_row(task,state,contract,name) for name in selected];routes={row['route'] for row in rows}
+    if state.get('spatial_source_decision') or ledger.get('pending_decision') or ledger.get('structural_grant'):
+        raise ValueError('Resolve the pending source/measurement decision before native commit')
     if len(routes)!=1 or not routes<={'instance','local_fit'}:raise ValueError('Batch one independent operation family')
     family={row.get('mother') if row['route']=='instance' else row.get('parent') for row in rows}
     if len(family)!=1:raise ValueError('Batch only source-related parts of one mother family')
@@ -64,6 +66,8 @@ def commit(task,request):
         from .spatial_fit import is_spatial, writes as spatial_writes
         writes=spatial_writes(row) if is_spatial(row) else ([{'owner':owner,'field':[]} for owner in row['owners']] if row['route']=='instance' else
                 [v for key,v in row['fit']['bindings'].items() if row['parameters'][key]['state']=='tunable'])
+        from .spatial_repair import guard_fields
+        guard_fields(contract,ledger,writes)
         if any(item['owner']==lock['owner'] and overlap(item['field'],lock['field'])
                for item in writes for lock in ledger['components'][row['id']].get('user_locks',[])):
             raise ValueError('USER_LOCK_CONFLICT: batch write overlaps an adopted field')
