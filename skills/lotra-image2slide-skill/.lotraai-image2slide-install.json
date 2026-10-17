@@ -1,7 +1,7 @@
 {
   "format_version": 1,
   "installer": "package_skill.py",
-  "manifest_sha256": "dbc952e5f72e4ea7ae409f7ee81935464e660ad0482a200a50fe8e173363506d",
+  "manifest_sha256": "2b651eb4901bd511f68f366235b2384957a11d3931ecf9a9ea434697767a72b3",
   "name": "lotra-image2slide-skill",
-  "version": "1.35.0"
+  "version": "1.35.1"
 }

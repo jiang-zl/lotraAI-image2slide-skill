@@ -1,3 +1,12 @@
+## 1.35.1
+
+Repair the nine spatial static-review findings across construction, complete
+footprint measurements, typed subjects, direct-resource invalidation, coupled
+finite parameter fitting, journaled repair phases, canonical topology and
+projection/unit guards. Qualification and final gates use current saved evidence. Native shape priority remains. Runtime
+binaries are unchanged. Tests, syntax/import/CLI checks, reconstruction and
+rendering were not run at the user's explicit request.
+
 ## 1.35.0
 
 Spatial reference frames, source-observed projected pose, recursive face-local

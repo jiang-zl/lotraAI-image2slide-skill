@@ -302,6 +302,11 @@ def apply_post_save(task,state,ledger,tx,candidate):
     if token in applied:return
     for name,status in post.get('statuses',{}).items():
         ledger['components'][name]['status']=status
+    for name,record in post.get('spatial_instantiations',{}).items():
+        ledger['components'][name]['instantiation'] = dict(copy.deepcopy(record), candidate=copy.deepcopy(candidate['pptx']))
+    if post.get('repair_phase_saved'):
+        from .spatial_repair import saved as repair_phase_saved
+        repair_phase_saved(ledger,post['repair_phase_saved'],candidate)
     if (tx.get('reason') or {}).get('kind')=='component_numeric_batch':
         for name in tx['reason']['components']:
             record=ledger['components'][name]

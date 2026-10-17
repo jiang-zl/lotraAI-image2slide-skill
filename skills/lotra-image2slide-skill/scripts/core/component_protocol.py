@@ -86,7 +86,7 @@ def validate_contract(value, scene, source_hash):
     if required_units!=covered_units:raise ValueError('Complete source-unit/component reconciliation required')
     coverage = defaultdict(list)
     for row in components:
-        if value.get('workflow_version') in ('1.33.0','1.34.0','1.35.0') and row.get('route')=='assembly' and (not row.get('semantic_class') or not row.get('view')):
+        if value.get('workflow_version') in ('1.33.0','1.34.0','1.35.0','1.35.1') and row.get('route')=='assembly' and (not row.get('semantic_class') or not row.get('view')):
             raise ValueError('SOURCE_DECISION_REQUIRED: freeze assembly semantic_class and observed view for the private method lifecycle')
         if row.get('route') not in ROUTES: raise ValueError('Unsupported component route')
         if not row.get('source_evidence') or not row.get('source_refs'):
@@ -259,7 +259,34 @@ def impact(contract, changed):
                 affected.add(related)
                 # Moving a child changes its parent's internal assembly.
                 queue.append((related, True))
-    if contract.get('workflow_version') == '1.35.0':
+    spatial_neighbours = set()
+    if contract.get('workflow_version') == '1.35.1':
+        # Only directly changed resources seed relation invalidation. An
+        # assembly becoming dirty does not mean every descendant changed.
+        unit_components = defaultdict(set)
+        changed_units = set()
+        changed_paint_units = set()
+        for row in components.values():
+            for unit in row.get('spatial_context', {}).get('direct_units', []):
+                unit_components[unit].add(row['id'])
+        for name, fields in changed.items():
+            row = components[name]
+            context = row.get('spatial_context', {})
+            direct = set(context.get('direct_units', []))
+            # An actual parent transform moves its descendants. A dirty parent
+            # qualification alone never enters this branch as a new change.
+            if 'pose' in fields and row['route'] == 'assembly':direct.update(context.get('units', []))
+            if set(fields) <= {'paint'}:changed_paint_units.update(direct)
+            else:changed_units.update(direct)
+        for relation in contract.get('spatial', {}).get('relations', []):
+            eligible = changed_units | (changed_paint_units if relation['kind'] == 'occludes' else set())
+            if set(relation['units']) & eligible:
+                relations.add('spatial:'+relation['id'])
+                spatial_neighbours.update(set().union(*(unit_components[u] for u in relation['units'])))
+        # Unchanged neighbour anatomy keeps its qualification and best. Current
+        # relationships are remeasured by the containing assembly/layout and
+        # the independent final gate; layout_ready is invalidated by callers.
+    elif contract.get('workflow_version') == '1.35.0':
         # Typed spatial neighbours share placement/occlusion dependencies, not
         # intrinsic mother anatomy. Their native checks must be refreshed.
         unit_components = defaultdict(set)
@@ -287,6 +314,7 @@ def impact(contract, changed):
                     if copy_row.get('mother') == parent:
                         affected.add(copy_row['id']);pending.append(copy_row['id'])
     return {'components': sorted(affected), 'relations': sorted(relations),
+            'spatial_neighbours': sorted(spatial_neighbours),
             'final_dirty': bool(changed), 'run_final_now': False}
 
 
@@ -296,6 +324,7 @@ def ready_for_final(contract, ledger):
     relation_pending = [r['id'] for r in contract.get('relations', [])
                         if ledger.get('relations', {}).get(r['id'], {}).get('status') != 'QUALIFIED']
     return {'ready': not pending and not relation_pending and ledger.get('layout_ready') is True and
+                    not any(r.get('spatial_repair_schedule') for r in ledger.get('components',{}).values()) and
                     not ledger.get('pending_transaction') and not ledger.get('user_reconciliation') and
                     not ledger.get('source_observation_dirty') and
                     (ledger.get('repair_batch') or {}).get('status')!='PLAN_REQUIRED',

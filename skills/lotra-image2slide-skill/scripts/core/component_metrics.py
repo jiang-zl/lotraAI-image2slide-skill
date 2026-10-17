@@ -59,6 +59,11 @@ def arrays(original, actual, mask=None):
 
 
 def measure(task, state, candidate, component):
+    from .spatial_fit import is_spatial, measured
+    if is_spatial(component):
+        from .component_workflow import _load
+        contract,_ = _load(task,state)
+        return measured(task,state,candidate,contract,component)
     from .appearance_metrics import canvas
     source_ref, preview_ref = state['source'], candidate.get('preview')
     if not preview_ref: return {'hard_checks': {'actual_preview': False}, 'metrics': {}}

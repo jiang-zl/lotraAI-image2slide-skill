@@ -18,7 +18,9 @@ def operator_key(row):
         'adapter':row.get('fit',{}).get('adapter'),'parameters':sorted(row.get('parameters',{}))})[:16]
 
 
-def apply(scene,row,values):
+def apply(scene,row,values,contract=None):
+    from .spatial_fit import is_spatial, apply as apply_spatial
+    if is_spatial(row):return apply_spatial(scene,row,values,contract)
     result=copy.deepcopy(scene);nodes={n['id']:n for n in result['objects']};allowed={}
     bindings=row['fit'].get('bindings',{})
     if set(bindings)!=set(row.get('parameters',{})):
@@ -120,13 +122,15 @@ def fit(task,request):
     if record['status']=='ACTUAL_NATIVE_CONFIRMATION_REQUIRED' and candidate['pptx']['sha256']!=record.get('numeric_baseline_hash'):
         return {'status':'ACTUAL_NATIVE_CONFIRMATION_REQUIRED','report':record.get('last_fit'),
                 'evaluations':0,'whole_audit_executed':False,'next':'Evaluate the actual saved candidate before another fit'}
-    if row.get('fit',{}).get('adapter')!='native_geometry':
+    spatial_adapter = row.get('fit',{}).get('adapter')=='spatial_parameters'
+    if row.get('fit',{}).get('adapter') not in ('native_geometry','spatial_parameters'):
         return {'status':'MODEL_OR_SOURCE_DECISION_REQUIRED','component':row['id'],'reason':'Use an existing original-only typed fitter or bind a supported geometric adapter'}
-    source=canvas(str(c._resource(task,state['source'])),state['source']['sha256'],tuple(state['source_size']))
-    x,y,r,b=window(row['roi'],state['source_size']);original=source[y:b,x:r]
-    if [x,y,r-x,b-y]!=row['roi']:raise ValueError('Cheap trial ROI must use original integer sample coordinates')
-    mask=None
-    if row.get('support_mask'):mask=np.asarray(Image.open(c._resource(task,row['support_mask'])).convert('L'))>0
+    mask=None;original=None
+    if not spatial_adapter:
+        source=canvas(str(c._resource(task,state['source'])),state['source']['sha256'],tuple(state['source_size']))
+        x,y,r,b=window(row['roi'],state['source_size']);original=source[y:b,x:r]
+        if [x,y,r-x,b-y]!=row['roi']:raise ValueError('Cheap trial ROI must use original integer sample coordinates')
+        if row.get('support_mask'):mask=np.asarray(Image.open(c._resource(task,row['support_mask'])).convert('L'))>0
     scene=read_json(c._resource(task,candidate['scene']));settings=copy.deepcopy(contract['policy']['parameter_search'])
     settings['parameter_metric_map']=row.get('parameter_metric_map',{})
     _,signatures=c._signatures(task,state,candidate)
@@ -151,10 +155,10 @@ def fit(task,request):
             same_context=c._measurement_signature(row,saved_signatures,contract)==measurement_signature
         if (same_context and previous.get('contract')==state['component_workflow']['contract']
                 and previous.get('status')=='TARGETS_MET'):
-            predicted,_=apply(scene,row,previous['parameters'])
+            predicted,_=apply(scene,row,previous['parameters'],contract)
             selected={n['id']:n for n in scene['objects']};fitted={n['id']:n for n in predicted['objects']}
             same=all(selected[name]==fitted[name] for name in row['owners'])
-            if same and record['status']=='LOCAL_TARGETS_UNMET':
+            if same and record['status'] in ('LOCAL_TARGETS_UNMET','SPATIAL_RELATIONS_UNMET'):
                 record['status']='MODEL_OR_SOURCE_DECISION_REQUIRED'
                 with writer(task):c._save_ledger(task,state,ledger,'surrogate_discrepancy',{'component':row['id'],'report':record['last_fit']})
                 return {'status':record['status'],'evaluations':0,'report':record['last_fit'],'whole_audit_executed':False,
@@ -194,7 +198,14 @@ def fit(task,request):
         if budget['evaluations']>=maximum:raise ValueError('Persistent measurement budget exhausted')
         pc.reserve(task,state,row,'evaluations')
         budget['evaluations']+=1;write_json(budget_file,budget)
-        constructed,_=apply(scene,row,values);actual=preview(constructed,row)
+        try:
+            constructed,_=apply(scene,row,values,contract)
+        except (ValueError, KeyError, IndexError, TypeError, np.linalg.LinAlgError) as error:
+            return {'hard_checks':{'valid_spatial_geometry':False},'metrics':{},'reason':str(error)}
+        if spatial_adapter:
+            from .spatial_fit import measured
+            return measured(task,state,candidate,contract,row,constructed)
+        actual=preview(constructed,row)
         metrics,_=arrays(original,actual,mask)
         from .component_metric_adapters import geometric
         metrics.update(geometric(actual,row,mask,original))

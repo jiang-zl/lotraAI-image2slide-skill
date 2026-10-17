@@ -106,7 +106,7 @@ def audit(task,state=None,candidate=None,persist=True):
            'actual_render':{'passed':True,'backend':receipt['backend'],'receipt':candidate['render']},
            'source_feature_basis':feature_basis,'source_feature_probes':feature_probes,
            'final_visual':visual}
-    if contract.get('workflow_version') == '1.35.0':
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
         from .spatial_checks import evaluate as spatial_evaluate
         # Independent final gate recomputes from saved bytes, not local hits.
         gates['spatial_native'] = spatial_evaluate(task,state,candidate,contract)
@@ -178,8 +178,9 @@ def report(result,compact,render):
     spatial=result['gates'].get('spatial_native')
     if spatial:
         lines.extend(['','| 空间关系 | 实测值 | 原图允许上限 | 结果 |','|---|---|---|---|'])
-        for name,item in spatial.get('relations',{}).items():
-            lines.append('| '+name.replace('|','/')+' | '+str(item.get('value'))+' '+str(item.get('unit',''))+' | '+str(item.get('threshold'))+' | '+('PASS' if item['passed'] else 'FAIL')+' |')
+        for channel in ('anchors','footprints','relations'):
+            for name,item in spatial.get(channel,{}).items():
+                lines.append('| '+(channel+':'+name).replace('|','/')+' | '+str(item.get('value'))+' '+str(item.get('unit',''))+' | '+str(item.get('threshold'))+' | '+('PASS' if item['passed'] else 'FAIL')+' |')
         lines.extend(['','空间验收针对原图可观察的投影关系；未确定的隐藏三维几何不在已验证结论内。'])
     lines.extend(['','整图视觉判断：'])
     for key,value in result['gates']['final_visual'].get('dimensions',{}).items():

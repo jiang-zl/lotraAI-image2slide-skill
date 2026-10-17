@@ -292,6 +292,47 @@ def construct(spec):
     return objects, manifest
 
 
+def compile_spec(spec, spatial=None):
+    """One dispatcher for bind, scoped revision, fitting and instance construction."""
+    from .spatial_constructors import prepare, construct as spatial_construct, KINDS as SPATIAL_KINDS, canonical
+    if spec.get('frame_ref') or spec.get('kind') in SPATIAL_KINDS:
+        if not spatial:raise ValueError('Spatial construction needs its frozen original graph')
+        prepared = prepare(spec, spatial)
+        objects, manifest = spatial_construct(prepared, spatial) if spec['kind'] in SPATIAL_KINDS else construct(prepared)
+        from .spatial_frames import strict
+        manifest['canonical_geometry'] = canonical(spec,strict(spatial))
+        manifest['frame_ref'] = spec.get('frame_ref')
+        return objects, manifest
+    return construct(spec)
+
+
+def revise_scene(scene, previous, revised, permitted):
+    """Replace only changed registered constructor owners in a source/native plan."""
+    old = {s['id']: s for s in previous.get('native_constructions', [])}
+    new = {s['id']: s for s in revised.get('native_constructions', [])}
+    result = copy.deepcopy(scene); changed = set()
+    from .spatial_frames import frames
+    def basis(spec, graph):
+        return identity(frames(graph).ancestors(spec['frame_ref'])) if spec and spec.get('frame_ref') else None
+    for name in sorted(set(old) | set(new)):
+        before, after = old.get(name), new.get(name)
+        if before == after and basis(before, previous.get('spatial')) == basis(after, revised.get('spatial')):continue
+        old_objects = compile_spec(before, previous.get('spatial'))[0] if before else []
+        new_objects = compile_spec(after, revised.get('spatial'))[0] if after else []
+        owners = {o['id'] for o in old_objects+new_objects}
+        if not owners <= set(permitted):
+            raise ValueError('Construction revision escaped its explicit owner resource group')
+        old_names = {o['id'] for o in old_objects}; replacements = {o['id']: o for o in new_objects}
+        retained = []; used = set()
+        for obj in result['objects']:
+            if obj['id'] in replacements:
+                retained.append(copy.deepcopy(replacements[obj['id']])); used.add(obj['id'])
+            elif obj['id'] not in old_names:retained.append(obj)
+        retained.extend(copy.deepcopy(o) for o in new_objects if o['id'] not in used)
+        result['objects'] = retained; changed.update(owners)
+    return result, changed
+
+
 def expand(scene, contract):
     result = copy.deepcopy(scene); manifests = []
     specs = contract.get('native_constructions', [])
@@ -299,17 +340,10 @@ def expand(scene, contract):
         raise ValueError('Distinct bounded native construction declarations required')
     owners = {o['id']:o for o in result['objects']}
     for spec in specs:
-        from .spatial_frames import enabled as spatial_enabled
-        from .spatial_constructors import prepare, construct as construct_spatial, KINDS as SPATIAL_KINDS
-        if spec.get('frame_ref') or spec.get('kind') in SPATIAL_KINDS:
-            if not spatial_enabled(contract) or not contract.get('spatial'):
-                raise ValueError('Spatial construction requires the frozen v1.35 original reference frames')
-            prepared = prepare(spec, contract['spatial'])
-            objects, manifest = (construct_spatial(prepared, contract['spatial']) if spec['kind'] in SPATIAL_KINDS else construct(prepared))
-            manifest['canonical_geometry'] = __import__(__package__+'.spatial_constructors', fromlist=['canonical']).canonical(spec)
-            manifest['frame_ref'] = spec.get('frame_ref')
-        else:
-            objects, manifest = construct(spec)
+        if spec.get('frame_ref') or spec.get('kind') in ('spatial_prism','spatial_polyhedron'):
+            from .spatial_frames import enabled
+            if not enabled(contract):raise ValueError('Explicit spatial-policy migration required before spatial construction')
+        objects, manifest = compile_spec(spec, contract.get('spatial'))
         for obj in objects:
             if obj['id'] in owners:
                 existing = owners[obj['id']]

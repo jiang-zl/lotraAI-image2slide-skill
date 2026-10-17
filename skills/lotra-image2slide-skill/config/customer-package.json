@@ -102,6 +102,7 @@
     "references/workflow-v133.md",
     "references/workflow-v134.md",
     "references/workflow-v135.md",
+    "references/workflow-v1351.md",
     "requirements.txt",
     "schemas/component-contract.schema.json",
     "schemas/frame-plan.json",
@@ -371,7 +372,11 @@
     "scripts/core/source_text_actions.py",
     "scripts/core/spatial_checks.py",
     "scripts/core/spatial_constructors.py",
+    "scripts/core/spatial_fit.py",
+    "scripts/core/spatial_footprints.py",
     "scripts/core/spatial_frames.py",
+    "scripts/core/spatial_observation.py",
+    "scripts/core/spatial_repair.py",
     "scripts/core/state.py",
     "scripts/core/state_repository.py",
     "scripts/core/surface_metrics.py",
@@ -440,7 +445,7 @@
   "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
   "publication_revision": 1,
   "release_status": "IMPLEMENTED_STATICALLY_REVIEWED_NOT_TESTED_PER_USER_REQUEST",
-  "runtime_regressions": "NOT_RUN_PER_USER_REQUEST: v1.35 tests, syntax/import/CLI, reconstruction, rendering and performance checks were not executed.",
+  "runtime_regressions": "NOT_RUN_PER_USER_REQUEST: tests, syntax/import/CLI, reconstruction and rendering excluded",
   "schema": "lotra-customer-package-1",
-  "version": "1.35.0"
+  "version": "1.35.1"
 }

@@ -18,11 +18,12 @@ def available(contract,ledger,candidate):
     applying=[key for key in repairs if key in structural.get('components',[])
               and ledger['components'][key]['status']=='SOURCE_DECISION_APPLY_REQUIRED']
     if applying:repairs=applying
-    elif contract.get('workflow_version')=='1.35.0' and repairs:
+    elif contract.get('workflow_version') in ('1.35.0','1.35.1') and repairs:
         phase=min(ledger['components'][key].get('repair_phase',5) for key in repairs)
         repairs=[key for key in repairs if ledger['components'][key].get('repair_phase',5)==phase]
     for row in rows.values():
         record=ledger['components'][row['id']]; status=record['status']; route=row['route']
+        if status=='SPATIAL_REPAIR_WAITING':continue
         if status=='QUALIFIED': continue
         children=[r['id'] for r in rows.values() if r.get('parent')==row['id']]
         repairing=row['id'] in repairs
@@ -41,6 +42,10 @@ def available(contract,ledger,candidate):
             operation='source_or_measurement_decision';stage='source'
         elif status in ('MEASUREMENT_INVALID','MEASUREMENT_REQUIRED','MEASUREMENT_DIAGNOSIS_REQUIRED'):
             stage='measurement'; operation='source_or_measurement_decision'
+        elif status=='SPATIAL_RELATIONS_UNMET' and row.get('fit',{}).get('adapter')=='spatial_parameters':
+            stage='fit';operation='fit';automatic=True
+            from .spatial_fit import writes
+            write_set=writes(row)
         elif status in DECISIONS:
             stage='source'; operation='source_or_measurement_decision'
         elif status=='HARD_CONSTRAINT_FAILED':
@@ -54,7 +59,7 @@ def available(contract,ledger,candidate):
             write_set=[{'owner':v['owner'],'field':v['field']} for k,v in row['fit']['bindings'].items() if row['parameters'][k]['state']=='tunable']
         elif route=='local_fit' and status=='LOCAL_TARGETS_UNMET':
             operation='source_or_measurement_decision' if row.get('curve_spec_hash') else 'fit'
-            automatic=not row.get('curve_spec_hash') and row.get('fit',{}).get('adapter')=='native_geometry' and bool(candidate.get('preview'))
+            automatic=not row.get('curve_spec_hash') and row.get('fit',{}).get('adapter') in ('native_geometry','spatial_parameters') and bool(candidate.get('preview'))
             for name,binding in row.get('fit',{}).get('bindings',{}).items():
                 if row['parameters'][name]['state']=='tunable':
                     write_set.append({'owner':binding['owner'],'field':binding['field']})
@@ -62,6 +67,9 @@ def available(contract,ledger,candidate):
             operation='reproject' if row.get('spatial_instance',{}).get('route')=='reproject_constructor' else 'instantiate'; automatic=True
             write_set=[{'owner':owner,'field':[]} for owner in row['owners']]
         reuse=sum(part.get('mother')==row['id'] for part in rows.values())
+        if operation in ('fit','commit') and row.get('fit',{}).get('adapter')=='spatial_parameters':
+            from .spatial_fit import writes
+            write_set=writes(row)
         dependency_unknown=bool(row.get('unresolved_dependencies'))
         locked_fields=([lock for key in repairs for lock in ledger['components'][key].get('user_locks',[])]
                        if repairing else record.get('user_locks',[]))

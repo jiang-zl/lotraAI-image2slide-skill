@@ -45,7 +45,7 @@ def source_placement(task,state,candidate,contract):
             if expected[owner]['render_type']=='group':continue
             actual=frames.get(owner,{}).get('frame');wanted=expected[owner]['bbox'];checks=[]
             intervals = None
-            if contract.get('workflow_version') == '1.35.0':
+            if contract.get('workflow_version') in ('1.35.0','1.35.1'):
                 wanted, intervals = _source_frame_bounds(expected[owner], {i:v for (name,i),v in ranges.items() if name==owner})
             if actual is not None:
                 for index,(observed,target) in enumerate(zip(actual,wanted)):

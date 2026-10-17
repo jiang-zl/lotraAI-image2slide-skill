@@ -18,7 +18,7 @@ TIERS = {'native_text':0,'native_math':0,'native_connector':0,'preset':1,
 
 
 def enabled(contract):
-    return contract.get('workflow_version') in ('1.34.0', '1.35.0')
+    return contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1')
 
 
 def _box(roi, size):
@@ -30,7 +30,7 @@ def _box(roi, size):
 def validate_observation(value, source_hash, size):
     from .component_protocol import finite
     finite(value)
-    if (value.get('schema') not in (VERSION, 'source-features-1.35.0') or value.get('source_hash') != source_hash or
+    if (value.get('schema') not in (VERSION, 'source-features-1.35.0', 'source-features-1.35.1') or value.get('source_hash') != source_hash or
             value.get('canvas') != list(size) or value.get('basis') != 'unchanged_original' or
             value.get('observer') not in ('host_model','human') or not value.get('observations')):
         raise ValueError('SOURCE_OBSERVATION_REQUIRED: independent located original observations')
@@ -80,7 +80,9 @@ def validate_observation(value, source_hash, size):
     for unit in units:
         if not any(f['unit']==unit['id'] for f in features):
             raise ValueError('Every observed source unit needs a feature, including assembly structure')
-    if value['schema'] == 'source-features-1.35.0':
+    if value['schema'] in ('source-features-1.35.0', 'source-features-1.35.1'):
+        if value.get('spatial',{}).get('schema') != value['schema'].replace('source-features-','spatial-'):
+            raise ValueError('Original observation and spatial policy revisions must match explicitly')
         from .spatial_frames import validate_observation as validate_spatial
         validate_spatial(value)
     return value
@@ -123,11 +125,18 @@ def observe(task, request):
             if weakened and not corrected.get(key,{}).get('source_evidence'):
                 raise ValueError('Retain frozen feature targets; a source correction needs located evidence')
     folder = task/'component-workflow'; folder.mkdir(exist_ok=True)
+    if state.get('spatial_source_decision'):
+        from .problem_control import reserve
+        from .component_workflow import component_row
+        token=identity({'spatial_observation':value})
+        for component in state['spatial_source_decision']['components']:
+            reserve(task,state,component_row(task,state,contract,component),'source_reads',token=token)
     file = folder/('Source-observation-'+identity(value)+'.json')
     if not file.exists(): write_json(file, value)
     with writer(task):
         if prior: state.setdefault('source_observation_history', []).append(prior)
         state['source_feature_observation'] = _ref(task, file)
+        state.pop('spatial_source_decision',None)
         if contract and enabled(contract):
             state['source_observation_rebind_required'] = True
             ledger['source_observation_dirty'] = True
@@ -246,7 +255,7 @@ def bind(task, state, contract, scene):
     units = {u['id']:u for u in observed['units']}
     declared = {u['id']:u for u in contract['source_inventory']}
     if set(units) != set(declared) or any(any(declared[k].get(f) != units[k].get(f)
-            for f in (('parent','roi','decomposition','source_evidence','spatial') if contract.get('workflow_version')=='1.35.0' else ('parent','roi','decomposition','source_evidence'))) for k in units):
+            for f in (('parent','roi','decomposition','source_evidence','spatial') if contract.get('workflow_version') in ('1.35.0','1.35.1') else ('parent','roi','decomposition','source_evidence'))) for k in units):
         raise ValueError('Source inventory must retain the independent recursive observation')
     features = {f['id']:f for f in observed['features']}
     bindings = contract.get('feature_bindings', [])

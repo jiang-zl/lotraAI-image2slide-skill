@@ -83,15 +83,19 @@
   "recovery_postconditions": "Immutable planned post-save ledger transitions before Ready; idempotent replay",
   "schema": "component-workflow-1.32.0",
   "spatial_policy": {
-    "centering": "recursive_face_local_aggregate",
+    "canonical_reuse": "vertices_and_face_edge_incidence",
+    "centering": "complete_native_logical_contact_domains",
     "final_saved_native_and_render_required": true,
     "frames": "original_owned",
     "hidden_3d_acceptance": false,
     "native_priority": true,
     "pose": "observable_projection_with_declared_symmetry",
+    "relation_subjects": "explicit_measured_ownership",
+    "repair_phases": "measurement_derived_journaled",
     "runtime_dependencies_added": [],
+    "spatial_fit": "bounded_constructor_parameters_with_immutable_original_targets",
     "standing_alignment": "contact_footprint",
-    "workflow_version": "1.35.0"
+    "workflow_version": "1.35.1"
   },
   "stage_order": [
     "recovery",

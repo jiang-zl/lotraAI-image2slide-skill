@@ -26,7 +26,8 @@
           "workflow_version": {
             "enum": [
               "1.34.0",
-              "1.35.0"
+              "1.35.0",
+              "1.35.1"
             ]
           }
         },
@@ -58,6 +59,39 @@
           "spatial_bindings",
           "spatial_basis",
           "spatial_units"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "workflow_version": {
+            "const": "1.35.1"
+          }
+        },
+        "required": [
+          "workflow_version"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spatial": {
+            "properties": {
+              "schema": {
+                "const": "spatial-1.35.1"
+              }
+            },
+            "required": [
+              "footprints"
+            ]
+          }
+        },
+        "required": [
+          "spatial",
+          "spatial_bindings",
+          "spatial_basis",
+          "spatial_units",
+          "spatial_footprint_bindings"
         ]
       }
     }
@@ -97,82 +131,123 @@
                   "type": "string"
                 },
                 "measurement": {
-                  "allOf": [
+                  "anyOf": [
                     {
-                      "if": {
-                        "properties": {
-                          "adapter": {
-                            "const": "keypoint_distance"
-                          }
-                        }
-                      },
-                      "then": {
-                        "required": [
-                          "keypoints"
-                        ]
-                      }
-                    },
-                    {
-                      "if": {
-                        "properties": {
-                          "adapter": {
-                            "const": "line_width_error"
-                          }
-                        }
-                      },
-                      "then": {
-                        "required": [
-                          "width_estimator"
-                        ]
-                      }
-                    }
-                  ],
-                  "properties": {
-                    "adapter": {
-                      "enum": [
-                        "keypoint_distance",
-                        "endpoint_distance",
-                        "centerline_distance",
-                        "curve_distance",
-                        "line_width_error"
-                      ]
-                    },
-                    "coordinate_space": {
-                      "const": "component_roi"
-                    },
-                    "expected_count": {
-                      "maximum": 4096,
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "foreground": {
-                      "type": "object"
-                    },
-                    "keypoints": {
-                      "items": {
-                        "properties": {
-                          "id": {
-                            "minLength": 1,
-                            "type": "string"
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "adapter": {
+                                "const": "keypoint_distance"
+                              }
+                            }
                           },
-                          "kind": {
-                            "enum": [
-                              "corner",
-                              "intersection",
-                              "endpoint"
+                          "then": {
+                            "required": [
+                              "keypoints"
                             ]
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "adapter": {
+                                "const": "line_width_error"
+                              }
+                            }
                           },
-                          "min_distance": {
-                            "maximum": 16,
-                            "minimum": 1,
-                            "type": "integer"
+                          "then": {
+                            "required": [
+                              "width_estimator"
+                            ]
+                          }
+                        }
+                      ],
+                      "properties": {
+                        "adapter": {
+                          "enum": [
+                            "keypoint_distance",
+                            "endpoint_distance",
+                            "centerline_distance",
+                            "curve_distance",
+                            "line_width_error"
+                          ]
+                        },
+                        "coordinate_space": {
+                          "const": "component_roi"
+                        },
+                        "expected_count": {
+                          "maximum": 4096,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "foreground": {
+                          "type": "object"
+                        },
+                        "keypoints": {
+                          "items": {
+                            "properties": {
+                              "id": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "kind": {
+                                "enum": [
+                                  "corner",
+                                  "intersection",
+                                  "endpoint"
+                                ]
+                              },
+                              "min_distance": {
+                                "maximum": 16,
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "sigma": {
+                                "exclusiveMinimum": 0,
+                                "maximum": 3,
+                                "type": "number"
+                              },
+                              "source_point": {
+                                "items": {
+                                  "type": "number"
+                                },
+                                "maxItems": 2,
+                                "minItems": 2,
+                                "type": "array"
+                              },
+                              "threshold_rel": {
+                                "exclusiveMinimum": 0,
+                                "maximum": 1,
+                                "type": "number"
+                              },
+                              "window": {
+                                "items": {
+                                  "type": "number"
+                                },
+                                "maxItems": 4,
+                                "minItems": 4,
+                                "type": "array"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "kind",
+                              "source_point",
+                              "window"
+                            ],
+                            "type": "object"
                           },
-                          "sigma": {
-                            "exclusiveMinimum": 0,
-                            "maximum": 3,
-                            "type": "number"
-                          },
-                          "source_point": {
+                          "maxItems": 64,
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "source_evidence": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "source_points": {
+                          "items": {
                             "items": {
                               "type": "number"
                             },
@@ -180,78 +255,72 @@
                             "minItems": 2,
                             "type": "array"
                           },
-                          "threshold_rel": {
-                            "exclusiveMinimum": 0,
-                            "maximum": 1,
-                            "type": "number"
-                          },
-                          "window": {
-                            "items": {
-                              "type": "number"
-                            },
-                            "maxItems": 4,
-                            "minItems": 4,
-                            "type": "array"
-                          }
+                          "type": "array"
                         },
-                        "required": [
-                          "id",
-                          "kind",
-                          "source_point",
-                          "window"
-                        ],
-                        "type": "object"
-                      },
-                      "maxItems": 64,
-                      "minItems": 1,
-                      "type": "array"
-                    },
-                    "source_evidence": {
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "source_points": {
-                      "items": {
-                        "items": {
+                        "source_width": {
+                          "exclusiveMinimum": 0,
                           "type": "number"
                         },
-                        "maxItems": 2,
-                        "minItems": 2,
-                        "type": "array"
+                        "statistic": {
+                          "enum": [
+                            "mean",
+                            "p95",
+                            "max"
+                          ]
+                        },
+                        "width_estimator": {
+                          "const": "pixel_cell_normal_chord"
+                        },
+                        "window": {
+                          "items": {
+                            "type": "number"
+                          },
+                          "maxItems": 4,
+                          "minItems": 4,
+                          "type": "array"
+                        }
                       },
-                      "type": "array"
+                      "required": [
+                        "adapter",
+                        "coordinate_space",
+                        "window",
+                        "foreground",
+                        "source_evidence"
+                      ],
+                      "type": "object"
                     },
-                    "source_width": {
-                      "exclusiveMinimum": 0,
-                      "type": "number"
-                    },
-                    "statistic": {
-                      "enum": [
-                        "mean",
-                        "p95",
-                        "max"
-                      ]
-                    },
-                    "width_estimator": {
-                      "const": "pixel_cell_normal_chord"
-                    },
-                    "window": {
-                      "items": {
-                        "type": "number"
+                    {
+                      "properties": {
+                        "adapter": {
+                          "const": "spatial_constraint"
+                        },
+                        "channel": {
+                          "enum": [
+                            "anchors",
+                            "footprints",
+                            "relations"
+                          ]
+                        },
+                        "source_evidence": {
+                          "type": "string"
+                        },
+                        "spatial_basis": {
+                          "type": "string"
+                        },
+                        "target": {
+                          "type": "string"
+                        }
                       },
-                      "maxItems": 4,
-                      "minItems": 4,
-                      "type": "array"
+                      "required": [
+                        "adapter",
+                        "channel",
+                        "target",
+                        "spatial_basis",
+                        "source_evidence"
+                      ],
+                      "type": "object"
                     }
-                  },
-                  "required": [
-                    "adapter",
-                    "coordinate_space",
-                    "window",
-                    "foreground",
-                    "source_evidence"
-                  ],
-                  "type": "object"
+                  ]
                 },
                 "measurement_domain": {
                   "enum": [
@@ -452,6 +521,9 @@
             },
             "type": "array",
             "uniqueItems": true
+          },
+          "spatial_fit": {
+            "type": "object"
           },
           "spatial_instance": {
             "properties": {
@@ -797,6 +869,25 @@
     },
     "spatial": {
       "properties": {
+        "footprints": {
+          "items": {
+            "required": [
+              "id",
+              "unit",
+              "frame",
+              "role",
+              "features",
+              "coverage",
+              "geometry",
+              "precision",
+              "tolerance",
+              "source_evidence"
+            ],
+            "type": "object"
+          },
+          "maxItems": 20000,
+          "type": "array"
+        },
         "frames": {
           "maxItems": 2048,
           "minItems": 1,
@@ -811,7 +902,10 @@
           "type": "array"
         },
         "schema": {
-          "const": "spatial-1.35.0"
+          "enum": [
+            "spatial-1.35.0",
+            "spatial-1.35.1"
+          ]
         }
       },
       "required": [
@@ -863,11 +957,49 @@
       "maxItems": 50000,
       "type": "array"
     },
+    "spatial_footprint_bindings": {
+      "items": {
+        "properties": {
+          "footprint": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "native_domain",
+              "native_text_frame"
+            ]
+          },
+          "owners": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "source_evidence": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "footprint",
+          "owners",
+          "method",
+          "source_evidence"
+        ],
+        "type": "object"
+      },
+      "maxItems": 20000,
+      "type": "array"
+    },
     "workflow_version": {
       "enum": [
         "1.33.0",
         "1.34.0",
-        "1.35.0"
+        "1.35.0",
+        "1.35.1"
       ]
     }
   },

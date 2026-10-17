@@ -14,6 +14,11 @@ def validate_metrics(row):
     for metric in row.get('metrics',[]):
         if not metric.get('applicable',True):continue
         spec=metric.get('measurement',{});adapter=spec.get('adapter',metric['id'])
+        if adapter=='spatial_constraint':
+            if (spec.get('channel') not in ('anchors','footprints','relations') or not spec.get('target') or
+                    not spec.get('spatial_basis') or not spec.get('source_evidence') or metric.get('measurement_domain')!='analytic'):
+                raise ValueError('Original-bound typed spatial constraint metric required')
+            continue
         from .surface_metrics import validate as validate_surface
         if validate_surface(metric): continue
         if not spec and metric['id'] in GENERIC:continue

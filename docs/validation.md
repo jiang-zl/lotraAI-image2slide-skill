@@ -1,17 +1,22 @@
-# v1.35.0 validation scope
+# 1.35.1 validation scope
 
-All product validation is NOT_RUN_PER_USER_REQUEST. No tests, syntax/import/CLI
-checks, reconstruction, rendering, Office behavior or performance/effect runs
-were performed. There is no v1.35 artwork acceptance or measured quality/speed
-improvement claim. Historical v1.34 tests and original reconstruction are retained
-as history only and were not rerun or used to qualify this release.
+This maintenance release received source and rule static review only.
 
-The authorized work includes code/rule implementation, static call-chain review,
-source/package inventory and hash preparation, source-only activation without
-executing product code, Git publication and public artifact/channel identity
-checks. Those are packaging/publication operations, not runtime tests.
+| Channel | Status |
+|---|---|
+| Nine reported design/implementation findings | IMPLEMENTED_STATICALLY_REVIEWED_UNTESTED |
+| Normal source/build/measure/repair/qualification/final call-chain review | STATIC_REVIEW_ONLY |
+| Source/package manifest and byte identities | Packaging and synchronization bookkeeping only |
+| Product tests and regression fixtures | NOT_RUN_PER_USER_REQUEST |
+| Syntax / AST / import / CLI checks | NOT_RUN_PER_USER_REQUEST |
+| Runtime startup or installation execution | NOT_RUN_PER_USER_REQUEST |
+| Original image reconstruction | NOT_RUN_PER_USER_REQUEST |
+| Rendering / Office behavior | NOT_RUN_PER_USER_REQUEST |
+| Performance / quality-effect / provider-token measurements | NOT_RUN |
+| Whole original-artwork acceptance | NOT_CLAIMED |
 
-Runtime resource capability facts are inherited without revalidation. The
-existing binary/runtime version remains 1.14.0. Unknown/excluded channels are
-not marked PASS. Each future reconstruction still requires its current saved
-native, actual render and final semantic/spatial acceptance evidence.
+The existing independently versioned runtime binaries/resources are reused;
+their older capability records were not revalidated by this source patch.
+Static review, successful packaging and publication do not establish executable
+or artwork acceptance. No user original, reconstructed PPT or private task was
+used as a release fixture. See Static-review.md and publication/source receipts.

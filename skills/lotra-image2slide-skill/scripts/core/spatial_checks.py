@@ -2,7 +2,7 @@
 import math
 import numpy as np
 from .common import digest, safe_path
-from .spatial_frames import Frames, enabled, PHASE
+from .spatial_frames import frames, enabled, strict, PHASE
 
 
 def _anchor(entry, binding):
@@ -48,7 +48,7 @@ def _region_distance(points, polygon):
     return max(float(region.distance(Point(p))) for p in points)
 
 
-def evaluate(task, state, candidate, contract, row=None):
+def evaluate(task, state, candidate, contract, row=None, *, scene_override=None, override_owners=()):
     """Never substitutes expected source points for missing native anchors.
 
     Every observable landmark is independently compared in unchanged source
@@ -61,12 +61,15 @@ def evaluate(task, state, candidate, contract, row=None):
     file = safe_path(task, candidate['pptx']['path'])
     if digest(file) != candidate['pptx']['sha256']:
         raise ValueError('Spatial measurement belongs to changed native bytes')
-    graph = Frames(contract['spatial']['frames'])
+    graph = frames(contract['spatial'])
     all_points = {p['id']: p for p in contract['spatial']['landmarks']}
     units = set(row['spatial_context']['units']) if row else set(contract['spatial_units'])
     points = {k: p for k, p in all_points.items() if p['unit'] in units}
     bindings = {b['landmark']: b for b in contract['spatial_bindings']}
     native = saved_nodes(file, state['source_size'])
+    if scene_override is not None:
+        from .spatial_footprints import scene_entries
+        native = scene_entries(scene_override, set(override_owners), native)
     actual, expected, anchors, results = {}, {}, {}, {}
     for name, point in points.items():
         try:
@@ -81,6 +84,18 @@ def evaluate(task, state, candidate, contract, row=None):
                 'declared_projection':graph.project(point['frame'],point['point'])}
         except (ValueError, KeyError, IndexError, TypeError, np.linalg.LinAlgError) as error:
             anchors[name] = {'passed': False, 'valid': False, 'reason': str(error), 'status': 'MEASUREMENT_REQUIRED'}
+    footprint_geometry, footprints = {}, {}
+    if strict(contract):
+        from .spatial_footprints import measure as measure_footprint
+        footprint_bindings = {b['footprint']: b for b in contract['spatial_footprint_bindings']}
+        for spec in contract['spatial']['footprints']:
+            if spec['unit'] not in units:continue
+            try:
+                measured = measure_footprint(spec, footprint_bindings[spec['id']], native, graph)
+                footprint_geometry[spec['id']] = measured
+                footprints[spec['id']] = {k: v for k, v in measured.items() if k != 'geometry'}
+            except (ValueError, KeyError, IndexError, TypeError, np.linalg.LinAlgError) as error:
+                footprints[spec['id']] = {'passed': False, 'valid': False, 'status': 'MEASUREMENT_REQUIRED', 'reason': str(error)}
     paint = None
     for relation in contract['spatial']['relations']:
         if not set(relation['units']) <= units:
@@ -116,6 +131,18 @@ def evaluate(task, state, candidate, contract, row=None):
                 if paint is None:
                     from .neighbor_geometry import read
                     paint, _ = read(task, state, candidate)
+                    if scene_override is not None:
+                        paint = dict(paint)
+                        from .spatial_footprints import _native_contours, _measure_curves
+                        for obj in scene_override['objects']:
+                            if obj['id'] not in override_owners:continue
+                            if not obj.get('style',{}).get('fill'):
+                                # An edge cannot claim the area of a filled face.
+                                paint[obj['id']]={'geometry':None}
+                                continue
+                            entry=native[obj['id']]
+                            region=_measure_curves(_native_contours(entry,'native_domain'),entry['matrix'],.01)
+                            paint[obj['id']]={'geometry':region['geometry'].buffer(-region['error'])}
                 front, back = [bindings[p]['owner'] for p in names]
                 if front == back:
                     raise ValueError('Occlusion requires independent actual native parts')
@@ -145,7 +172,27 @@ def evaluate(task, state, candidate, contract, row=None):
                 values['hidden_volume_verified'] = False
             else:
                 local = np.asarray([graph.inverse_plane(relation['frame'], p) for p in screen])
-                if kind == 'center_in_plane':
+                complete = []
+                if strict(contract) and kind in ('center_in_plane', 'align_in_plane', 'contained_on_plane', 'supported_by', 'attached_to_face'):
+                    keys = relation['footprints']
+                    if any(k not in footprint_geometry for k in keys):
+                        raise ValueError('Missing complete actual subject footprint')
+                    complete = [footprint_geometry[k] for k in keys]
+                    if any(not f['valid'] for f in complete):raise ValueError('Invalid complete footprint')
+                    from shapely.ops import unary_union
+                    domain = unary_union([f['geometry'] for f in complete])
+                    precision = max(f['error'] for f in complete)
+                    if precision > relation['tolerance']:
+                        raise ValueError('Frozen footprint precision cannot certify this relation tolerance')
+                if kind == 'center_in_plane' and complete:
+                    bounds = domain.bounds
+                    center = np.array([(bounds[0]+bounds[2])/2, (bounds[1]+bounds[3])/2])
+                    delta = center-np.asarray(relation['target'])
+                    error = float(np.max(np.abs(delta)))+precision
+                    values.update(actual_center=center.tolist(), two_axis_error=delta.tolist(),
+                        precision_bound=precision, coverage='complete_direct_content_union',
+                        projected_target=graph.project(relation['frame'], relation['target']))
+                elif kind == 'center_in_plane':
                     content = np.asarray([p for p, name in zip(local, names) if all_points[name]['unit'] in relation['content_units']])
                     if not len(content):
                         raise ValueError('Actual direct-content footprint required for aggregate centering')
@@ -154,12 +201,37 @@ def evaluate(task, state, candidate, contract, row=None):
                     error = float(np.max(np.abs(delta)))
                     values.update(actual_center=center.tolist(), two_axis_error=delta.tolist(),
                         projected_target=graph.project(relation['frame'], relation['target']))
+                elif kind == 'align_in_plane' and complete:
+                    axis = relation['axis']; mode = relation['alignment_anchor']
+                    coordinates = []
+                    source_footprints = {f['id']: f for f in contract['spatial']['footprints']}
+                    for unit in relation['subjects']:
+                        member = unary_union([footprint_geometry[k]['geometry'] for k in relation['footprints']
+                                              if source_footprints[k]['unit'] == unit])
+                        b = member.bounds
+                        coordinates.append(b[axis] if mode == 'min' else b[axis+2] if mode == 'max' else (b[axis]+b[axis+2])/2)
+                    error = float(np.ptp(coordinates))+2*precision
+                    values.update(coverage='complete_subject_footprints', precision_bound=2*precision)
                 elif kind == 'align_in_plane':
                     error = float(np.ptp(local[:, relation['axis']]))
                 elif kind in ('contained_on_plane', 'supported_by', 'attached_to_face'):
-                    error = _region_distance(local, relation['region'])
-                    values['basis'] = 'actual_contact_or_surface_landmarks_in_usable_face'
-                    values['coverage'] = 'declared_visible_landmarks; full boundary and visibility retain native/visual feature gates'
+                    if complete:
+                        from .spatial_footprints import _polygon
+                        usable = _polygon(relation['region'])
+                        holes=[_polygon(h) for h in relation.get('region_holes',[])]
+                        if holes:usable=usable.difference(unary_union(holes))
+                        allowed = usable.buffer(relation['tolerance']-precision)
+                        covered = allowed.covers(domain)
+                        outside = domain.difference(allowed)
+                        error = 0. if covered else relation['tolerance']+max(math.sqrt(outside.area), outside.length/2, 1e-10)
+                        values.update(complete_coverage=covered, precision_bound=precision,
+                            coverage='complete_subject_domain_in_usable_face',
+                            basis='saved_native_contact_or_attached_domain',
+                            value_definition='zero if conservative complete coverage holds; otherwise positive coverage violation above tolerance')
+                    else:
+                        error = _region_distance(local, relation['region'])
+                        values['basis'] = 'actual_contact_or_surface_landmarks_in_usable_face'
+                        values['coverage'] = 'legacy_declared_visible_landmarks'
                 elif kind == 'same_plane':
                     # Coplanarity is source-declared. Reprojection verifies its
                     # visible native realization; no 3D inverse is manufactured.
@@ -170,20 +242,23 @@ def evaluate(task, state, candidate, contract, row=None):
                     raise ValueError('Unsupported spatial relation')
                 values['actual_face_coordinates'] = local.tolist()
             anchor_pass = all(anchors[p]['passed'] for p in names)
+            footprint_pass = all(footprints[k]['passed'] for k in relation.get('footprints', [])) if strict(contract) else True
             results[key] = {'passed': bool(error <= relation['tolerance'] and anchor_pass), 'valid': True,
                 'kind': kind, 'value': error, 'threshold': relation['tolerance'], 'unit': relation['unit'],
                 'phase': PHASE[kind], 'landmarks_current': anchor_pass, **values}
+            results[key]['passed'] = results[key]['passed'] and footprint_pass
         except (ValueError, KeyError, IndexError, TypeError, np.linalg.LinAlgError) as error:
             results[key] = {'passed': False, 'valid': False, 'kind': kind, 'phase': PHASE[kind],
                 'reason': str(error), 'status': 'MEASUREMENT_REQUIRED'}
-    valid = all(r.get('valid') for r in [*anchors.values(), *results.values()])
+    valid = all(r.get('valid') for r in [*anchors.values(), *footprints.values(), *results.values()])
     failed = [k for k, r in results.items() if not r['passed']]
-    return {'passed': all(r['passed'] for r in [*anchors.values(), *results.values()]),
+    return {'passed': all(r['passed'] for r in [*anchors.values(), *footprints.values(), *results.values()]),
         'valid': valid, 'status': 'SPATIAL_CHECKED' if valid else 'MEASUREMENT_REQUIRED',
-        'anchors': anchors, 'relations': results, 'spatial_basis': (row or contract)['spatial_basis'],
+        'anchors': anchors, 'footprints': footprints, 'relations': results, 'spatial_basis': (row or contract)['spatial_basis'],
         'pptx_hash': candidate['pptx']['sha256'], 'source_hash': state['source']['sha256'],
         'repair_order': sorted(failed, key=lambda k: (results[k]['phase'], k)),
-        'claim': 'saved_native_observable_projection', 'hidden_3d_verified': False}
+        'claim': 'declared_numeric_surrogate' if scene_override is not None else 'saved_native_observable_projection',
+        'hidden_3d_verified': False}
 
 
 def instance_policy(row, mother):

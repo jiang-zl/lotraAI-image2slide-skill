@@ -61,7 +61,8 @@ def commit(task,request):
         if owned.intersection(row['owners']):raise ValueError('Batch write sets overlap')
         owned.update(row['owners'])
         from .component_revision import overlap
-        writes=([{'owner':owner,'field':[]} for owner in row['owners']] if row['route']=='instance' else
+        from .spatial_fit import is_spatial, writes as spatial_writes
+        writes=spatial_writes(row) if is_spatial(row) else ([{'owner':owner,'field':[]} for owner in row['owners']] if row['route']=='instance' else
                 [v for key,v in row['fit']['bindings'].items() if row['parameters'][key]['state']=='tunable'])
         if any(item['owner']==lock['owner'] and overlap(item['field'],lock['field'])
                for item in writes for lock in ledger['components'][row['id']].get('user_locks',[])):
@@ -78,7 +79,7 @@ def commit(task,request):
             from .component_fit import basis as fit_basis
             if fit['status']!='TARGETS_MET' or fit.get('fit_basis')!=fit_basis(row,contract['policy'],state,measurement_signature):
                 raise ValueError('Only a current numerically ready result can be committed')
-            scene,writes=apply(scene,row,fit['parameters']);allowed.update(writes)
+            scene,writes=apply(scene,row,fit['parameters'],contract);allowed.update(writes)
         with writer(task):c._save_ledger(task,state,ledger,'numeric_batch_planned',{'components':selected})
         saved=construct(task,state,scene,candidate,allowed,{'kind':'component_numeric_batch','components':selected})
         task,state=a._state(task);contract,ledger=c._load(task,state)

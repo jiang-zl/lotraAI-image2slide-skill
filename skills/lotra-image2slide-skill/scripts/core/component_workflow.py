@@ -30,7 +30,8 @@ def implementation():
              'render','host_render','office_bridge','tool_router','native_commit',
              'agent_runtime','quality_loop','workflow_control','execution_contract','build',
              'curve_functions','problem_control','knowledge_flow','component_source_features','native_surfaces','surface_metrics',
-             'spatial_frames','spatial_checks','spatial_constructors')
+             'spatial_frames','spatial_checks','spatial_constructors','spatial_observation',
+             'spatial_footprints','spatial_fit','spatial_repair')
     files={name:digest(ROOT/'scripts/core'/(name+'.py')) for name in names}
     for name in ('config/component-workflow.json','config/font-collections.json','schemas/component-contract.schema.json'):
         files[name]=digest(ROOT/name)
@@ -118,16 +119,21 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
     contract = copy.deepcopy(request['contract'])
     previous, _ = _load(task, state) if state.get('component_workflow') else (None, None)
     # Old contracts keep their policy until an explicit migration request.
-    contract.setdefault('workflow_version', (previous or {}).get('workflow_version', '1.35.0'))
-    if not previous and contract['workflow_version'] != '1.35.0':
+    contract.setdefault('workflow_version', (previous or {}).get('workflow_version', '1.35.1'))
+    if not previous and contract['workflow_version'] != '1.35.1':
         raise ValueError('New v1.35 tasks cannot bypass spatial/feature contracts with a legacy policy')
     if previous and previous.get('workflow_version') != contract['workflow_version']:
-        if not request.get('migrate_spatial') or contract['workflow_version'] != '1.35.0':
+        if not request.get('migrate_spatial') or contract['workflow_version'] != '1.35.1':
             raise ValueError('Old tasks retain policy; an explicit migrate_spatial source rebind is required')
     from .spatial_frames import prepare_binding
     prepare_binding(task, state, contract)
+    recompiled_owners=set()
+    if previous and contract.get('workflow_version')=='1.35.1':
+        from .native_surfaces import revise_scene
+        permitted={o for r in previous['components']+contract['components'] for o in r['owners']}
+        scene,recompiled_owners=revise_scene(scene,previous,contract,permitted)
     from .native_surfaces import expand as expand_surfaces
-    if contract.get('workflow_version') in ('1.34.0', '1.35.0'):
+    if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
         scene = expand_surfaces(scene, contract)
     from .curve_functions import prepare as prepare_curves
     from .problem_control import bind as bind_problems
@@ -161,7 +167,13 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
                 metric['threshold']=frozen['value'];metric['calibration_result']=frozen
     from .component_source_features import bind as bind_features
     bind_features(task, state, contract, scene)
-    if contract.get('workflow_version') == '1.35.0':
+    if contract.get('workflow_version')=='1.35.1':
+        from .spatial_fit import prepare as prepare_spatial_fit
+        previous_spatial_rows={r['id']:r for r in (previous or {}).get('components',[])}
+        for row in contract['components']:
+            prepare_spatial_fit(contract,row,scene,previous_spatial_rows.get(row['id']))
+            select(row,nodes)
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
         from .spatial_constructors import validate_instances
         validate_instances(contract)
     validate_contract(contract, scene, state['source']['sha256'])
@@ -181,6 +193,23 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
     _resource(task, contract['authority'])
     contract['policy'] = policy()
     if prepare_only:return {'contract':contract,'source_scene':scene}
+    if recompiled_owners and native_apply is None and _candidate(state):
+        # A corrected common frame must produce a concrete scoped native plan,
+        # rather than leave old compiled owners colliding during rebind or
+        # strand fixed components with no way to apply the new projection.
+        base=_candidate(state)
+        current=read_json(_resource(task,base['scene']))
+        proposed,changed_owners=revise_scene(current,previous,contract,permitted)
+        file=task/'component-workflow'/('Spatial-source-rebind-'+identity(proposed)+'.json')
+        write_json(file,proposed)
+        old_rows={r['id']:r for r in previous['components']}
+        scope=[r['id'] for r in contract['components']
+               if (set(r['owners'])|set(old_rows.get(r['id'],{}).get('owners',[]))) & changed_owners]
+        if not scope:raise ValueError('Source recompile needs explicit current component ownership')
+        native_apply={'scene':_ref(task,file),'components':scope,
+            'fields':[{'owner':o,'field':[]} for o in sorted(changed_owners)],
+            'rebuild_owners':[],
+            'previous_owners':{key:old_rows.get(key,{}).get('owners',[]) for key in scope}}
     bind_problems(task, state, contract, previous)
     scene=prepare_curves(task,state,contract,scene)
     folder = task / 'component-workflow'; folder.mkdir(exist_ok=True)
@@ -202,6 +231,12 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
         if prior:
             components[row['id']]['user_locks']=copy.deepcopy(prior.get('user_locks',[]))
             components[row['id']]['search_budgets']=copy.deepcopy(prior.get('search_budgets',{}))
+            if not reusable:
+                components[row['id']]['retained_bests']=copy.deepcopy(prior.get('retained_bests',[]))
+                if prior.get('best'):
+                    components[row['id']]['retained_bests'].append({'contract':existing['contract'],
+                        'best':copy.deepcopy(prior['best']),'reason':request.get('revision_reason'),
+                        'current_qualification':False})
         if prior and previous_rows.get(row['id'],{}).get('source_region_key')==row.get('source_region_key'):
             choices=copy.deepcopy(prior.get('source_model_choices',[]))
         else:choices=[]
@@ -231,6 +266,12 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
     for key,record in components.items():record['user_locks']=[copy.deepcopy(v) for v in all_locks if owned.get(v['owner'])==key]
     if previous_ledger:
         ledger['repair_batch']=copy.deepcopy(previous_ledger.get('repair_batch'))
+        if ledger['repair_batch'] and any(r.get('spatial_repair_schedule') for r in previous_ledger['components'].values()):
+            ledger['repair_batch']['status']='PLAN_REQUIRED'
+            ledger['repair_batch']['replan_reason']='Source revision changed an active phased repair; preserve the previous ledger and replan current failures.'
+            for record in components.values():
+                record.pop('spatial_repair_schedule',None)
+                record.pop('repair_grant',None)
         ledger['user_reconciliation']=copy.deepcopy(previous_ledger.get('user_reconciliation'))
         for key in ('applied_post_save','lock_history'):
             if key in previous_ledger:ledger[key]=copy.deepcopy(previous_ledger[key])
@@ -322,7 +363,9 @@ def _measurement_signature(row,signatures,contract):
     """Source-ROI measurements depend on page pose as well as intrinsic anatomy."""
     intrinsic=_component_signature(row,signatures,contract=contract)
     return {'intrinsic':intrinsic,'placement':{owner:{key:signatures.get(owner,{}).get(key)
-        for key in ('pose','assembly','native_placement')} for owner in intrinsic}}
+        for key in ('pose','assembly','native_placement')} for owner in intrinsic},
+        'native_ancestors':{owner:signatures.get(owner,{}).get('native_placement')
+                            for owner in row.get('spatial_context',{}).get('native_ancestors',[])}}
 
 
 def refresh(task, state, contract, ledger, candidate):
@@ -364,6 +407,10 @@ def refresh(task, state, contract, ledger, candidate):
             pose_changes[row['id']]=['pose']
             if row.get('spatial_basis') and record['status']=='QUALIFIED':
                 record['status']='RECHECK_REQUIRED'
+        if row.get('spatial_context',{}).get('native_ancestors') and previous_facets:
+            if any(previous_facets.get(owner,{}).get('native_placement') != signatures.get(owner,{}).get('native_placement')
+                   for owner in row['spatial_context']['native_ancestors']):
+                if record['status']=='QUALIFIED':record['status']='RECHECK_REQUIRED'
         previous=record.get('qualified_signature') if record['status']=='QUALIFIED' else record.get('observed_signature')
         record['observed_signature']=current
         probe=record.get('immediate_probe')
@@ -504,7 +551,7 @@ def evaluate(task, request=None):
                       'route': row['route']}
         else:
             result = {'passed': False, 'status': 'SPECIALIST_OR_INSTANCE_EVIDENCE_REQUIRED', 'route': row['route']}
-        if contract.get('workflow_version') in ('1.34.0', '1.35.0'):
+        if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
             from .component_source_features import source_check
             source_basis = source_check(row)
             result['source_basis'] = source_basis
@@ -513,7 +560,7 @@ def evaluate(task, request=None):
                 'appearance':'DEFERRED_TO_ASSEMBLY_AND_FINAL' if row['route']=='fixed_parameters' else result.get('passed',False)}
             result['passed'] = result['passed'] and source_basis['passed']
             if not source_basis['passed']: result['status'] = source_basis['status']
-        if contract.get('workflow_version') == '1.35.0':
+        if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
             from .spatial_checks import evaluate as spatial_evaluate
             spatial = spatial_evaluate(task, state, candidate, contract, row)
             result['spatial_native'] = spatial
@@ -563,7 +610,7 @@ def qualify(task, request):
     checks = program_checks(task,state,candidate,contract,row)
     if not all(check.get('passed') is True for check in checks.values()):
         return {'status':'COMPONENT_CHECKS_UNMET','component':name,'checks':checks}
-    if row.get('visual_review_required', True) or contract.get('workflow_version') in ('1.34.0', '1.35.0'):
+    if row.get('visual_review_required', True) or contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
         actual_render(task,state,candidate)
         if not candidate.get('preview') or actual.get('preview_hash') != candidate['preview']['sha256']:
             raise ValueError('Assembly visual evidence must bind the actual current preview')
@@ -571,7 +618,7 @@ def qualify(task, request):
             raise ValueError('Actual original/current local visual observations required')
         if actual.get('verdict') != 'PASS':
             return {'status':'LOCAL_VISUAL_WORK_REQUIRED','component':name,'evidence':evidence}
-        if contract.get('workflow_version') in ('1.34.0', '1.35.0'):
+        if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
             from .component_source_features import local_review
             feature_review = local_review(row, actual)
             if not feature_review['passed']:
@@ -617,7 +664,7 @@ def layout(task, request):
         queue_final_repair(ledger,['layout_owner:'+v['owner'] for v in placed['items'] if not v['passed']],evidence)
         with writer(task):_save_ledger(task,state,ledger,'layout_repair_required',{'checks':placed})
         return {'status':'SOURCE_LAYOUT_UNMET','checks':placed,'next':'component repair plan'}
-    if contract.get('workflow_version') == '1.35.0':
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
         from .spatial_checks import evaluate as spatial_evaluate
         spatial = spatial_evaluate(task,state,candidate,contract)
         if not spatial['passed']:
@@ -626,6 +673,7 @@ def layout(task, request):
             from .component_revision import queue_final_repair
             failures=['spatial_relation:'+k for k,v in spatial['relations'].items() if not v['passed']]
             failures += ['spatial_anchor:'+k for k,v in spatial['anchors'].items() if not v['passed']]
+            failures += ['spatial_footprint:'+k for k,v in spatial.get('footprints',{}).items() if not v['passed']]
             queue_final_repair(ledger,failures,evidence)
             with writer(task):_save_ledger(task,state,ledger,'spatial_layout_repair_required',{'checks':spatial})
             return {'status':'SPATIAL_LAYOUT_UNMET','checks':spatial,'next':'component repair plan'}
@@ -665,10 +713,25 @@ def next_action(task, state, candidate=None):
                    'previous_contract':state['component_workflow']['contract'],
                    'action_references':[REFERENCE],'whole_audit_allowed':False})
         return {'status':'WORK_PACKET','packet':packet}
+    if state.get('spatial_source_decision'):
+        from .problem_control import remaining
+        rows={r['id']:r for r in contract['components']}
+        exhausted=[name for name in state['spatial_source_decision']['components'] if remaining(task,state,rows[name],'source_reads')==0]
+        if exhausted:
+            return {'status':'ORIGINAL_PROBLEM_UNRESOLVED','components':exhausted,
+                    'best_retained':True,'acceptance':False,'reason':'Located shared-frame source-read budget exhausted',
+                    'spatial_source_decision':state['spatial_source_decision']}
+        packet=a._packet(task,state,'component_contract_source','source_features',
+            'Resolve the located common-frame/projection interpretation against the unchanged original. Submit a complete retained observation with revision_reason and spatial_corrections; preserve independent targets and bounds, then rebind every actual consumer.',
+            extra={'source_hash':state['source']['sha256'],'source':state['source'],
+                   'source_observation':state.get('source_feature_observation'),
+                   'spatial_source_decision':state['spatial_source_decision'],
+                   'action_references':[REFERENCE],'whole_audit_allowed':False})
+        return {'status':'WORK_PACKET','packet':packet}
     if not contract:
         if not state.get('source_feature_observation'):
             packet=a._packet(task,state,'component_contract_source','source_features',
-                'Observe the unchanged original before native owners. Submit source-features-1.35.0 recursive units, visible features, hierarchical spatial classifications, frames, observable pose/support/face-centering targets, uncertainty and decomposition stops; do not derive targets from a candidate.',
+                'Observe the unchanged original before native owners. Submit source-features-1.35.1 recursive units, visible features, hierarchical spatial classifications, frames, observable pose/support/face-centering targets, uncertainty and decomposition stops; do not derive targets from a candidate.',
                 extra={'source_hash':state['source']['sha256'],'source':state['source'],
                        'canvas':state['source_size'],'action':'component-workflow observe_source',
                        'action_references':[REFERENCE],'whole_audit_allowed':False,
@@ -721,6 +784,11 @@ def next_action(task, state, candidate=None):
         return {'status':'WORK_PACKET','packet':packet}
     refresh(task, state, contract, ledger, candidate)
     write_json(safe_path(task, state['component_workflow']['ledger_path']), ledger)
+    if contract.get('workflow_version')=='1.35.1':
+        from .spatial_repair import advance as advance_repair_phases
+        scene=read_json(_resource(task,candidate['scene']))
+        if advance_repair_phases(task,state,candidate,contract,ledger,scene):
+            with writer(task):_save_ledger(task,state,ledger,'spatial_repair_phase_advanced')
     from .problem_control import remaining
     exhausted=[r['id'] for r in contract['components'] if r.get('problem_id') and ledger['components'][r['id']]['status']!='QUALIFIED'
                and remaining(task,state,r,'source_reads')==0 and (remaining(task,state,r,'evaluations')==0 or remaining(task,state,r,'native_confirmations')==0)]
@@ -750,7 +818,8 @@ def next_action(task, state, candidate=None):
                             'Execute the selected source-bound local action; retain fixed parts and do not run the whole audit.',
                             roi=component.get('roi'), extra={'component_action': chosen,
                             'action_references': [REFERENCE], 'whole_audit_allowed': False,
-                            'spatial_requirements': __import__(__package__+'.spatial_frames',fromlist=['packet']).packet(contract,component) if contract.get('workflow_version')=='1.35.0' else None,
+                            'spatial_requirements': __import__(__package__+'.spatial_frames',fromlist=['packet']).packet(contract,component) if contract.get('workflow_version') in ('1.35.0','1.35.1') else None,
+                             'source_decision':ledger['components'][chosen['id']].get('source_decision'),
                             'submit_operation':chosen['operation'],'component_batch':batch_ids,
                             'repair_atomic':bool(chosen.get('repair_components'))})
         return {'status': 'WORK_PACKET', 'packet': packet}
@@ -776,7 +845,7 @@ def next_action(task, state, candidate=None):
             return {'status':'WORK_PACKET','packet':packet}
     kind = 'component_final_visual' if readiness['ready'] else 'component_layout_work'
     feature_extra = {}
-    if readiness['ready'] and contract.get('workflow_version') in ('1.34.0', '1.35.0'):
+    if readiness['ready'] and contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
         from .component_source_features import diagnostics
         actual_render(task,state,candidate)
         feature_extra = {'source_observation':contract['source_observation'],
@@ -799,14 +868,14 @@ def program_checks(task,state,candidate,contract,row):
     if set(required)-{'native_structure','relations','connection_geometry','numeric_targets','visual'}:
         raise ValueError('Unknown executable check; use a supported source-bound specialist route')
     checks={'native_structure':{'passed':native['status']=='PASS','result':native}}
-    if contract.get('workflow_version') in ('1.34.0', '1.35.0'):
+    if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1'):
         from .component_source_features import source_check
         checks['source_basis'] = source_check(row)
-    if contract.get('workflow_version') == '1.35.0':
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
         from .spatial_checks import evaluate as spatial_evaluate
         checks['spatial_native'] = spatial_evaluate(task, state, candidate, contract, row)
     checks['source_fixed_paint']=fixed_style_checks(task,candidate,contract,row,scene)
-    if contract.get('workflow_version') in ('1.34.0', '1.35.0') and any(f.get('metrics') for f in row.get('source_features',[])):
+    if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1') and any(f.get('metrics') for f in row.get('source_features',[])):
         from .component_source_features import probes
         actual_render(task,state,candidate)
         checks['source_feature_probes'] = probes(task,state,candidate,row['source_features'])

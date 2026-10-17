@@ -75,14 +75,19 @@ def decide(task,request):
     if request.get('source_hash')!=state['source']['sha256'] or request.get('pptx_hash')!=(candidate or {}).get('pptx',{}).get('sha256'):
         raise ValueError('Decision must bind current original and native revision')
     if not request.get('revision_reason'):raise ValueError('Describe the original/model/measurement correction')
-    if contract.get('workflow_version') in ('1.34.0','1.35.0') and request.get('decision_kind') not in (
+    if contract.get('workflow_version') in ('1.34.0','1.35.0','1.35.1') and request.get('decision_kind') not in (
             'source_omission','representation_insufficient','parameter_error','measurement_invalid',
             'native_mismatch','relation_error','source_ambiguity','spatial_frame','spatial_pose',
-            'face_alignment','support_relation','spatial_occlusion'):
+            'face_alignment','support_relation','spatial_occlusion','constructor_recapture'):
         raise ValueError('Classify the located source/model/measurement failure before repairing')
     from .problem_control import reserve
     reserve(task,state,c.component_row(task,state,contract,request['component']),'source_reads',token=identity(request))
     selected={request['component']};scope=descendants(contract,selected)
+    if request.get('decision_kind')=='constructor_recapture':
+        # Only this explicit source decision expands to the current mother
+        # family; unrelated source/native resources remain outside the grant.
+        dependents={r['id'] for r in contract['components'] if r.get('mother') in scope}
+        scope.update(descendants(contract,dependents))
     old={r['id']:r for r in contract['components']}
     replacements=request.get('replacements') or [request['replacement_component']]
     changed={r['id']:copy.deepcopy(r) for r in replacements}
@@ -105,17 +110,34 @@ def decide(task,request):
                 raise ValueError('Feature revision escaped the selected component subtree')
         revised['feature_bindings']=copy.deepcopy(request['feature_bindings'])
     if 'native_constructions' in request:
-        from .native_surfaces import construct
+        from .native_surfaces import compile_spec
         permitted={o for key in scope for o in rows.get(key,old.get(key,{})).get('owners',[])}
         permitted.update(o for key in scope for o in old.get(key,{}).get('owners',[]))
         prior={s['id']:s for s in contract.get('native_constructions',[])}
         after={s['id']:s for s in request['native_constructions']}
         for key in set(prior)|set(after):
             if prior.get(key)==after.get(key):continue
-            for spec in (prior.get(key),after.get(key)):
-                if spec and not {o['id'] for o in construct(spec)[0]}<=permitted:
+            from .spatial_frames import prepare_binding
+            prepare_binding(task,state,revised)
+            for spec, graph in ((prior.get(key),contract.get('spatial')),(after.get(key),revised.get('spatial'))):
+                if spec and not {o['id'] for o in compile_spec(spec,graph)[0]}<=permitted:
                     raise ValueError('Native construction revision escaped the selected owner resource group')
         revised['native_constructions']=copy.deepcopy(request['native_constructions'])
+    if 'spatial_bindings' in request or 'spatial_footprint_bindings' in request:
+        # Binding corrections are source decisions and stay inside this packet's
+        # native owner group; complete coverage is revalidated by bind.
+        allowed_owners = {o for key in scope for o in rows.get(key,old.get(key,{})).get('owners',[])}
+        for field, key, owner_field in [('spatial_bindings','landmark','owner'),
+                                       ('spatial_footprint_bindings','footprint','owners')]:
+            if field not in request:continue
+            prior = {v[key]:v for v in contract.get(field,[])}
+            after_bindings = {v[key]:v for v in request[field]}
+            for name in set(prior)|set(after_bindings):
+                if prior.get(name)==after_bindings.get(name):continue
+                for item in (prior.get(name),after_bindings.get(name)):
+                    owned = set(item[owner_field] if owner_field=='owners' else [item[owner_field]]) if item else set()
+                    if not owned <= allowed_owners:raise ValueError('Spatial binding revision escaped the packet owner scope')
+            revised[field] = copy.deepcopy(request[field])
     if 'relations' in request:
         prior={r['id']:r for r in contract['relations']};after={r['id']:r for r in request['relations']}
         for key in set(prior)|set(after):
@@ -134,33 +156,46 @@ def decide(task,request):
     after=normalize_scene(read_json(c._resource(task,source_ref)))
     allowed={owner for key in scope for owner in old.get(key,{}).get('owners',[])}
     allowed.update(owner for key in scope for owner in rows.get(key,{}).get('owners',[]))
+    constructor_changed = set()
+    if 'native_constructions' in request:
+        from .native_surfaces import revise_scene
+        after, constructor_changed = revise_scene(after,contract,revised,allowed)
+        if constructor_changed:
+            file = task/'component-workflow'/('Source-construction-revision-'+identity(after)+'.json')
+            write_json(file,after);source_ref = c._ref(task,file)
     bnodes={n['id']:n for n in before['objects']};anodes={n['id']:n for n in after['objects']}
     if any(bnodes.get(key)!=anodes.get(key) for key in (set(bnodes)|set(anodes))-allowed):
         raise ValueError('Source Scene revision escaped the selected anatomy')
     if any(before.get(k)!=after.get(k) for k in set(before)|set(after) if k not in ('objects','relations','font_plan')):
         raise ValueError('A focused decision cannot change the original canvas or global source facts')
-    if request.get('apply_scene'):
-        proposed=read_json(c._resource(task,request['apply_scene']))
+    apply_scene = request.get('apply_scene')
+    if constructor_changed and not apply_scene:
+        current=read_json(c._resource(task,candidate['scene']))
+        proposed,_=revise_scene(current,contract,revised,allowed)
+        file=task/'component-workflow'/('Native-construction-revision-'+identity(proposed)+'.json')
+        write_json(file,proposed);apply_scene=c._ref(task,file)
+    if apply_scene:
+        proposed=read_json(c._resource(task,apply_scene))
         current=read_json(c._resource(task,candidate['scene']))
         from .component_native_plan import prepare
         prepare(task,state,current,proposed,[{'owner':owner,'field':[]} for owner in allowed],request.get('rebuild_owners',[]))
     # Validate the complete normalized contract before publishing revised source facts.
     c.bind(task,{'contract':revised,'source_scene':source_ref,'authority':request['authority'],
                  'revision_reason':request['revision_reason']},prepare_only=True)
-    native_apply=({'scene':request['apply_scene'],'components':sorted(scope&set(rows)),
+    native_apply=({'scene':apply_scene,'components':sorted(scope&set(rows)),
         'fields':[{'owner':owner,'field':[]} for owner in sorted(allowed)],
         'rebuild_owners':request.get('rebuild_owners',[]),
-        'previous_owners':{key:old.get(key,{}).get('owners',[]) for key in scope}} if request.get('apply_scene') else None)
+        'previous_owners':{key:old.get(key,{}).get('owners',[]) for key in scope}} if apply_scene else None)
     result=c.bind(task,{'contract':revised,'source_scene':source_ref,'authority':request['authority'],
                         'revision_reason':request['revision_reason']},native_apply=native_apply)
     task,state=a._state(task);contract,ledger=c._load(task,state)
     for key in scope&set(ledger['components']):
         record=ledger['components'][key]
-        if not request.get('apply_scene'):record['status']='RECHECK_REQUIRED'
+        if not apply_scene:record['status']='RECHECK_REQUIRED'
     with writer(task):c._save_ledger(task,state,ledger,'source_decision_submitted',{'components':sorted(scope),'reason':request['revision_reason']})
-    if request.get('apply_scene'):
+    if apply_scene:
         # No implicit overwrite: the submitted actual Scene and grants remain focused.
-        return edit_native(task,{'components':sorted(scope&set(rows)), 'scene':request['apply_scene'],
+        return edit_native(task,{'components':sorted(scope&set(rows)), 'scene':apply_scene,
             'rebuild_owners':request.get('rebuild_owners',[]),
             'pptx_hash':candidate['pptx']['sha256'],'source_hash':state['source']['sha256']})
     return dict(result,status='SOURCE_DECISION_APPLIED',acceptance=False)
@@ -179,7 +214,7 @@ def repair(task,request):
     if not batch or batch['status']!='PLAN_REQUIRED':raise ValueError('Current located repair decision required')
     if request.get('source_hash')!=state['source']['sha256'] or request.get('pptx_hash')!=candidate['pptx']['sha256']:
         raise ValueError('Final repair plan is stale')
-    if contract.get('workflow_version') == '1.35.0':
+    if contract.get('workflow_version') in ('1.35.0', '1.35.1'):
         from .spatial_checks import evaluate as spatial_evaluate
         spatial = spatial_evaluate(task,state,candidate,contract)
         if not spatial['valid']:
@@ -187,7 +222,13 @@ def repair(task,request):
                     'acceptance':False,'native_writes_granted':False}
     rows={r['id']:r for r in contract['components']};items=request.get('items',[])
     if not items:raise ValueError('Locate final failures to nonempty component field grants')
-    if contract.get('workflow_version')=='1.35.0' and any(item.get('frame_pose_diagnosis')=='shared_frame' for item in items):
+    if contract.get('workflow_version') in ('1.35.0','1.35.1') and any(item.get('frame_pose_diagnosis')=='shared_frame' for item in items):
+        if contract.get('workflow_version')=='1.35.1':
+            state['spatial_source_decision']={'kind':'shared_frame','source_hash':state['source']['sha256'],
+                'pptx_hash':candidate['pptx']['sha256'],'failures':copy.deepcopy(batch['failures']),
+                'components':[item['component'] for item in items]}
+            batch['status']='SOURCE_DECISION_REQUIRED'
+            with writer(task):c._save_ledger(task,state,ledger,'shared_spatial_frame_decision_required',state['spatial_source_decision'])
         return {'status':'SPATIAL_SOURCE_DECISION_REQUIRED','acceptance':False,'best_retained':True,
                 'next':'Revise the source-owned common frame with located spatial_corrections, then rebind all consumers. Local drawing patches cannot repair a shared projection definition.'}
     if len({v['component'] for v in items})!=len(items):raise ValueError('Merge fields for the same component into one repair item')
@@ -212,7 +253,14 @@ def repair(task,request):
             if grant['owner'] not in row['owners'] or not isinstance(grant.get('field'),list):raise ValueError('Repair field escaped its component')
             if any(lock['owner']==grant['owner'] and overlap(lock['field'],grant['field']) for lock in record.get('user_locks',[])):
                 raise ValueError('USER_LOCK_CONFLICT: preserve the adopted user field')
-        record['repair_grant']=copy.deepcopy(fields);record['repair_base']=candidate['pptx']['sha256'];record['status']='REPAIR_REQUIRED'
+        if contract.get('workflow_version')=='1.35.1':
+            from .spatial_repair import prepare_item
+            scene=read_json(c._resource(task,candidate['scene']))
+            record['spatial_repair_schedule']=prepare_item(contract,spatial,row,item,candidate,scene)
+            record['repair_grant']=[];record['status']='SPATIAL_REPAIR_WAITING'
+        else:
+            record['repair_grant']=copy.deepcopy(fields);record['status']='REPAIR_REQUIRED'
+        record['repair_base']=candidate['pptx']['sha256']
         record['repair_context']={'row':identity(row),'source':state['source']['sha256'],'native':candidate.get('retained_pptx',candidate['pptx'])}
         changed[row['id']]=['geometry','assembly']
     if covered!=set(batch['failures']):raise ValueError('Every final failure needs a located correction')
@@ -223,6 +271,9 @@ def repair(task,request):
     for name in affected['relations']:ledger['relations'].pop(name,None)
     batch.update(status='LOCAL_REPAIR',items=copy.deepcopy(items))
     ledger.update(layout_ready=False,final_dirty=True,final_result=None)
+    if contract.get('workflow_version')=='1.35.1':
+        from .spatial_repair import activate
+        activate(ledger,candidate,read_json(c._resource(task,candidate['scene'])),contract)
     with writer(task):c._save_ledger(task,state,ledger,'final_repair_scoped',{'affected':affected})
     return {'status':'LOCAL_REPAIR_REQUIRED','components':sorted(changed),'whole_audit_executed':False}
 
@@ -261,6 +312,7 @@ def edit_native(task,request):
     scene,allowed,_=prepare(task,state,old,proposed,grants,rebuild)
     if not allowed:raise ValueError('No proposed field correction')
     post={'statuses':{name:'RECHECK_REQUIRED' for name in selected},'consume_grants':sorted(selected),
+           'repair_phase_saved':sorted(selected) if contract.get('workflow_version')=='1.35.1' else [],
           'consume_structural_grant':bool(structural and selected<=set(structural['components'])),
           'repair_batch_status':'RECHECK_REQUIRED' if ledger.get('repair_batch') else None}
     saved=construct(task,state,scene,candidate,allowed,{'kind':'component_scoped_repair','components':sorted(selected),'post_save':post})

@@ -8,7 +8,8 @@ import math
 import numpy as np
 from .common import identity
 
-VERSION = 'spatial-1.35.0'
+VERSION = 'spatial-1.35.1'
+LEGACY_VERSION = 'spatial-1.35.0'
 MODES = {'planar', 'surface', 'solid', 'mixed', 'uncertain'}
 RELATIONS = {'center_in_plane', 'align_in_plane', 'contained_on_plane',
              'supported_by', 'attached_to_face', 'same_plane', 'axis_direction',
@@ -20,7 +21,15 @@ PHASE = {'pose_projection': 1, 'axis_direction': 1, 'extent_ratio': 1,
 
 
 def enabled(contract):
-    return contract.get('workflow_version') == '1.35.0'
+    return contract.get('workflow_version') in ('1.35.0', '1.35.1')
+
+
+def strict(value):
+    return value.get('workflow_version') == '1.35.1' or value.get('schema') == VERSION
+
+
+def frames(value):
+    return Frames(value['frames'], strict=strict(value))
 
 
 def array(value, shape):
@@ -68,10 +77,11 @@ def rotation_matrix(row):
 
 class Frames:
     """Acyclic canvas/plane/rigid-space graph; plane inverse is planar only."""
-    def __init__(self, rows):
+    def __init__(self, rows, strict=False):
         if not rows or len(rows) > 2048 or len({r.get('id') for r in rows}) != len(rows):
             raise ValueError('Distinct bounded spatial frame IDs required')
         self.rows = {r['id']: r for r in rows}
+        self.strict = strict
         self.cache = {}
         for name in self.rows:
             self.matrix(name)
@@ -84,7 +94,8 @@ class Frames:
         if name not in self.rows or name in (seen or set()):
             raise ValueError('Missing/cyclic spatial reference frame')
         row = self.rows[name]
-        if not row.get('source_evidence') or not row.get('units'):
+        if (not row.get('source_evidence') or not isinstance(row.get('units'), str)
+                or not row['units'].strip()):
             raise ValueError('Each spatial frame needs original evidence and units')
         kind = row.get('kind')
         if kind == 'canvas':
@@ -104,6 +115,8 @@ class Frames:
                 rigid[:3, :3] = rotation
                 rigid[:3, 3] = array(row['translation'], (3,))
                 if parent['kind'] == 'space3d':
+                    if self.strict and row['units'] != parent['units']:
+                        raise ValueError('Normalize rigid parent/child coordinates to one explicit unit before binding')
                     if 'projection' in row:
                         raise ValueError('Child rigid pose inherits its parent projection')
                     result = base @ rigid
@@ -113,6 +126,13 @@ class Frames:
                     projection = array(row['projection'], (3, 4))
                     if np.linalg.matrix_rank(projection) != 3:
                         raise ValueError('Nondegenerate spatial projection required')
+                    if self.strict:
+                        affine = np.allclose(projection[2, :3], 0., rtol=0., atol=1e-12)
+                        if row['projection_type'] in ('orthographic', 'axonometric'):
+                            if not affine or abs(projection[2, 3]) < 1e-12:
+                                raise ValueError('Parallel projection needs a nonzero constant homogeneous denominator')
+                        elif row['projection_type'] == 'perspective' and affine:
+                            raise ValueError('Perspective projection must declare its depth-dependent denominator')
                     result = projection @ rigid
                 else:
                     raise ValueError('A 3D space cannot inherit a 2D plane camera')
@@ -165,9 +185,9 @@ class Frames:
 def validate_observation(observed):
     """Spatial recognition and targets are frozen before native ownership."""
     value = observed.get('spatial', {})
-    if value.get('schema') != VERSION:
+    if value.get('schema') not in (VERSION, LEGACY_VERSION):
         raise ValueError('SPATIAL_SOURCE_DECISION_REQUIRED: hierarchical spatial observation')
-    frames = Frames(value.get('frames', []))
+    graph = frames(value)
     units = {u['id']: u for u in observed['units']}
     landmarks = value.get('landmarks', [])
     if len(landmarks) > 50000 or len({p.get('id') for p in landmarks}) != len(landmarks):
@@ -175,7 +195,7 @@ def validate_observation(observed):
     points = {p['id']: p for p in landmarks}
     for unit in units.values():
         spatial = unit.get('spatial', {})
-        if (spatial.get('mode') not in MODES or spatial.get('frame') not in frames.rows or
+        if (spatial.get('mode') not in MODES or spatial.get('frame') not in graph.rows or
                 not spatial.get('source_evidence') or type(spatial.get('container')) is not bool or
                 spatial.get('placement') not in ('standing', 'attached', 'free', 'annotation', 'unknown') or
                 spatial.get('observability') not in ('clear', 'partial', 'unresolved')):
@@ -185,12 +205,12 @@ def validate_observation(observed):
         if spatial.get('unobservable_axes') and not spatial.get('symmetry_evidence'):
             raise ValueError('Unobservable rotations require source-supported symmetry/ambiguity')
     for point in landmarks:
-        if (point.get('unit') not in units or point.get('frame') not in frames.rows or
+        if (point.get('unit') not in units or point.get('frame') not in graph.rows or
                 not point.get('source_evidence') or not point.get('role') or
                 point.get('observability') not in ('clear', 'partial') or
                 type(point.get('tolerance_source_px')) not in (int, float) or point['tolerance_source_px'] < 0):
             raise ValueError('Located observable landmark with frozen source-pixel bound required')
-        projected = np.asarray(frames.project(point['frame'], point['point']))
+        projected = np.asarray(graph.project(point['frame'], point['point']))
         original = array(point['source_point'], (2,))
         if np.linalg.norm(projected-original) > point['tolerance_source_px']:
             raise ValueError('SPATIAL_FRAME_DECISION_REQUIRED: declared projection disagrees with independently observed original landmark')
@@ -203,17 +223,17 @@ def validate_observation(observed):
                 not row.get('units') or not set(row['units']) <= set(units) or
                 not names or len(names) != len(set(names)) or not set(names) <= set(points) or
                 not {points[p]['unit'] for p in names} <= set(row['units']) or
-                row.get('frame') not in frames.rows or type(row.get('tolerance')) not in (int, float) or row['tolerance'] < 0):
+                row.get('frame') not in graph.rows or type(row.get('tolerance')) not in (int, float) or row['tolerance'] < 0):
             raise ValueError('Located typed spatial relation with frozen bound and complete source landmarks required')
         kind = row['kind']
-        domain = 'degree' if kind in ('axis_direction', 'pose_projection') else 'ratio' if kind == 'extent_ratio' else 'source_px' if kind in ('shared_edge', 'occludes') else frames.rows[row['frame']]['units']
+        domain = 'degree' if kind in ('axis_direction', 'pose_projection') else 'ratio' if kind == 'extent_ratio' else 'source_px' if kind in ('shared_edge', 'occludes') else graph.rows[row['frame']]['units']
         if row.get('unit') != domain:
             raise ValueError('Spatial relation tolerance unit conflicts with measurement coordinates')
         if kind in ('axis_direction', 'occludes') and len(names) != 2 or kind in ('extent_ratio', 'shared_edge') and len(names) != 4:
             raise ValueError('Spatial relation landmark arity differs')
         if kind == 'pose_projection' and len(names) < 3:
             raise ValueError('Pose needs at least three observable landmarks')
-        if kind in ('center_in_plane', 'align_in_plane', 'contained_on_plane', 'supported_by', 'attached_to_face', 'same_plane') and frames.dimension(row['frame']) != 2:
+        if kind in ('center_in_plane', 'align_in_plane', 'contained_on_plane', 'supported_by', 'attached_to_face', 'same_plane') and graph.dimension(row['frame']) != 2:
             raise ValueError('Face-local relation requires an invertible plane, not a 3D inverse')
         if kind == 'center_in_plane':
             array(row['target'], (2,))
@@ -233,7 +253,7 @@ def validate_observation(observed):
             if region.ndim != 2 or region.shape[1] != 2 or not 3 <= len(region) <= 128 or not np.isfinite(region).all():
                 raise ValueError('Finite explicit usable-face region required')
         if kind == 'volume_contains':
-            if frames.dimension(row['frame']) != 3 or row.get('claim') != 'visible_projection_only':
+            if graph.dimension(row['frame']) != 3 or row.get('claim') != 'visible_projection_only':
                 raise ValueError('Single-image volume checks must declare their visible-projection scope')
             array(row['bounds'], (2, 3))
     for unit in units.values():
@@ -252,6 +272,9 @@ def validate_observation(observed):
             represented = {points[p]['unit'] for p in centers[0]['landmarks']}
             if not children <= represented or not centers[0].get('target_evidence'):
                 raise ValueError('Every direct child contributes its logical footprint; freeze centered or source-offset target')
+    if strict(value):
+        from .spatial_observation import validate
+        validate(observed, graph)
     return value
 
 
@@ -287,20 +310,46 @@ def bind(contract, observed, scene):
     contract['spatial'] = copy.deepcopy(value)
     contract['spatial_units'] = {u['id']: copy.deepcopy(u['spatial']) for u in observed['units']}
     contract['spatial_basis'] = identity({'spatial': value, 'bindings': bindings,
+        'footprint_bindings': contract.get('spatial_footprint_bindings', []),
         'units': {u['id']: u['spatial'] for u in observed['units']}})
-    frames = Frames(value['frames'])
+    graph = frames(value)
+    if strict(contract):
+        from .spatial_footprints import validate_bindings
+        validate_bindings(contract, observed, scene)
     for row in contract['components']:
         units = {feature_units[b['feature']] for b in row.get('feature_bindings', [])}
         selected = [p for p in value['landmarks'] if p['unit'] in units]
         used = {p['frame'] for p in selected} | {u['spatial']['frame'] for u in observed['units'] if u['id'] in units}
-        relations = [r for r in value['relations'] if set(r['units']) & units]
+        relations = [r for r in value['relations'] if (set(r['units']) <= units if strict(contract) else bool(set(r['units']) & units))]
         used.update(r['frame'] for r in relations)
-        dependencies = {f['id']: f for name in used for f in frames.ancestors(name)}
+        footprints = [f for f in value.get('footprints', []) if f['unit'] in units]
+        used.update(f['frame'] for f in footprints)
+        dependencies = {f['id']: f for name in used for f in graph.ancestors(name)}
         row['spatial_context'] = {'units': sorted(units), 'frames': dependencies,
+            'direct_units': sorted({feature_units[b['feature']] for b in row.get('feature_bindings', [])
+                                    if set(b['owners']) & set(row['owners'])}),
             'landmarks': selected, 'relations': relations,
+            'footprints': footprints,
+            'footprint_bindings': [b for b in contract.get('spatial_footprint_bindings', [])
+                                   if b['footprint'] in {f['id'] for f in footprints}],
             'classifications': {u['id']: u['spatial'] for u in observed['units'] if u['id'] in units},
             'bindings': [b for b in bindings if b['landmark'] in {p['id'] for p in selected}]}
+        if strict(contract):
+            ancestors = set()
+            for owner in row['owners']:
+                parent = nodes[owner].get('parent')
+                while parent:
+                    ancestors.add(parent);parent = nodes[parent].get('parent')
+            row['spatial_context']['native_ancestors'] = sorted(ancestors)
         row['spatial_basis'] = identity(row['spatial_context'])
+        if strict(contract):
+            from .component_source_features import _members
+            members=_members(contract,row)
+            owned={o for member in contract['components'] if member['id'] in members for o in member['owners']}
+            row['constructor_basis']=identity({m['id']:{k:m.get(k) for k in
+                ('spec_hash','geometry_hash','canonical_geometry','frame_basis')}
+                for m in contract.get('construction_manifests',[])
+                if any(p['owner'] in owned for p in m['parts'])})
 
 
 def prepare_binding(task, state, contract):
@@ -312,7 +361,8 @@ def prepare_binding(task, state, contract):
     if not ref:
         raise ValueError('SPATIAL_SOURCE_DECISION_REQUIRED: observe frames before native construction')
     observed = read_json(_resource(task, ref))
-    if observed.get('schema') != 'source-features-1.35.0':
+    expected = 'source-features-1.35.1' if strict(contract) else 'source-features-1.35.0'
+    if observed.get('schema') != expected:
         raise ValueError('Explicitly migrate the original observation to v1.35 spatial semantics')
     contract['spatial'] = copy.deepcopy(validate_observation(observed))
 
@@ -349,23 +399,28 @@ def review(contract, evidence, row=None):
 
 
 def packet(contract=None, row=None):
-    return {'schema': VERSION, 'reference': 'references/workflow-v135.md',
+    current = not contract or strict(contract)
+    return {'schema': VERSION if current else LEGACY_VERSION, 'reference': 'references/workflow-v135.md',
         'spatial_basis': (row or contract or {}).get('spatial_basis'),
         'recognition': 'Classify every source unit; shared parent frames do not force identical child orientation.',
         'alignment': 'Canvas, face-local content aggregate, and standing-object contact footprint are distinct anchors.',
         'pose': 'Use observable projected axes/faces and symmetry; unknown hidden 3D is not a measured PASS.',
         'review': 'Bind spatial_review to current source/native/render and every unit/relation; invalid probes precede drawing repair.',
+        'footprints': 'New contracts bind complete source-owned logical/contact domains to all corresponding saved native parts; sparse landmark envelopes do not certify full layout.' if current else 'Legacy bound policy retained; explicit migration is required for complete-footprint contracts.',
         'repair_order': ['frame/projection', 'local_pose', 'support/face_alignment', 'shared_geometry', 'occlusion', 'material/text'],
         'context': {'units':(row or {}).get('spatial_context',{}).get('units',[]),
                     'frames':sorted((row or {}).get('spatial_context',{}).get('frames',{})),
-                    'relation_ids':[r['id'] for r in (row or {}).get('spatial_context',{}).get('relations',[])]}}
+                    'relation_ids':[r['id'] for r in (row or {}).get('spatial_context',{}).get('relations',[])],
+                    'external_relation_ids':[r['id'] for r in (contract or {}).get('spatial',{}).get('relations',[])
+                        if set(r['units']) & set((row or {}).get('spatial_context',{}).get('units',[]))
+                        and not set(r['units']) <= set((row or {}).get('spatial_context',{}).get('units',[]))]}}
 
 
 def correction_guard(before, after, request):
     """Frame/pose/target changes cannot silently loosen a failed measurement."""
     def inventory(value):
         result = {'unit:'+u['id']: u.get('spatial') for u in value['units']}
-        for kind in ('frames', 'landmarks', 'relations'):
+        for kind in ('frames', 'landmarks', 'relations', 'footprints'):
             result.update({kind+':'+r['id']: r for r in value.get('spatial', {}).get(kind, [])})
         return result
     old, new = inventory(before), inventory(after)

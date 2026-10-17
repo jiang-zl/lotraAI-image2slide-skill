@@ -47,7 +47,8 @@ def consumer(row,policy,state=None):
     if row.get('feature_basis'):
         modules.update(('component_source_features','native_surfaces','surface_metrics'))
     if row.get('spatial_basis'):
-        modules.update(('spatial_frames', 'spatial_checks', 'spatial_constructors'))
+        modules.update(('spatial_frames', 'spatial_checks', 'spatial_constructors',
+                        'spatial_observation', 'spatial_footprints', 'spatial_fit', 'spatial_repair'))
     if row.get('route')=='assembly': modules.update(('knowledge','knowledge_flow'))
     source_adapter=row.get('model',{}).get('source_adapter')
     if source_adapter:
@@ -69,7 +70,7 @@ def consumer(row,policy,state=None):
             'schema':digest(ROOT/'schemas/component-contract.schema.json'),
             'policy':selected_policy,
             'model':row.get('model'),'design_revision':8,
-            'spatial_basis':row.get('spatial_basis')}
+            'spatial_basis':row.get('spatial_basis'), 'constructor_basis':row.get('constructor_basis')}
 
 
 def source_region(task,state,row):

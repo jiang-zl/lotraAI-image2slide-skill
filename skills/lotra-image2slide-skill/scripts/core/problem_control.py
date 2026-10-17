@@ -9,7 +9,7 @@ LIMITS = {'models': 3, 'evaluations': 96, 'source_reads': 2, 'native_confirmatio
 
 
 def enabled(contract):
-    return contract.get('workflow_version') in ('1.33.0','1.34.0','1.35.0')
+    return contract.get('workflow_version') in ('1.33.0','1.34.0','1.35.0','1.35.1')
 
 
 def _path(task):

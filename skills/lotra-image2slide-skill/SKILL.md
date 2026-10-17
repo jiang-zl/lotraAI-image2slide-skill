@@ -3,7 +3,7 @@ name: lotra-image2slide-skill
 description: Reconstruct scientific images, optionally continuing a one-shot partial PPT, as faithful native editable slides. Use source-bound functions, qualified icon parts and mothers, private reusable methods, and deferred final review.
 ---
 
-# lotraAI Image2Slide v1.35.0
+# lotraAI Image2Slide v1.35.1
 
 Read project `.lotraAI-build/Active-skill.json` for the selected entry and
 `Bundle-install.json` for actual runtime facts. Keep the current model/reasoning
@@ -22,11 +22,12 @@ PARTIAL.pptx` imports one partial slide once. Resume with `context-control
 TASK_PATH resume`. Follow current packet action_references and their relevant
 continuations; avoid loading entire states, databases or release logs.
 
-For new tasks read [v1.35 spatial reconstruction](references/workflow-v135.md)
+For new tasks read [v1.35.1 spatial contracts and repair](references/workflow-v1351.md),
+the retained [spatial reconstruction](references/workflow-v135.md)
 and the retained [source features and surfaces](references/workflow-v134.md).
 The v1.33 functions, shared budgets and private knowledge still apply. The existing
 [component contract](references/component-workflow-v132.md) remains schema
-design_revision 8; new contracts use workflow_version 1.35.0. Old bound tasks
+design_revision 8; new contracts use workflow_version 1.35.1. Old bound tasks
 retain their policy until explicit migration; never silently redraw them.
 
 1. Observe the unchanged original before native ownership. Freeze recursive
@@ -69,12 +70,22 @@ retain their policy until explicit migration; never silently redraw them.
    observed. Check each container's entire direct-content aggregate in both local
    axes; face-attached content uses its face and standing solids use base contacts
    plus separate pose checks. Preserve the frozen centered/source-offset target.
+   Every typed relation must measure its named subject. Bind complete logical or
+   contact footprints to all corresponding native leaves; sparse point envelopes
+   do not certify aggregate centering or containment. Curve precision remains a
+   measured bound. Insufficient extractors/precision return measurement decisions.
    Inspect shared edges, holes, support and actual visible occlusion. Changed-view
    instances reproject qualified local constructors; affine copies need equivalent
    projection evidence. Group and retain qualified native
    geometry. Reuse mothers for current-source instances and variants. Preserve
    qualified work and scoped dependency invalidation. Shared next/advance and the
    existing native journal handle construction, recovery and compatible batches.
+   Use the common spatial constructor for initial build and scoped revisions.
+   Spatial numeric fitting changes only source-bounded constructor inputs; it
+   never changes the original measurement graph, targets, topology or visibility.
+   Repair phases come from current saved measurements. Earlier phases must pass
+   before later grants activate. Mother recapture and shared-frame decisions are
+   persistent packets; do not repeat an unchanged automatic reprojection.
 5. Complete layout, then one deferred language-restricted font review, current
    whole visual review, independent original-to-output omission checks for every
    unit, and final audit/export. Program suspicions cannot replace semantic review.

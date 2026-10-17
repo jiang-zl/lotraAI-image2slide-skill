@@ -1,3 +1,3 @@
 """Portable deterministic sci-rebuild core. No host/model API dependencies."""
 
-VERSION = "1.35.0"
+VERSION = "1.35.1"
