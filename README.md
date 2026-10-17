@@ -6,6 +6,7 @@ This patch closes eight spatial workflow gaps: source-bounded fit/layout consist
 
 
 
+
 **Reconstruct scientific figures as layered, editable PowerPoint slides.**
 
 [English](README.md) · [简体中文](README.zh-CN.md)

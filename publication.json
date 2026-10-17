@@ -1,14 +1,14 @@
 {
-  "bundle_id": "dff06fead9c6c2c2bdd4581e9700349fcaceace22e6d8f0086daee1174ebc3db",
+  "bundle_id": "6bb121c647e618c5a183de4e67ca9029bcde16ca5526b856051bfab2db168ea6",
   "complete_bundle": {
-    "bytes": 2414838802,
+    "bytes": 2414838839,
     "manifest": {
       "bytes": 7357,
-      "sha256": "e9edf82468514c83639ff79f58157e34b5f516228627e105c06e905eee0a53eb",
+      "sha256": "1cc26391ec7cba97bf5909b570e129d133ea908a1c22e33895d1641fdce3e2bd",
       "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.2/v1.35.2-bundle.json"
     },
     "parts": 18,
-    "sha256": "64cb4c48a03faf50ea337470fdc62d038da08a3a6950a0455955dc0b7ed28aac"
+    "sha256": "f5ecc07b79b63779799471f24ed50f6517b584ade2a29c3ef08518245414d939"
   },
   "download_mode": "manifest-owned-file-differential",
   "functional_validation": "NOT_RUN_PER_USER_REQUEST",
@@ -19,18 +19,18 @@
   "publication_revision": 1,
   "reconstruction_validation": "NOT_RUN_PER_USER_REQUEST",
   "release_branch": "release",
-  "release_id": "1.35.2-dff06fead9c6",
+  "release_id": "1.35.2-6bb121c647e6",
   "release_tag": "v1.35.2",
   "release_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.35.2",
   "runtime_release_created": false,
   "runtime_resources_changed": false,
   "runtime_version": "1.14.0",
-  "skill_payload_sha256": "22e8227bacd92a33ef2f7dc5ad1ded29588b43d9329eee83a2750433c8432d14",
+  "skill_payload_sha256": "a5fb3b467c58d180432acae57ae23ff6221f1684b4bce8405899193ee1ac5cd0",
   "skill_source_path": "skills/lotra-image2slide-skill",
   "static_review": "docs/v1.35.2/Static-review.md",
   "update": {
-    "bytes": 1734055,
-    "sha256": "22e8227bacd92a33ef2f7dc5ad1ded29588b43d9329eee83a2750433c8432d14",
+    "bytes": 1734069,
+    "sha256": "a5fb3b467c58d180432acae57ae23ff6221f1684b4bce8405899193ee1ac5cd0",
     "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.2/lotraAI-image2slide-skill-v1.35.2.zip"
   },
   "validation_report": "docs/v1.35.2/Validation-report.md",

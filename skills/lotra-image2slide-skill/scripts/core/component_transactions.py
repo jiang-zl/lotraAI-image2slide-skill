@@ -37,8 +37,8 @@ def begin(task,state,scene,baseline,allowed,reason):
     if (reason or {}).get('kind')=='component_numeric_batch':
         plan['post_save']['statuses']={key:'ACTUAL_NATIVE_CONFIRMATION_REQUIRED' for key in reason['components']}
     if repair_names:
-        plan['post_save']['repair_phase_saved']=repair_names
-        plan['post_save']['consume_grants']=repair_names
+        plan['post_save']['repair_phase_saved']=sorted(set(plan['post_save'].get('repair_phase_saved',[]))|set(repair_names))
+        plan['post_save']['consume_grants']=sorted(set(plan['post_save'].get('consume_grants',[]))|set(repair_names))
         plan['post_save'].setdefault('statuses',{}).update({name:'RECHECK_REQUIRED' for name in repair_names})
     key=identity(plan);folder=task/'transactions'/key;folder.mkdir(parents=True,exist_ok=True)
     file=folder/'Transaction.json'

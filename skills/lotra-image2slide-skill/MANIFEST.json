@@ -665,8 +665,8 @@
       "size": 27125
     },
     "scripts/core/component_transactions.py": {
-      "sha256": "0c96980c253e1016b449d705b4cdee8ad707f26397da817269eb6c6ccef99e45",
-      "size": 21645
+      "sha256": "64e1c43be8a4f23d75b46860adf7d86b9194d2eea0f3ea01feded179b0f30b8e",
+      "size": 21771
     },
     "scripts/core/component_user_sync.py": {
       "sha256": "65c8432a3c75027bcfb96c23f31b2ba8ca6e0b25269f996c7b85d69cec41f8fc",

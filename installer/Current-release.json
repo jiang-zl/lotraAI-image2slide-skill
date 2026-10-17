@@ -1,12 +1,12 @@
 {
   "bundle": {
     "bytes": 7357,
-    "sha256": "e9edf82468514c83639ff79f58157e34b5f516228627e105c06e905eee0a53eb",
+    "sha256": "1cc26391ec7cba97bf5909b570e129d133ea908a1c22e33895d1641fdce3e2bd",
     "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.2/v1.35.2-bundle.json"
   },
   "catalog": {
     "bytes": 542557,
-    "sha256": "7172d95b52fd963e0e26e6e25d752cca44c57a9da26c76073b4baf6e426a036d",
+    "sha256": "37fab3c80d257fb5555f1d6575b451230167934c65696b050f55b77cda0d49e3",
     "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.2/release.json"
   },
   "entry": {
