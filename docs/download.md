@@ -18,4 +18,4 @@ The program handles resume, per-part verification, assembly and whole-archive ve
 Install or update lotraAI Image2Slide in this project from https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime.
 ~~~
 
-First installation selects your platform resources; later updates synchronize managed files by content. A complete ZIP can be supplied directly to Codex, and an extracted bundle can use its bundled installer. See the [runtime installation guide](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/docs/installation.md). The macOS Math DMG requires a separate initial online download and is not embedded in the complete bundle.
+First installation selects your platform resources; later updates synchronize managed files by content. A complete ZIP can be supplied directly to Codex, and an extracted bundle can use its bundled installer. See the [runtime installation guide](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/dev/docs/installation.md). The macOS Math DMG requires a separate initial online download and is not embedded in the complete bundle.

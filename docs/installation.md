@@ -8,7 +8,7 @@ Open your working project in Codex and send:
 
 One entry prepares both the runtime and the main skill. First installation selects your platform resources. Later updates add, replace and retire managed files while retaining unchanged active files without downloading or rewriting them. Your knowledge library, fonts, tasks, originals, PPTs and global skills are preserved.
 
-For manual commands, Windows/Linux/macOS resource coverage, complete-bundle downloads and installation from an extracted bundle, use the maintained [runtime installation guide](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/docs/installation.md).
+For manual commands, Windows/Linux/macOS resource coverage, complete-bundle downloads and installation from an extracted bundle, use the maintained [runtime installation guide](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/dev/docs/installation.md).
 
 After installation, attach your image and send:
 

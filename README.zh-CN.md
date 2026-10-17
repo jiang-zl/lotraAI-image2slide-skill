@@ -2,10 +2,9 @@
 
 本补丁修复八类空间流程遗漏：统一拟合与布局验收、原生写入阶段授权、失败决策和未决义务门槛，补齐规则引用、三维提取、局部依赖和透视几何域检查。原生形状、填色和边框继续优先。本轮仅静态审查，未运行产品测试、重建或渲染。
 
+**当前发布版本：1.35.2** · 开发／默认分支：`dev` · 版本分支：`1.35.2` · 正式标签：`v1.35.2`
 
-
-
-
+当前 `dev` 与 `1.35.2` 均对应已发布的 1.35.2。分支统一使用 `dev` 或 `X.Y.Z`；正式标签使用 `vX.Y.Z`，不增加其他后缀。
 
 
 **将科研参考图重建为分层、可编辑的 PowerPoint。**
@@ -51,7 +50,7 @@ Codex 调用维护好的安装程序，按平台准备 Python、依赖、OCR 和
 **Windows（PowerShell）**
 
 ```powershell
-$url = 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/release/install-lotra.ps1'
+$url = 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/dev/install-lotra.ps1'
 curl.exe -fL --retry 2 --connect-timeout 20 $url -o install-lotra.ps1
 if ($LASTEXITCODE -eq 7) { curl.exe --noproxy '*' -fL --retry 2 --connect-timeout 20 $url -o install-lotra.ps1 }
 if ($LASTEXITCODE -eq 0) { powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-lotra.ps1 -Project (Get-Location).Path }
@@ -60,13 +59,13 @@ if ($LASTEXITCODE -eq 0) { powershell.exe -NoProfile -ExecutionPolicy Bypass -Fi
 **macOS（终端，Apple Silicon / Intel）**
 
 ```sh
-curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/release/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
+curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/dev/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
 ```
 
 **Linux / WSL（终端）**
 
 ```sh
-curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/release/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
+curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/dev/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
 ```
 
 skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime.sh`，可为指定项目补齐或更新 runtime。各入口共用安装核心，使用相同的资源校验、缓存与差分同步流程。参数和已有解压包的用法见安装说明。
@@ -84,7 +83,6 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 ## 案例
 
 以下三组案例由作者提供，每组包含原图、PowerPoint 截图和亮点图。点击图片查看原尺寸。截图用于展示重建结构；原生 PPTX 文件和各案例的实际生成版本未随这些图片提供。
-
 
 ### 1. 边缘联邦学习系统
 
@@ -124,7 +122,6 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 - 选择状态截图展示模块框、标签、箭头、数学标注与反馈路径的独立对象结构。
 
 [查看案例说明](docs/examples/03-signal-reconstruction.zh-CN.md)
-
 
 ## 使用方式
 

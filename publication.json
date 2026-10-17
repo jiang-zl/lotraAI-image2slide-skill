@@ -1,14 +1,14 @@
 {
-  "bundle_id": "f63cc64567190c4de8e29f7066f6140cb8bfa4c6b2af1edbeec7cfb52fc47583",
+  "bundle_id": "c1770d25b3cd8162e8d4b7de87d71de003d5498dc1f3f4f7b66daa97a9fb5c70",
   "complete_bundle": {
-    "bytes": 2414839076,
+    "bytes": 2414848628,
     "manifest": {
       "bytes": 7357,
-      "sha256": "b95f26465f1b13b0982cb12a0d68094088ff51dd933342140ea80a9a416e0283",
+      "sha256": "d594f51737643004ed78c6430ac47adb35503e309750e0f57e4d57b98409abf3",
       "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.2/v1.35.2-bundle.json"
     },
     "parts": 18,
-    "sha256": "acf01b398b22223e7aca60606c0f38926ff7e1a1c7b5543ae6dcca1e1917bffd"
+    "sha256": "4bd976b9a87db7cb17eb3c77c1030b83d5abad615ce6f0c264de01716c29f598"
   },
   "download_mode": "manifest-owned-file-differential",
   "functional_validation": "NOT_RUN_PER_USER_REQUEST",
@@ -18,22 +18,22 @@
   "product": "lotraAI",
   "publication_revision": 1,
   "reconstruction_validation": "NOT_RUN_PER_USER_REQUEST",
-  "release_branch": "release",
-  "release_id": "1.35.2-f63cc6456719",
+  "release_branch": "dev",
+  "release_id": "1.35.2-c1770d25b3cd",
   "release_tag": "v1.35.2",
   "release_url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/tag/v1.35.2",
   "runtime_release_created": false,
   "runtime_resources_changed": false,
   "runtime_version": "1.14.0",
-  "skill_payload_sha256": "631895f2cf6e3ce584fb02d4d5ba46e375513a99468ec369df7008725372a694",
+  "skill_payload_sha256": "80edd051e147c794972c3db45f63254f70d90eee726a7f5c7fb06d22d6c7f0f1",
   "skill_source_path": "skills/lotra-image2slide-skill",
   "static_review": "docs/v1.35.2/Static-review.md",
   "update": {
-    "bytes": 1734197,
-    "sha256": "631895f2cf6e3ce584fb02d4d5ba46e375513a99468ec369df7008725372a694",
+    "bytes": 1734270,
+    "sha256": "80edd051e147c794972c3db45f63254f70d90eee726a7f5c7fb06d22d6c7f0f1",
     "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.2/lotraAI-image2slide-skill-v1.35.2.zip"
   },
   "validation_report": "docs/v1.35.2/Validation-report.md",
   "version": "1.35.2",
-  "version_branch": "codex/release-v1.35.2"
+  "version_branch": "1.35.2"
 }

@@ -2,10 +2,9 @@
 
 This patch closes eight spatial workflow gaps: source-bounded fit/layout consistency, shared write-phase authority, persistent failure decisions and pending-obligation gates, versioned rules, native 3D extraction guards, scoped transform/order dependencies, and finite projective domains. Native shapes, fills and outlines retain priority. This release received static review only; product tests, reconstruction and rendering were not run.
 
+**Current release: 1.35.2** · Development/default branch: `dev` · Version branch: `1.35.2` · Release tag: `v1.35.2`
 
-
-
-
+`dev` and `1.35.2` currently contain the released 1.35.2. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
 
 
 **Reconstruct scientific figures as layered, editable PowerPoint slides.**
@@ -51,7 +50,7 @@ Alternatively, open a terminal in your Image2Slide working project and run the c
 **Windows (PowerShell)**
 
 ```powershell
-$url = 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/release/install-lotra.ps1'
+$url = 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/dev/install-lotra.ps1'
 curl.exe -fL --retry 2 --connect-timeout 20 $url -o install-lotra.ps1
 if ($LASTEXITCODE -eq 7) { curl.exe --noproxy '*' -fL --retry 2 --connect-timeout 20 $url -o install-lotra.ps1 }
 if ($LASTEXITCODE -eq 0) { powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-lotra.ps1 -Project (Get-Location).Path }
@@ -60,13 +59,13 @@ if ($LASTEXITCODE -eq 0) { powershell.exe -NoProfile -ExecutionPolicy Bypass -Fi
 **macOS (Terminal, Apple Silicon / Intel)**
 
 ```sh
-curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/release/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
+curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/dev/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
 ```
 
 **Linux / WSL (Terminal)**
 
 ```sh
-curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/release/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
+curl -fL --retry 2 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill/dev/install-lotra.sh' -o install-lotra.sh && sh install-lotra.sh "$PWD"
 ```
 
 The skill package also includes `scripts/install-runtime.ps1` and `scripts/install-runtime.sh` to prepare or update a chosen project's runtime. All entries share the same installer, resource verification, cache and differential synchronization. See the installation guide for arguments and installation from an extracted bundle.
@@ -85,7 +84,6 @@ Complex icons are observed recursively before construction. Native shapes, fills
 ## Examples
 
 These three author-supplied case studies each include a reference image, a PowerPoint screenshot, and a detail view. Click any image for its original size. Screenshots illustrate the reconstruction structure; native PPTX files and the generating version of each case were not supplied with these images.
-
 
 ### 1. Edge federated learning
 
@@ -125,7 +123,6 @@ A training-and-inference pipeline with SPGA, STFT, CTFR, time–frequency masks,
 - The selection screenshot exposes module boxes, labels, arrows, mathematical annotations, and feedback paths as separate objects.
 
 [Read the case study](docs/examples/03-signal-reconstruction.md)
-
 
 ## Using it in practice
 

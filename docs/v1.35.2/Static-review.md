@@ -37,3 +37,9 @@ implemented by treating their 2D boxes as projected geometry; conservative curve
 control-hull horizon checks can require a focused representation decision.
 Single-image evidence never establishes hidden 3D truth. A later execution run
 is still needed to establish product/runtime/artwork behavior.
+
+Repository naming maintenance keeps product version 1.35.2: default/development
+branch dev and version branch 1.35.2 share the current commit; formal version
+tags have no extra suffix. README and maintained installer channel/pins follow
+these branch names. Runtime binaries/resources and spatial product core are
+unchanged. No product execution or tests were performed for this maintenance.

@@ -33,3 +33,9 @@ complete-bundle part; unchanged bundle parts retain their immutable URLs.
 Local deliverables are production/lotraAI-image2slide-v1.35.2-bundle.zip and
 production/lotraAI-image2slide-v1.35.2-update.zip. See Static-review.md for the
 call-chain review and Validation-report.md for the intentionally excluded runs.
+
+Repository naming maintenance keeps product version 1.35.2: default/development
+branch dev and version branch 1.35.2 share the current commit; formal version
+tags have no extra suffix. README and maintained installer channel/pins follow
+these branch names. Runtime binaries/resources and spatial product core are
+unchanged. No product execution or tests were performed for this maintenance.

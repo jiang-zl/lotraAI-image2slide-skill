@@ -18,4 +18,4 @@
 请从 https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime 在当前项目安装或更新 lotraAI Image2Slide。
 ~~~
 
-首次按平台获取资源，后续按文件差分更新。已有完整 ZIP 可直接交给 Codex，解压包可使用包内安装器；参见 [runtime 安装说明](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/release/docs/installation.zh-CN.md)。macOS Math DMG 需首次单独联网获取，未包含在完整 bundle 中。
+首次按平台获取资源，后续按文件差分更新。已有完整 ZIP 可直接交给 Codex，解压包可使用包内安装器；参见 [runtime 安装说明](https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/blob/dev/docs/installation.zh-CN.md)。macOS Math DMG 需首次单独联网获取，未包含在完整 bundle 中。

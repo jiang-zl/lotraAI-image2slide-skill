@@ -1645,12 +1645,12 @@
       "size": 1751
     },
     "scripts/install-runtime.ps1": {
-      "sha256": "ebc6f31d16d32da5c9ca374fb4cc0a4084e5914142c51501ded3b847bbece4e0",
-      "size": 7003
+      "sha256": "ce04b3730a1dfcdd796f7ceb6f8f8ec8db4fd04742fda2e4fdf3c7209527f092",
+      "size": 7097
     },
     "scripts/install-runtime.sh": {
-      "sha256": "801b8cf74eea4c9a9693ba760198864ce8494c4dc8017277541313f2863f9870",
-      "size": 4950
+      "sha256": "5cfd7d4d529914d701cdea07eea918796ae0633b3fd470fcd3a1f66fc82d127f",
+      "size": 5019
     },
     "scripts/local_render_service.py": {
       "sha256": "50e6a38639955b0ef47e9d3afce3251e5e26840379d91d30d1aa1b6ea1d379de",
