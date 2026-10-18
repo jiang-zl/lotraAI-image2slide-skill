@@ -1,19 +1,19 @@
 {
   "files": {
     "README.md": {
-      "sha256": "d760ef73a38ac91b6fe778f39f505759bfb5673fa50968b4c58faf1ce68ff369",
+      "sha256": "f8bbd416830ad9ef49e303b557b352c44d3d7e25b56fe977be690fd88f320f4b",
       "size": 785
     },
     "README.zh-CN.md": {
-      "sha256": "762e23ec3eaac438f690fe62fff46a2b7a5eee2905eba452c22c9f99a5e01efe",
+      "sha256": "470f8f2a32820ce49c890121f8f82fbb501f2d6020d372bcc731309f290eb73a",
       "size": 716
     },
     "SKILL.md": {
-      "sha256": "85a437fd7aaa9bdfbb3b46e4ddc96198b99ec17046c2752779985db230fdaf6a",
-      "size": 8860
+      "sha256": "6c35931983b76ed9bbf68cb661a29012eb8b3e806760babe08e9d1931eee0357",
+      "size": 9168
     },
     "agents/openai.yaml": {
-      "sha256": "c5055b5887ff48913c8289972410d122dc1dfb460ee5966b7481875716de7311",
+      "sha256": "1c923d6e3389571a4c9fa4a91946e140f476e6340042915338875586d2775b48",
       "size": 430
     },
     "config/component-workflow.json": {
@@ -29,8 +29,8 @@
       "size": 61397
     },
     "config/customer-package.json": {
-      "sha256": "04bb954ccafbb18b04dbc36fd25bfeb72fd9fdb7d5cb209dd9608f1e1f85e729",
-      "size": 17868
+      "sha256": "b2523225e36c4a8dd2e7c05bdb6021badcf4be54f1c8a060672bb74342916fa6",
+      "size": 17921
     },
     "config/font-collections.json": {
       "sha256": "1c90aa23438be48260f8479ce1a31f96edceaeb0cbeb19ac3ae9729025d3c7ce",
@@ -776,6 +776,10 @@
       "sha256": "990c699b8c1fed93ce0a87be36e6ff467271becba39d22cb47356ade43a2408e",
       "size": 20170
     },
+    "scripts/core/editor_backend.py": {
+      "sha256": "25c29d14e316857d0377b893099ec0bf411e3e0e39d728f900965da0f1b84bd8",
+      "size": 13268
+    },
     "scripts/core/execution_context.py": {
       "sha256": "25eb76398fc1811bc2f9c6167dd94c37a8c2f116c86e7f9789b970715e7cfe43",
       "size": 5597
@@ -1121,12 +1125,12 @@
       "size": 2839
     },
     "scripts/core/portable_editor.py": {
-      "sha256": "49bc3b1d130dd7a0dc1a7d2d39362b5d5795095e9e1e0ad675aff4765b812042",
-      "size": 3505
+      "sha256": "430f0d1e2347cbf981a20addb24fc17d0fcb85d7ad692e0fc106d878dd0cd25d",
+      "size": 1608
     },
     "scripts/core/portable_runtime.py": {
-      "sha256": "dd230f6e69441ff906e526290849ffda7d0266e5d92c90c28f94179e9b8ae839",
-      "size": 12272
+      "sha256": "9a5aa06642b42732085fee0276655b3695f8257b8179cd0ac27eb11412c9aeda",
+      "size": 12872
     },
     "scripts/core/presets.py": {
       "sha256": "2fc4800d7b687f44709c51a4158ba6e3093b9bb6645fc7105a8d7f8bfb695a39",
@@ -1585,8 +1589,12 @@
       "size": 19175
     },
     "scripts/core/uno_editor_client.py": {
-      "sha256": "d4434495dd2603f69b294056a10f9c572b6961092212966b1d88637949b99012",
-      "size": 7604
+      "sha256": "ef06c4b4d3d33131531a3693c800ac475578ff0dcd62aee71dccd1ae8f846cad",
+      "size": 8387
+    },
+    "scripts/core/uno_host_worker.py": {
+      "sha256": "16acd754e1604ee5da408a0e5e335bc9bb1808307d37afe22ae293fe5b2d994e",
+      "size": 3407
     },
     "scripts/core/upgrade_validation.py": {
       "sha256": "2ae6cca980cd1fb9a864c1c7c448e6903e67baed16624dded850d6faffe2fba1",
@@ -1645,12 +1653,12 @@
       "size": 1751
     },
     "scripts/install-runtime.ps1": {
-      "sha256": "ce04b3730a1dfcdd796f7ceb6f8f8ec8db4fd04742fda2e4fdf3c7209527f092",
-      "size": 7097
+      "sha256": "4ef92f195cf58604a2a2ae866ed2f4a0ec43ed77ee039de4d0b3f6787e4731c5",
+      "size": 7368
     },
     "scripts/install-runtime.sh": {
-      "sha256": "5cfd7d4d529914d701cdea07eea918796ae0633b3fd470fcd3a1f66fc82d127f",
-      "size": 5019
+      "sha256": "cd1a6cdcbd8c7618774b3072a8de6f241422c4b3c45276aabc94448ecee2b2de",
+      "size": 6533
     },
     "scripts/local_render_service.py": {
       "sha256": "50e6a38639955b0ef47e9d3afce3251e5e26840379d91d30d1aa1b6ea1d379de",
@@ -1727,5 +1735,5 @@
   },
   "format_version": 1,
   "name": "lotra-image2slide-skill",
-  "version": "1.35.2"
+  "version": "1.35.3"
 }

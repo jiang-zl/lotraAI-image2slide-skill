@@ -1,0 +1,18 @@
+{
+  "version": "1.35.3",
+  "windows_complete_bundle": "PASS",
+  "windows_repeat": "PASS",
+  "windows_partial_skill_resume": "PASS",
+  "repeat_unchanged_skill_files": 435,
+  "installed_skill_count": 1,
+  "setup_skill_registered": false,
+  "core_ready": true,
+  "math_backend_ready": true,
+  "math_execution_mode": "subprocess_uno",
+  "actual_rendering": "SEPARATE_FORMULA_FIXTURE_CHECKS",
+  "global_skills": "PRESERVED",
+  "user_sentinels": "PRESERVED",
+  "macos_physical_host": "PENDING",
+  "deep_windows_test_path": "UNO_CONNECTION_FAILED; shorter private path passed; deep paths not qualified",
+  "whole_drawing_acceptance": false
+}

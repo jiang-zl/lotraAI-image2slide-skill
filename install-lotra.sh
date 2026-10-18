@@ -24,19 +24,28 @@ if [ "$(uname -s)" = Darwin ]; then
  if [ "$(sysctl -n hw.optional.arm64 2>/dev/null || true)" = 1 ]; then key=macos-arm64-cp312; fi
 fi
 case "$key" in
- linux-aarch64-cp312) engine_url="https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/linux-aarch64-cp312.tar.gz"; engine_hash="2e1ba0e7f22e01c534caebf7f09e7820322bc0d055271d3434af671e8400f96f"; exe_hash="dab6ef4f6c7847ec9f123756e3472cb0212b8d2043af623c6c3a4e806bde6e90"; executable="python/bin/python3.12" ;;
- linux-x86_64-cp312) engine_url="https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/linux-x86_64-cp312.tar.gz"; engine_hash="ffa8f85f1b56e88b687f08d743d817015524b86a9365fd921243132b80f1a36d"; exe_hash="708fefcd7df61b1327cb7b9740fafd42cb2f6cd1d387378892d4a28b7479fb78"; executable="python/bin/python3.12" ;;
- macos-arm64-cp312) engine_url="https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/macos-arm64-cp312.tar.gz"; engine_hash="233f8e15255b3e1d1fd47ea5dd5230dfed803f371138e896e54d98c60ae19f6f"; exe_hash="83deb939c9034c3e85a377eeb04e7d9992f8881652a22289cd0eeeb83b98a565"; executable="python/bin/python3.12" ;;
- macos-x86_64-cp312) engine_url="https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/macos-x86_64-cp312.tar.gz"; engine_hash="fb3187d95334813b88940db0f1ca57b84cedfd552739c3a5771c3ea0e49988c9"; exe_hash="63a792c5f90bedbb2309549a5d85726ff21ee65c0af9ae01627140e9b2b83aaa"; executable="python/bin/python3.12" ;;
+ linux-aarch64-cp312) engine_url="https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/linux-aarch64-cp312.tar.gz"; engine_api_url="https://api.github.com/repos/jiang-zl/lotraAI-image2slide-skill-runtime/releases/assets/647394840"; engine_hash="2e1ba0e7f22e01c534caebf7f09e7820322bc0d055271d3434af671e8400f96f"; exe_hash="dab6ef4f6c7847ec9f123756e3472cb0212b8d2043af623c6c3a4e806bde6e90"; executable="python/bin/python3.12" ;;
+ linux-x86_64-cp312) engine_url="https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/linux-x86_64-cp312.tar.gz"; engine_api_url="https://api.github.com/repos/jiang-zl/lotraAI-image2slide-skill-runtime/releases/assets/647771853"; engine_hash="ffa8f85f1b56e88b687f08d743d817015524b86a9365fd921243132b80f1a36d"; exe_hash="708fefcd7df61b1327cb7b9740fafd42cb2f6cd1d387378892d4a28b7479fb78"; executable="python/bin/python3.12" ;;
+ macos-arm64-cp312) engine_url="https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/macos-arm64-cp312.tar.gz"; engine_api_url="https://api.github.com/repos/jiang-zl/lotraAI-image2slide-skill-runtime/releases/assets/647393262"; engine_hash="233f8e15255b3e1d1fd47ea5dd5230dfed803f371138e896e54d98c60ae19f6f"; exe_hash="83deb939c9034c3e85a377eeb04e7d9992f8881652a22289cd0eeeb83b98a565"; executable="python/bin/python3.12" ;;
+ macos-x86_64-cp312) engine_url="https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/macos-x86_64-cp312.tar.gz"; engine_api_url="https://api.github.com/repos/jiang-zl/lotraAI-image2slide-skill-runtime/releases/assets/647392282"; engine_hash="fb3187d95334813b88940db0f1ca57b84cedfd552739c3a5771c3ea0e49988c9"; exe_hash="63a792c5f90bedbb2309549a5d85726ff21ee65c0af9ae01627140e9b2b83aaa"; executable="python/bin/python3.12" ;;
 esac
 [ ! -L "$project/.lotraAI-build" ] || { echo 'Preserve redirected storage' >&2; exit 2; }
 state="$project/.lotraAI-build/install-entry"
 mkdir -p "$state"
 get() {
- url=$1; file=$2; expected=$3
+ url=$1; file=$2; expected=$3; api=${4:-}; api=${4:-}; api=${4:-}
  if [ -f "$file" ]; then [ "$(hash_file "$file")" = "$expected" ] || { echo 'Preserve changed cached file' >&2; exit 2; }; return; fi
  mkdir -p "$(dirname "$file")"
- curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - --output "$file.part" "$url" >>"$state/Download.log" 2>&1
+ if ! if ! if ! curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - --output "$file.part" "$url" >>"$state/Download.log" 2>&1; then
+  [ -n "$api" ] || { echo 'Download failed; verified cache and partial retained' >&2; exit 2; }
+  curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - -H 'Accept: application/octet-stream' --output "$file.part" "$api" >>"$state/Download.log" 2>&1
+ fi; then
+  [ -n "$api" ] || { echo 'Download failed; verified cache and partial retained' >&2; exit 2; }
+  curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - -H 'Accept: application/octet-stream' --output "$file.part" "$api" >>"$state/Download.log" 2>&1
+ fi; then
+  [ -n "$api" ] || { echo 'Download failed; verified cache and partial retained' >&2; exit 2; }
+  curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - -H 'Accept: application/octet-stream' --output "$file.part" "$api" >>"$state/Download.log" 2>&1
+ fi
  [ "$(hash_file "$file.part")" = "$expected" ] || { echo 'Download hash mismatch; partial retained' >&2; exit 2; }
  mv -- "$file.part" "$file"
 }
@@ -54,7 +63,7 @@ if [ -f "$descriptor" ]; then
 fi
 if [ -z "$python" ]; then
  archive="$state/$engine_hash.tar.gz"
- get "$engine_url" "$archive" "$engine_hash"
+ get "$engine_url" "$archive" "$engine_hash" "$engine_api_url" "$engine_api_url" "$engine_api_url"
  base="$project/.lotraAI-build/bootstrap/$engine_hash"
  [ ! -L "$base" ] || { echo 'Preserve redirected bootstrap' >&2; exit 2; }
  mkdir -p "$base"
@@ -62,6 +71,6 @@ if [ -z "$python" ]; then
  python="$base/$executable"
  [ "$(hash_file "$python")" = "$exe_hash" ] || { echo 'Python executable differs' >&2; exit 2; }
 fi
-entry="$project/.lotraAI-build/bootstrap/2e97191baa833e70485bc93c0eec26334c4af2aebbbda8862efef9292b5f3119/install_lotra.py"
-get 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.2/tools/install_lotra.py' "$entry" '2e97191baa833e70485bc93c0eec26334c4af2aebbbda8862efef9292b5f3119'
+entry="$project/.lotraAI-build/bootstrap/bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6/install_lotra.py"
+get 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.3/tools/install_lotra.py' "$entry" 'bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6'
 exec "$python" -I -X utf8 -B "$entry" --project "$project" "$@"

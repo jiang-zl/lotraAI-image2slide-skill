@@ -128,19 +128,17 @@ def runtime(project,candidate,root,spec,key,cache,workspace):
     return facts
 
 
-def math_runtime(project,bundle,key,cache,workspace):
-    from renderer_install import install_renderer
+def math_runtime(project,bundle,key,cache,workspace,skill):
+    from renderer_install import install_renderer,verify_backend
     record=bundle.get('math_renderers',{}).get(key)
     if not record:raise ValueError('This platform has core resources but no supplied Math package: '+key)
     destination=within(project,'.lotraAI-build/toolchain/LibreOffice-'+record['version']+'-'+key)
     marker=within(destination,'lotra-runtime.json')
-    reuse_ready=False;import_ready=False
+    reuse_ready=False
     if marker.exists():
         previous=read_json(marker)
         if previous.get('sha256')!=record['sha256']:raise ValueError('Preserve different Math resources')
         reuse_ready=all(within(destination,n).is_file() for n in (record['executable'],record['uno_python']))
-        import_ready=(previous.get('uno_import_ready') is True and reuse_ready and
-                      sha(within(destination,record['uno_python']))==previous.get('uno_python_sha256'))
     if not reuse_ready:
         local=workspace/record['path']
         archive=local if same_bytes(local,record) else fetch(record,cache)
@@ -148,15 +146,8 @@ def math_runtime(project,bundle,key,cache,workspace):
         if not destination_file.exists():reuse(archive,destination_file)
     facts=install_renderer(workspace,project,bundle,key)
     if facts.get('status')!='INSTALLED_NOT_TESTED':raise ValueError('Math resource preparation incomplete')
-    configured=read_json(project/'.lotraAI-build/Portable-renderer.json')['platforms'][platform.system()]
-    if not import_ready:
-        log=within(workspace,'math-import.log')
-        with log.open('wb') as stream:
-            result=subprocess.run([configured['uno_python'],'-c','import uno'],stdout=stream,stderr=subprocess.STDOUT,timeout=60)
-        if result.returncode:raise ValueError('Math import unavailable; see '+str(log))
-        previous=read_json(marker)
-        put(marker,(json.dumps({**previous,'uno_import_ready':True,'uno_python_sha256':sha(Path(configured['uno_python']))},sort_keys=True)+'\n').encode())
-    facts.update(resource_reused=reuse_ready,render_status='NOT_RUN')
+    backend=verify_backend(project,skill,workspace,key)
+    facts.update(resource_reused=reuse_ready,render_status='NOT_RUN',backend=backend)
     return facts
 
 
@@ -180,6 +171,7 @@ def install(project,catalog,root,harness):
     cache=within(project,'.lotraAI-build/downloads/sha256')
     metadata=('AGENTS.md','.lotraAI-build/Active-skill.json','.lotraAI-build/Bundle-install.json')
     touched=False;relocated=False;committed=False
+    phase='SKILL_FILES';stages={'skill_files':'NOT_RUN','math_backend':'NOT_RUN','core_runtime':'NOT_RUN'}
     try:
         restore_runtime(project,state)
         relocation=state/'Relocation.json'
@@ -197,6 +189,7 @@ def install(project,catalog,root,harness):
             canonical.rename(previous);target=previous;relocated=False
             write_json(relocation,{'status':'ROLLED_BACK','previous':str(previous)})
         candidate,plan=prepare(project,target,catalog['skill']['files'],state,root.parent)
+        stages['skill_files']='VERIFIED'
         runtime_checkpoint(project,state,key,catalog['bundle']['math_renderers'][key])
         bundle=catalog['bundle']
         # Resolve unsupported optional-platform resources before touching the skill.
@@ -206,11 +199,21 @@ def install(project,catalog,root,harness):
             if same_bytes(local,math_record):
                 linked=within(state,math_record['path'])
                 if not linked.exists():reuse(local,linked)
-        math=math_runtime(project,bundle,key,cache,state)
+        phase='MATH_BACKEND'
+        math=math_runtime(project,bundle,key,cache,state,candidate)
+        stages['math_backend']='READY'
+        phase='CORE_RUNTIME'
         facts=runtime(project,candidate,root,catalog['platforms'][key],key,cache,state)
+        stages['core_runtime']='READY'
+        phase='REGISTRATION'
         selected=project/'.lotraAI-build/Active-skill.json'
         if (not any(plan[n] for n in ('add','replace','delete')) and selected.exists()
                 and read_json(selected).get('release_id')==catalog['release_id']):
+            result=read_json(project/'.lotraAI-build/Bundle-install.json')
+            result.update(runtime=facts,math_renderer=math,math_import_ready=True,math_backend_ready=True,
+                          math_execution_mode=math['backend']['execution_mode'],stages=stages)
+            write_json(project/'.lotraAI-build/Bundle-install.json',result)
+            write_json(state/'Result.json',result)
             finish_runtime(state)
             print(json.dumps({'status':'ALREADY_CURRENT','version':catalog['version'],'skill_entry':str(target/'SKILL.md'),
                               'core_ready':True,'render_status':'NOT_RUN','report':str(state/'Result.json')}))
@@ -236,7 +239,8 @@ def install(project,catalog,root,harness):
         prefix=[str(engine),'-I','-X','utf8','-B',str(target/'scripts/run_lotra.py'),'--project',str(project)]
         result={'schema':'lotra-product-install-result-1','version':catalog['version'],'publication_revision':catalog['publication_revision'],
                 'bundle_id':catalog['bundle_id'],'environment':key,'project':str(project),'status':'INSTALLED_READY_SINGLE_SKILL',
-                'core_ready':True,'runtime':facts,'math_renderer':math,'math_import_ready':True,'runtime_python':str(engine),
+                'core_ready':True,'runtime':facts,'math_renderer':math,'math_import_ready':True,'math_backend_ready':True,
+                'math_execution_mode':math['backend']['execution_mode'],'stages':stages,'runtime_python':str(engine),
                 'command_prefix':prefix,'command_text':subprocess.list2cmdline(prefix) if os.name=='nt' else shlex.join(prefix),
                 'render_ready':False,'native_edit_ready':False,'whole_drawing_acceptance':False,
                 'capabilities':{'render_ready':False,'render_status':'NOT_RUN','native_edit_ready':False},
@@ -254,6 +258,8 @@ def install(project,catalog,root,harness):
                           'skill_entry':'.agents/skills/lotra-image2slide-skill/SKILL.md','core_ready':True,'render_status':'NOT_RUN','report':str(state/'Result.json')}))
     except Exception as error:
         if committed:raise
+        failed_stage={'SKILL_FILES':'skill_files','MATH_BACKEND':'math_backend','CORE_RUNTIME':'core_runtime'}.get(phase)
+        if failed_stage:stages[failed_stage]='FAILED'
         rollback(target,state)
         restore_runtime(project,state)
         registration=state/'Registration.json'
@@ -266,7 +272,9 @@ def install(project,catalog,root,harness):
             previous=Path(read_json(state/'Relocation.json')['previous'])
             target.rename(previous)
             write_json(state/'Relocation.json',{'status':'ROLLED_BACK','previous':str(previous)})
-        write_json(state/'Failure.json',{'status':'INSTALL_FAILED','reason':str(error)})
+        write_json(state/'Failure.json',{'status':'INSTALL_FAILED','reason':str(error),'phase':phase,'stages':stages,
+            'core_ready':True if stages['core_runtime']=='READY' else False if stages['core_runtime']=='FAILED' else None,
+            'math_backend_ready':stages['math_backend']=='READY','render_status':'NOT_RUN'})
         raise
     finally:lock.close()
 

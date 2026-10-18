@@ -1,3 +1,14 @@
+## 1.35.3
+
+Run macOS native Math operations inside the signed LibreOffice application.
+Share bounded backend startup/export, private job identities, immutable inputs
+and owned-process cancellation between installation and normal rendering. Keep
+phase-specific installation failures and refresh startup facts on repeat. Add
+pinned GitHub asset-API fallbacks and repair the old installer platform dispatch.
+Retain workflow_version 1.35.2, design_revision 8 and runtime binaries 1.14.0.
+Focused tests and Windows formula exports were run; physical macOS qualification,
+Office interactive behavior, artwork acceptance and effect measurements were not.
+
 ## 1.35.2
 
 Close eight spatial workflow gaps: unify source-bounded fitting and layout,

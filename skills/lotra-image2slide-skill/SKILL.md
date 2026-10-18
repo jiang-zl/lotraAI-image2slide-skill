@@ -3,7 +3,10 @@ name: lotra-image2slide-skill
 description: Reconstruct scientific images, optionally continuing a one-shot partial PPT, as faithful native editable slides. Use source-bound functions, qualified icon parts and mothers, private reusable methods, and deferred final review.
 ---
 
-# lotraAI Image2Slide v1.35.2
+# lotraAI Image2Slide v1.35.3
+
+The 1.35.3 installation patch retains workflow_version 1.35.2 and design_revision 8; old task contracts are unchanged. macOS uses the signed LibreOffice application to host its fixed native Math worker. Read current backend readiness receipts; a source update or resource hash alone is not host readiness.
+
 
 Read project `.lotraAI-build/Active-skill.json` for the selected entry and
 `Bundle-install.json` for actual runtime facts. Keep the current model/reasoning

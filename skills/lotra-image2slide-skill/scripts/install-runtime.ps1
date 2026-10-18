@@ -1,6 +1,6 @@
 param([Parameter(Mandatory=$true)][string]$Project,[string]$DownloadBundle,[string]$BundleRoot)
 function Get-LotraResource {
- param([string]$Uri,[string]$Destination,[string]$Sha256,[long]$Bytes)
+ param([string]$Uri,[string]$Destination,[string]$Sha256,[long]$Bytes,[string]$ApiUri)
  $ErrorActionPreference='Stop'
  if($Sha256 -notmatch '^[a-f0-9]{64}$' -or $Bytes -le 0){throw 'Invalid pinned resource.'}
  if(Test-Path -LiteralPath $Destination){
@@ -15,7 +15,9 @@ function Get-LotraResource {
    $offset=if(Test-Path -LiteralPath $partial){(Get-Item -LiteralPath $partial).Length}else{0}
    if($offset -eq $Bytes -and (Get-FileHash -LiteralPath $partial -Algorithm SHA256).Hash.ToLowerInvariant() -eq $Sha256){Move-Item -LiteralPath $partial -Destination $Destination;return}
    if($offset -ge $Bytes){[IO.File]::WriteAllBytes($partial,[byte[]]@());$offset=0}
-   $request=[Net.HttpWebRequest]::Create($Uri);$request.Timeout=60000;$request.ReadWriteTimeout=60000
+   if($attempt -gt 0 -and $ApiUri){$Uri=$ApiUri}
+   $request=[Net.HttpWebRequest]::Create($Uri);
+   if($Uri.StartsWith('https://api.github.com/')){$request.Accept='application/octet-stream'};$request.Timeout=60000;$request.ReadWriteTimeout=60000
    if($attempt -gt 0 -and $lastFailure -match '10061|refused|拒绝'){$request.Proxy=$null}
    if($offset -gt 0){$request.AddRange($offset)}
    $response=$request.GetResponse()
@@ -63,7 +65,7 @@ if(-not $python){
  $base=Join-Path $projectRoot '.lotraAI-build/bootstrap/e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42'
  $archive=Join-Path $projectRoot '.lotraAI-build/install-entry/e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42.zip'
  New-Item -ItemType Directory -Path $base -Force|Out-Null
- Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/windows-amd64-cp312.zip' -Destination $archive -Sha256 'e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42' -Bytes 23135647
+ Get-LotraResource -Uri 'https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime/releases/download/v1.34.0/windows-amd64-cp312.zip' -Destination $archive -Sha256 'e0f12f47ffb709e2401825fe9dc6a386ec52962ffc96bdb0af06bfc93b471f42' -Bytes 23135647 -ApiUri 'https://api.github.com/repos/jiang-zl/lotraAI-image2slide-skill-runtime/releases/assets/647391937'
  $python=Join-Path $base 'python/python.exe'
  if(-not(Test-Path -LiteralPath $python)){
   Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -83,10 +85,10 @@ if(-not $python){
  }
  if((Get-FileHash -LiteralPath $python -Algorithm SHA256).Hash.ToLowerInvariant() -ne '86c4690be87a6bb6be1affe24b3c1b67ceedc86b477d6cde9f812fafd0f6d3b9'){throw 'Python executable differs.'}
 }
-$entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/2e97191baa833e70485bc93c0eec26334c4af2aebbbda8862efef9292b5f3119'
+$entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6'
 New-Item -ItemType Directory -Path $entryRoot -Force|Out-Null
 $entry=Join-Path $entryRoot 'install_lotra.py'
-Get-LotraResource -Uri 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.2/tools/install_lotra.py' -Destination $entry -Sha256 '2e97191baa833e70485bc93c0eec26334c4af2aebbbda8862efef9292b5f3119' -Bytes 8746
+Get-LotraResource -Uri 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.3/tools/install_lotra.py' -Destination $entry -Sha256 'bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6' -Bytes 10287
 $entryArgs=@('--project',$projectRoot)
 if($DownloadBundle -and $BundleRoot){throw 'Choose bundle download or local installation.'}
 if($DownloadBundle){$entryArgs+=@('--download-bundle',$DownloadBundle)}

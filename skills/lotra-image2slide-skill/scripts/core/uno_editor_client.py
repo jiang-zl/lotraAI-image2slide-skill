@@ -9,20 +9,30 @@ import uno
 from com.sun.star.lang import DisposedException
 
 
-def main(connection, directory):
-    directory=Path(directory);plan=json.loads((directory/'editor-plan.json').read_text(encoding='utf-8'))
-    local=uno.getComponentContext()
-    resolver=local.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver',local)
-    context=None
-    for _ in range(450):
-        try:context=resolver.resolve('uno:'+connection+';urp;StarOffice.ComponentContext');break
-        except Exception:time.sleep(.1)
+def main(connection, directory, context=None, probe=False, terminate=True):
+    directory=Path(directory)
+    if context is None:
+        local=uno.getComponentContext()
+        resolver=local.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver',local)
+        for _ in range(450):
+            try:context=resolver.resolve('uno:'+connection+';urp;StarOffice.ComponentContext');break
+            except Exception:time.sleep(.1)
     if context is None:raise RuntimeError('Bounded Math editor connection failed')
     desktop=context.ServiceManager.createInstanceWithContext('com.sun.star.frame.Desktop',context)
     def prop(name,value):
         p=uno.createUnoStruct('com.sun.star.beans.PropertyValue');p.Name=name;p.Value=value;return p
     document=None
     try:
+        if probe:
+            document=desktop.loadComponentFromURL('private:factory/smath','_blank',0,(prop('Hidden',True),))
+            if document is None:raise RuntimeError('Native Math document creation failed')
+            formula='sum from {k=1} to n k^2'
+            document.Formula=formula
+            if document.Formula != formula:raise RuntimeError('Native Math formula was not preserved')
+            (directory/'math-probe.json').write_text(json.dumps({'status':'PASS','native_math_service':True,
+                'formula':document.Formula,'scope':'backend_startup_only','document_render':'NOT_RUN'})+'\n',encoding='utf-8')
+            return
+        plan=json.loads((directory/'editor-plan.json').read_text(encoding='utf-8'))
         document=desktop.loadComponentFromURL((directory/'editor-input.pptx').as_uri(),'_blank',0,
             (prop('Hidden',True),prop('ReadOnly',True),prop('MacroExecutionMode',
              uno.getConstantByName('com.sun.star.document.MacroExecMode.NEVER_EXECUTE')),prop('UpdateDocMode',0)))
@@ -112,8 +122,8 @@ def main(connection, directory):
         # This is cleanup only: any export error from the try still propagates.
         try:
             if document is not None:document.close(True)
-            desktop.terminate()
+            if terminate:desktop.terminate()
         except DisposedException:pass
 
 
-if __name__=='__main__':main(*sys.argv[1:])
+if __name__=='__main__':main(*sys.argv[1:3],probe=sys.argv[3:]==['--probe'])

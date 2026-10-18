@@ -17,6 +17,7 @@ VERSION = 'portable-runtime-1.31'
 
 
 def capabilities(project, configuration=None):
+    from .editor_backend import execution_mode, identity as backend_identity
     project = Path(project).resolve()
     config_path = project/'.lotraAI-build/Portable-renderer.json'
     config = configuration or (read_json(config_path) if config_path.is_file() else {})
@@ -32,7 +33,8 @@ def capabilities(project, configuration=None):
                 'office_interactive_edit_verified': 'not_run'}
     uno_python=configured.get('uno_python') or str(Path(exe).parent/('python.exe' if os.name=='nt' else 'python'))
     if not Path(uno_python).is_absolute():uno_python=str(project/uno_python)
-    if not Path(uno_python).is_file():
+    mode=execution_mode(configured)
+    if mode=='subprocess_uno' and not Path(uno_python).is_file():
         return {'status':'CAPABILITY_BLOCKED','backend':'LibreOffice','policy':VERSION,
                 'reason':'Bundled native Math editor Python missing','fallback_attempts':0}
     try:
@@ -47,8 +49,10 @@ def capabilities(project, configuration=None):
               'executable': str(Path(exe).resolve()), 'executable_sha256': digest(exe),
               'version': version, 'platform': platform.system(),
               'fontconfig': configured.get('fontconfig'),
-              'uno_python':str(Path(uno_python).resolve()),'uno_python_sha256':digest(uno_python),
+              'execution_mode':mode,'uno_python':str(Path(uno_python).resolve()),
               'office_interactive_edit_verified': 'not_run', 'fallback_attempts': 0}
+    if Path(uno_python).is_file():result['uno_python_sha256']=digest(uno_python)
+    result['backend_identity']=backend_identity(result)
     result['core_libraries']={str(p):digest(p) for name in
         ('soffice.bin','mergedlo.dll','smlo.dll','libmergedlo.so','libsmlo.so','libsmlo.dylib')
         if (p:=Path(exe).parent/name).is_file()}
@@ -112,14 +116,18 @@ def render_key(pptx, caps, scene, width):
             raise ValueError('Font resource changed after freezing')
     if digest(caps['executable']) != caps['executable_sha256']:
         raise ValueError('Renderer changed after preflight')
-    if digest(caps['uno_python']) != caps['uno_python_sha256']:
+    if caps.get('uno_python_sha256') and digest(caps['uno_python']) != caps['uno_python_sha256']:
         raise ValueError('Math editor client runtime changed after preflight')
+    from .editor_backend import identity as backend_identity
+    if caps.get('backend_identity') != backend_identity(caps):
+        raise ValueError('Math execution mode, worker or native resources changed after preflight')
     if any(digest(path)!=sha for path,sha in caps.get('core_libraries',{}).items()):
         raise ValueError('Declared editor library changed after preflight')
     return identity({'pptx': digest(pptx), 'renderer': caps['identity'], 'fonts': fonts,
                      'width': width, 'canvas': scene['canvas'], 'policy': VERSION,
                      'renderer_code': [digest(Path(__file__).with_name(f)) for f in
-                                       ('render.py','portable_editor.py','math_editor.py','uno_editor_client.py')]})
+                                       ('render.py','portable_editor.py','math_editor.py','uno_editor_client.py',
+                                        'editor_backend.py','uno_host_worker.py')]})
 
 
 def shared_render(task, pptx, caps, scene, width=1440, independent=False):

@@ -1,6 +1,9 @@
 """Extract only the selected immutable equation-editor payload into this project."""
 from pathlib import Path,PurePosixPath
 import hashlib,io,json,os,shutil,subprocess,plistlib,tarfile,zipfile
+import importlib.util
+import platform
+import uuid
 
 def sha(path):
     h=hashlib.sha256()
@@ -94,11 +97,45 @@ def install_renderer(bundle,project,manifest,key):
         text=str(path.resolve())
         return '\\\\'+text[8:] if text.startswith('\\\\?\\UNC\\') else text[4:] if text.startswith('\\\\?\\') else text
     if not all((root/record[n]).is_file() for n in ('executable','uno_python')):raise ValueError('Math package has no required executable/Python launcher')
+    if platform=='Darwin':
+        checked=subprocess.run(['codesign','--verify','--deep','--strict',normal(root/'LibreOffice.app')],
+            capture_output=True,timeout=60)
+        if checked.returncode:
+            raise ValueError('Official Math application signature verification failed: '+checked.stderr.decode('utf-8','replace')[-2000:])
     if not ready:
         receipt.write_text(json.dumps({'sha256':record['sha256'],'version':record['version'],'tested':False,
                                       **{n+'_sha256':sha(root/record[n]) for n in ('executable','uno_python')}})+'\n')
     value.setdefault('platforms',{})[platform]={'executable':normal(root/record['executable']),
-        'uno_python':normal(root/record['uno_python']),'version':record['version'],'installed_not_tested':True}
+        'uno_python':normal(root/record['uno_python']),'version':record['version'],'installed_not_tested':True,
+        'execution_mode':'libreoffice_hosted' if platform=='Darwin' else 'subprocess_uno',
+        **({'application_signature_verified':True} if platform=='Darwin' else {})}
     data=json.dumps(value,indent=2)+'\n'
     if not target.exists() or target.read_text()!=data:target.write_text(data)
     return {'status':'INSTALLED_NOT_TESTED','root':str(root),'version':record['version'],'tested':False,'fallback_attempts':0}
+
+
+def verify_backend(project,skill,workspace,key):
+    """Use the exact same bounded backend as export, with no core dependencies."""
+    project,skill,workspace=map(Path,(project,skill,workspace))
+    folder=workspace/'math-backend-probes'/uuid.uuid4().hex
+    folder.mkdir(parents=True,exist_ok=False)
+    module_file=skill/'scripts/core/editor_backend.py'
+    spec=importlib.util.spec_from_file_location('lotra_install_math_backend',module_file)
+    backend=importlib.util.module_from_spec(spec);spec.loader.exec_module(backend)
+    configured=json.loads((project/'.lotraAI-build/Portable-renderer.json').read_bytes())['platforms'][platform.system()]
+    try:
+        # Every install/repeat performs a fresh finite startup check. Historical
+        # uno_import_ready receipts cannot certify a different execution mode.
+        facts=backend.run(configured,folder,operation='probe',timeout=60,
+                          client_file=module_file.with_name('uno_editor_client.py'))
+    except backend.BackendError as error:
+        (workspace/'Math-backend-failure.json').write_text(json.dumps(error.facts,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+        raise ValueError('Math backend unavailable; see '+str(folder/'backend-result.json')) from error
+    proof=folder/'backend-result.json'
+    record={'status':'READY','execution_mode':facts['execution_mode'],'backend_identity':facts['backend_identity'],
+            'probe':{'path':proof.relative_to(project).as_posix(),'sha256':sha(proof)},
+            'revalidated':True,'render_status':'NOT_RUN','office_behavior':'NOT_RUN'}
+    marker=project/'.lotraAI-build/toolchain'/('LibreOffice-'+configured['version']+'-'+key)/'lotra-runtime.json'
+    prior=json.loads(marker.read_bytes())
+    marker.write_text(json.dumps({**prior,'uno_import_ready':True,'math_backend':record},sort_keys=True)+'\n',encoding='utf-8')
+    return record

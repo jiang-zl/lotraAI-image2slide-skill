@@ -1,0 +1,27 @@
+{
+  "version": "1.35.3",
+  "workflow_version": "1.35.2",
+  "design_revision": 8,
+  "runtime_version": "1.14.0",
+  "runtime_resource_changes": false,
+  "focused_tests": {
+    "windows": 20,
+    "wsl_linux": 20,
+    "entry_windows": 4
+  },
+  "windows_installation": {
+    "complete_bundle": "PASS",
+    "repeat": "PASS",
+    "partial_skill_resume": "PASS"
+  },
+  "formula_exports": {
+    "windows_hosted": "PASS",
+    "windows_external_uno": "PASS",
+    "wsl_linux_external_uno": "PASS"
+  },
+  "macos_arm64": "PHYSICAL_HOST_PENDING",
+  "macos_x86_64": "PHYSICAL_HOST_PENDING",
+  "office_behavior": "NOT_RUN",
+  "whole_drawing_acceptance": false,
+  "performance_effect": "NOT_RUN"
+}

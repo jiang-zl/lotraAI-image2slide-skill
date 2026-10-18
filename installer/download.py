@@ -6,6 +6,7 @@ import time
 import threading
 import urllib.error
 import urllib.request
+import urllib.parse
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -20,6 +21,37 @@ def sha(file):
 
 _LOCKS={}
 _LOCK_GUARD=threading.Lock()
+
+
+def github_asset_api(url, size):
+    """Resolve the exact public release asset; content pins remain unchanged."""
+    parsed=urllib.parse.urlsplit(url)
+    parts=parsed.path.strip('/').split('/')
+    if parsed.scheme!='https' or parsed.netloc!='github.com' or parsed.query or len(parts)!=6 or parts[2:4]!=['releases','download']:
+        return None
+    repo='/'.join(parts[:2])
+    if repo not in ('jiang-zl/lotraAI-image2slide-skill','jiang-zl/lotraAI-image2slide-skill-runtime'):
+        return None
+    tag,name=map(urllib.parse.unquote,parts[4:])
+    opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    def read(endpoint):
+        request=urllib.request.Request('https://api.github.com/repos/'+repo+endpoint,
+            headers={'User-Agent':'lotraAI-installer/1.35.3','Accept':'application/vnd.github+json'})
+        with opener.open(request,timeout=20) as response:
+            data=response.read(4*1024*1024+1)
+        if len(data)>4*1024*1024:raise ValueError('GitHub asset metadata exceeds byte limit')
+        return json.loads(data)
+    release=read('/releases/tags/'+urllib.parse.quote(tag,safe=''))
+    if release.get('tag_name')!=tag:raise ValueError('GitHub fallback release differs')
+    for page in range(1,11):
+        assets=read('/releases/'+str(int(release['id']))+'/assets?per_page=100&page='+str(page))
+        matches=[a for a in assets if a.get('name')==name]
+        if matches:
+            if len(matches)!=1 or matches[0].get('size')!=size or matches[0].get('state')!='uploaded':
+                raise ValueError('GitHub fallback asset identity differs')
+            return 'https://api.github.com/repos/'+repo+'/releases/assets/'+str(int(matches[0]['id']))
+        if len(assets)<100:return None
+    raise ValueError('GitHub release asset pagination exceeds finite limit')
 
 
 def archive_member(archive,name,record,cache):
@@ -103,7 +135,7 @@ def _fetch(record, cache, *, attempts=3):
             if part.stat().st_size==size and sha(part)==expected:os.replace(part,file);return file
             part.unlink()  # Exact owned logical member; verified pieces remain cached.
         raise ValueError('Verified member pieces do not match the complete file')
-    last=None
+    last=None;url=record['url'];api_tried=False
     for attempt in range(attempts):
         offset=part.stat().st_size if part.exists() else 0
         if offset==size and sha(part)==expected:os.replace(part,file);return file
@@ -112,8 +144,10 @@ def _fetch(record, cache, *, attempts=3):
         first=int(span['offset']) if span else 0
         whole=int(span['archive_bytes']) if span else size
         headers={'User-Agent':'lotraAI-installer/1.34.0'}
+        if url.startswith('https://api.github.com/'):
+            headers['Accept']='application/octet-stream'
         if span or offset:headers['Range']='bytes='+str(first+offset)+'-'+(str(first+size-1) if span else '')
-        request=urllib.request.Request(record['url'],headers=headers)
+        request=urllib.request.Request(url,headers=headers)
         try:
             transport=urllib.request.build_opener(urllib.request.ProxyHandler({})) if attempt and ('10061' in str(last) or 'refused' in str(last).lower()) else urllib.request.build_opener()
             with transport.open(request,timeout=60) as response:
@@ -141,5 +175,12 @@ def _fetch(record, cache, *, attempts=3):
                 os.replace(part,file);return file
             last=str(error)
         except (OSError,ValueError) as error:last=str(error)
-        if attempt+1<attempts:time.sleep(min(2**attempt,4))
+        if attempt+1<attempts:
+            if not api_tried:
+                api_tried=True
+                try:
+                    alternate=github_asset_api(record['url'],whole)
+                    if alternate:url=alternate
+                except (OSError,ValueError,KeyError,TypeError):pass
+            time.sleep(min(2**attempt,4))
     raise RuntimeError('DOWNLOAD_LIMIT_REACHED: '+str(last)+'; verified checkpoints and owned partial retained')

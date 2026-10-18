@@ -24,7 +24,7 @@ from pathlib import Path, PurePosixPath
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-VERSION = '1.35.2'
+VERSION = '1.35.3'
 SCHEMA = 'lotra-offline-product-bundle-1'
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -357,7 +357,7 @@ def register(project, skill, manifest, harness, result):
     except ValueError:
         selected_entry = str(readable_windows_path(skill / 'SKILL.md'))
     new = {'name': 'lotra-image2slide-skill', 'version': VERSION,
-           'bundle_id':result['bundle_id'],'design_revision':8,'workflow_version':VERSION,
+           'bundle_id':result['bundle_id'],'design_revision':8,'workflow_version':manifest.get('workflow_version','1.35.2'),
            'skill': selected_entry,
            'package_sha256': manifest['payloads']['skill']['sha256'], 'global_skills': 'preserved'}
     if active.exists() and read_json(active) != new:
@@ -379,7 +379,7 @@ def register(project, skill, manifest, harness, result):
     else:
         replacement = previous + ('\n\n' if previous and not previous.endswith('\n\n') else '') + block + '\n'
     policy_begin,policy_end='<!-- lotraAI-release-policy:start -->','<!-- lotraAI-release-policy:end -->'
-    policy_block=policy_begin+'\nSelected lotraAI release is 1.34.0. The current selected SKILL.md and references/workflow-v134.md supersede older release-specific normal-flow rules for new 1.34 contracts. Preserve old bound tasks until explicit migration, private knowledge/fonts/tasks, current model/reasoning and global skills. No Setup skill. Use Bundle-install.json for actual capabilities; source publication was not runtime/artwork acceptance.\n'+policy_end
+    policy_block=policy_begin+'\nSelected lotraAI release is '+VERSION+'. Use the selected SKILL.md. This installation patch retains workflow_version 1.35.2, references/workflow-v1352.md and design_revision 8. Preserve old bound tasks, source files, private knowledge/fonts/tasks, current model/reasoning and global skills. No Setup skill. Use Bundle-install.json for actual host capabilities; publication is not artwork acceptance.\n'+policy_end
     if policy_begin in replacement or policy_end in replacement:
         if replacement.count(policy_begin)!=1 or replacement.count(policy_end)!=1 or replacement.index(policy_begin)>=replacement.index(policy_end):raise ValueError('Preserve ambiguous release policy block')
         replacement=re.sub(re.escape(policy_begin)+r'.*?'+re.escape(policy_end),lambda unused:policy_block,replacement,flags=re.S)
@@ -479,8 +479,12 @@ def main():
         if result['math_renderer'].get('status') != 'INSTALLED_NOT_TESTED':
             raise ValueError('Required Math runtime is not supplied for this platform; skill has not been published')
         # Import readiness is distinct from opening/editing/rendering a document.
-        uno=readable_windows_path(read_json(project/'.lotraAI-build/Portable-renderer.json')['platforms']['Windows' if key.startswith('windows') else 'Linux']['uno_python'])
-        command([uno,'-c','import uno; print("UNO_READY")'],state_dir/'Math-uno.log',60)
+        from renderer_install import verify_backend
+        math_backend=verify_backend(Path(readable_windows_path(project)),Path(script_skill),
+                                    Path(readable_windows_path(state_dir)),key)
+        result['math_renderer']['backend']=math_backend
+        result['math_backend_ready']=True
+        result['math_execution_mode']=math_backend['execution_mode']
         result['math_import_ready']=True
         from installer_publication import publish_skill
         skill = publish_skill(root, project, manifest, state_dir, state)

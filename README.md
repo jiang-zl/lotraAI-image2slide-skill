@@ -1,10 +1,13 @@
 # lotraAI
 
-This patch closes eight spatial workflow gaps: source-bounded fit/layout consistency, shared write-phase authority, persistent failure decisions and pending-obligation gates, versioned rules, native 3D extraction guards, scoped transform/order dependencies, and finite projective domains. Native shapes, fills and outlines retain priority. This release received static review only; product tests, reconstruction and rendering were not run.
+This patch adds LibreOffice-hosted Math execution on macOS and uses the same bounded backend for installation checks and document export. Windows native Math startup/export checks were exercised; macOS physical-host validation remains pending. Runtime binaries and platform resource bytes are unchanged.
 
-**Current release: 1.35.2** · Development/default branch: `dev` · Version branch: `1.35.2` · Release tag: `v1.35.2`
 
-`dev` and `1.35.2` currently contain the released 1.35.2. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
+
+
+**Current release: 1.35.3** · Development/default branch: `dev` · Version branch: `1.35.3` · Release tag: `v1.35.3`
+
+`dev` and `1.35.3` currently contain the released 1.35.3. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
 
 
 **Reconstruct scientific figures as layered, editable PowerPoint slides.**
@@ -30,7 +33,7 @@ Codex runs the maintained installer, prepares Python, dependencies, OCR and Math
 Already have the complete ZIP? Supply the file or its absolute local path, then send:
 
 ~~~text
-Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.35.2-bundle.zip.
+Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.35.3-bundle.zip.
 ~~~
 
 Runtime resources and private task state stay in the project's `.lotraAI-build` directory. See the [installation guide](docs/installation.md) for manual commands and platform requirements, or the [download guide](docs/download.md) for complete bundles.
@@ -134,7 +137,7 @@ Use $lotra-image2slide-skill to continue rebuilding from this partial PPT, follo
 
 After an interruption, ask the agent to resume the existing task in the same working project. Keep the original and `.lotraAI-build` available. See the [usage guide](docs/usage.md).
 
-## v1.35.2
+## v1.35.3
 
 Spatial type is recognized recursively from the original to its parts. Source-owned frames, observable pose and original landmarks connect native construction, face-local aggregate centering, base support, shared edges, occlusion and saved-result checks. Native shapes, fills and outlines take priority. Functional curves, finite convergence, private method reuse and deferred font/whole review remain.
 
@@ -142,7 +145,7 @@ Installation and updates use the same entry and managed-file synchronization: ad
 
 Resources cover Windows x64, Linux x64, and macOS on Apple Silicon and Intel. macOS requires 13 or later and a separate initial Math download. Linux ARM64 still lacks a complete Math package. See the [installation guide](docs/installation.md) for the supplied routes.
 
-This release implements and statically reviews spatial frames, 3D pose, face-local centering, support and occlusion checks. Tests, syntax/import/CLI checks, reconstruction and rendering were not run at the maintainer's request. Earlier gallery and validation records do not qualify this release. Runtime binaries remain 1.14.0 with existing resources reused. See the [changelog](CHANGELOG.md) and [validation notes](docs/validation.md).
+Focused backend/transport regressions and Windows native Math exports were checked for this patch. macOS physical installation/startup, Office interactive editing, whole-image reconstruction acceptance and performance/token effects were not tested. The retained spatial workflow is 1.35.2; runtime binaries remain 1.14.0. See [validation notes](docs/validation.md).
 
 ## Documentation and source
 
@@ -151,8 +154,8 @@ This release implements and statically reviews spatial frames, 3D pose, face-loc
 | [Installation](docs/installation.md) | Automatic setup, differential updates, bundles and platform requirements |
 | [Usage](docs/usage.md) | Image reconstruction, partial-slide import and resuming work |
 | [Examples](docs/examples/README.md) | Originals, reconstruction screenshots and component details |
-| [Workflow](skills/lotra-image2slide-skill/references/workflow-v1351.md) | The 1.35.2 reconstruction and reuse rules |
-| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.35.2 main-skill payload |
+| [Workflow](skills/lotra-image2slide-skill/references/workflow-v1352.md) | The 1.35.3 reconstruction and reuse rules |
+| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.35.3 main-skill payload |
 | [Provenance and licensing](NOTICE.md) | Project source, third-party components, and example assets |
 
 For feedback, include the operating system, product version, attempted operation, and relevant diagnostic. Share a reviewed reference image or excerpt when needed. Private task data remains under your control in the working project.

@@ -1,8 +1,8 @@
-# v1.35.2 publication
+# 1.35.3 publication
 
-The skill source and installation catalogs are version 1.35.2. Runtime binaries
-remain 1.14.0 and all runtime resource URLs/hashes are inherited unchanged.
-No new runtime tag or binary release is produced; maintained bootstrap URLs use dev. Installation channel
-metadata points to the current source catalog; unchanged full-bundle ranges
-reuse their inherited immutable release parts. See docs/v1.35.2/Validation-report.md for the
-explicit no-test/no-reconstruction scope. Publication is not runtime acceptance.
+The product source, fixed Math worker, installers and matching catalogs are
+version 1.35.3. Spatial task policies retain workflow_version 1.35.2. Existing
+runtime binaries and resources are unchanged. New source/version branches use
+1.35.3 and dev, with the product tag v1.35.3. Historical tags are preserved.
+The install channel is activated only after public Release/catalog/asset checks.
+Physical macOS qualification remains pending; see validation.md.

@@ -9,37 +9,11 @@ from .common import digest,write_json
 
 def export_pdf(pptx,output,caps,timeout=120):
     from .math_editor import prepare
+    from .editor_backend import run
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
     before=digest(pptx);prepare(pptx,output)
-    runtime_root=next((p for p in output.resolve().parents if p.name=='.lotraAI-build'),output.parent)
-    profile=runtime_root/'editor-profiles'/uuid.uuid4().hex;profile.mkdir(parents=True)
-    connection='pipe,name=lotra'+uuid.uuid4().hex
-    env=dict(os.environ)
-    for variable in ('URE_BOOTSTRAP','UNO_PATH','PYTHONHOME'):env.pop(variable,None)
-    if caps.get('fontconfig'):env['FONTCONFIG_FILE']=caps['fontconfig']
-    args=[caps['executable'],'-env:UserInstallation='+profile.resolve().as_uri(),
-          '--headless','--nologo','--nodefault','--norestore','--accept='+connection+';urp;']
-    flags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0
     begin=time.monotonic()
-    with (output/'editor-server.log').open('wb') as log:
-        process=subprocess.Popen(args,stdout=log,stderr=log,env=env,creationflags=flags,start_new_session=os.name!='nt')
-        try:
-            client=subprocess.run([caps['uno_python'],'-B',str(Path(__file__).with_name('uno_editor_client.py')),
-                connection,str(output.resolve())],capture_output=True,timeout=timeout,env=env,creationflags=flags)
-            (output/'editor-client.log').write_bytes(client.stdout+b'\n'+client.stderr)
-            if client.returncode:raise RuntimeError('Native Math editor export failed: '+client.stderr.decode('utf-8','replace')[-1000:])
-            if not (output/'Final.pdf').is_file():raise RuntimeError('Native editor produced no PDF')
-        finally:
-            try:process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                # Terminate only this task's owned process tree. No global kill.
-                if os.name=='nt':
-                    subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],capture_output=True,timeout=10,creationflags=flags)
-                else:
-                    import signal
-                    try:os.killpg(process.pid,signal.SIGTERM)
-                    except ProcessLookupError:pass
-                process.wait(timeout=5)
+    run(caps,output,timeout=timeout)
     if digest(pptx)!=before:raise RuntimeError('Editor modified canonical PPTX')
     return {'seconds':time.monotonic()-begin,'pptx_hash':before}
 

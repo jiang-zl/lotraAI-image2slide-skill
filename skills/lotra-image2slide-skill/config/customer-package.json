@@ -195,6 +195,7 @@
     "scripts/core/desktop_bridge.py",
     "scripts/core/detail_contracts.py",
     "scripts/core/drawing_plan.py",
+    "scripts/core/editor_backend.py",
     "scripts/core/execution_context.py",
     "scripts/core/execution_contract.py",
     "scripts/core/external_sync.py",
@@ -398,6 +399,7 @@
     "scripts/core/transient_export.py",
     "scripts/core/typed_metrics.py",
     "scripts/core/uno_editor_client.py",
+    "scripts/core/uno_host_worker.py",
     "scripts/core/upgrade_validation.py",
     "scripts/core/user_delivery.py",
     "scripts/core/vector_asset.py",
@@ -445,8 +447,8 @@
   "private_data": "No task states, actual host font archives, observations, databases, user files or release histories.",
   "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
   "publication_revision": 1,
-  "release_status": "IMPLEMENTED_STATICALLY_REVIEWED_NOT_TESTED_PER_USER_REQUEST",
-  "runtime_regressions": "NOT_RUN_PER_USER_REQUEST: tests, syntax/import/CLI, reconstruction and rendering excluded",
+  "release_status": "FOCUSED_VALIDATION_MACOS_HOST_PENDING",
+  "runtime_regressions": "See docs/v1.35.3/Validation-report.md; macOS physical-host validation remains pending",
   "schema": "lotra-customer-package-1",
-  "version": "1.35.2"
+  "version": "1.35.3"
 }
