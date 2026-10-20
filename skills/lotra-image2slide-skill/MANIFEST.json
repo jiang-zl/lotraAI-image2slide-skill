@@ -1,20 +1,20 @@
 {
   "files": {
     "README.md": {
-      "sha256": "f8bbd416830ad9ef49e303b557b352c44d3d7e25b56fe977be690fd88f320f4b",
-      "size": 785
+      "sha256": "35f98506ef35504bd1715ff03250344ce26ed0f8809d0f4493058d9ab730594a",
+      "size": 766
     },
     "README.zh-CN.md": {
-      "sha256": "470f8f2a32820ce49c890121f8f82fbb501f2d6020d372bcc731309f290eb73a",
-      "size": 716
+      "sha256": "0214e4cb0fd1cf643cdfa423f8e863a1f2f137d701be55bc09e21f7c3cfbc111",
+      "size": 698
     },
     "SKILL.md": {
-      "sha256": "6c35931983b76ed9bbf68cb661a29012eb8b3e806760babe08e9d1931eee0357",
-      "size": 9168
+      "sha256": "cf6c31ef7832bd4a1df034402e4de5f1b9aa54526f0dfe724245072b8fbe5a73",
+      "size": 9153
     },
     "agents/openai.yaml": {
-      "sha256": "1c923d6e3389571a4c9fa4a91946e140f476e6340042915338875586d2775b48",
-      "size": 430
+      "sha256": "079eb22c96c569b15edb97b86b26009f6274e49f3ac2eef7142130b3f65bded8",
+      "size": 424
     },
     "config/component-workflow.json": {
       "sha256": "01055ea31735ebfd5c46eeeb44aee4ad03326ac3cfb03b96fc55240f3505a3da",
@@ -29,8 +29,8 @@
       "size": 61397
     },
     "config/customer-package.json": {
-      "sha256": "b2523225e36c4a8dd2e7c05bdb6021badcf4be54f1c8a060672bb74342916fa6",
-      "size": 17921
+      "sha256": "f718a55d2fa9116e40d9a33d5dc4353c762d9efa44d9bf2905c0c465013aad74",
+      "size": 17481
     },
     "config/font-collections.json": {
       "sha256": "1c90aa23438be48260f8479ce1a31f96edceaeb0cbeb19ac3ae9729025d3c7ce",
@@ -1653,12 +1653,12 @@
       "size": 1751
     },
     "scripts/install-runtime.ps1": {
-      "sha256": "4ef92f195cf58604a2a2ae866ed2f4a0ec43ed77ee039de4d0b3f6787e4731c5",
+      "sha256": "2e7d346baa130fe4ce0d923cc9f691cf240d18037fd5350e73aab82e9cd6ad23",
       "size": 7368
     },
     "scripts/install-runtime.sh": {
-      "sha256": "cd1a6cdcbd8c7618774b3072a8de6f241422c4b3c45276aabc94448ecee2b2de",
-      "size": 6533
+      "sha256": "1718402b476a3ea1050857a3863221bf84df4809149842e5ac8466019e4f48d7",
+      "size": 5764
     },
     "scripts/local_render_service.py": {
       "sha256": "50e6a38639955b0ef47e9d3afce3251e5e26840379d91d30d1aa1b6ea1d379de",
@@ -1735,5 +1735,5 @@
   },
   "format_version": 1,
   "name": "lotra-image2slide-skill",
-  "version": "1.35.3"
+  "version": "1.35.4"
 }

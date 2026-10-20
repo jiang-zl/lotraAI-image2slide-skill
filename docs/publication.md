@@ -1,8 +1,10 @@
-# 1.35.3 publication
+# 1.35.4 publication
 
-The product source, fixed Math worker, installers and matching catalogs are
-version 1.35.3. Spatial task policies retain workflow_version 1.35.2. Existing
-runtime binaries and resources are unchanged. New source/version branches use
-1.35.3 and dev, with the product tag v1.35.3. Historical tags are preserved.
-The install channel is activated only after public Release/catalog/asset checks.
-Physical macOS qualification remains pending; see validation.md.
+The product installation patch is 1.35.4. Spatial task contracts remain on
+workflow_version 1.35.2. Runtime binaries/resources and the Math implementation
+are unchanged. Default/development branches use dev; version branches use
+1.35.4 and the formal source tag is v1.35.4. Historical tags are preserved.
+The source Release contains only changed distribution parts and metadata;
+unchanged immutable runtime assets and complete-bundle parts are reused.
+Final distribution parsing precedes publication, and public README installation
+checks are retained separately. Physical macOS validation remains pending.

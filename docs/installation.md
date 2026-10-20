@@ -23,3 +23,11 @@ The signed LibreOffice application runs a fixed Python/UNO worker in a new proje
 If a prior attempt installed only the skill files, rerun the maintained installation entry in that same project. Verified resources are retained. Read the current attempt’s `Failure.json`, `Math-backend-failure.json` and referenced `backend-result.json` for phase, commands, exit status and log paths. A core stage that was never reached is `NOT_RUN`. A successful startup check does not certify document rendering or artwork quality.
 
 GitHub release downloads have a bounded official asset-API fallback, retaining the exact byte count, SHA-256, range checks and cache ownership. macOS Math DMGs still use their pinned upstream URL. macOS Apple Silicon and Intel physical-host checks remain pending; Windows tests do not qualify either Mac architecture.
+
+## 1.35.4 installer entries
+
+Shell entries are UTF-8 without BOM and use LF. Maintainers generate them from
+`installer/templates` with `tools/prepare_install_entries.py`, then run
+`tools/validate_install_entries.py` against final attachments and ZIP members.
+Windows entries are checked with Windows PowerShell as well as actual installation.
+Runtime binaries and resource packages remain unchanged.

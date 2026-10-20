@@ -33,16 +33,10 @@ esac
 state="$project/.lotraAI-build/install-entry"
 mkdir -p "$state"
 get() {
- url=$1; file=$2; expected=$3; api=${4:-}; api=${4:-}; api=${4:-}
+ url=$1; file=$2; expected=$3; api=${4:-}
  if [ -f "$file" ]; then [ "$(hash_file "$file")" = "$expected" ] || { echo 'Preserve changed cached file' >&2; exit 2; }; return; fi
  mkdir -p "$(dirname "$file")"
- if ! if ! if ! curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - --output "$file.part" "$url" >>"$state/Download.log" 2>&1; then
-  [ -n "$api" ] || { echo 'Download failed; verified cache and partial retained' >&2; exit 2; }
-  curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - -H 'Accept: application/octet-stream' --output "$file.part" "$api" >>"$state/Download.log" 2>&1
- fi; then
-  [ -n "$api" ] || { echo 'Download failed; verified cache and partial retained' >&2; exit 2; }
-  curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - -H 'Accept: application/octet-stream' --output "$file.part" "$api" >>"$state/Download.log" 2>&1
- fi; then
+ if ! curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - --output "$file.part" "$url" >>"$state/Download.log" 2>&1; then
   [ -n "$api" ] || { echo 'Download failed; verified cache and partial retained' >&2; exit 2; }
   curl --silent --show-error --fail --location --retry 2 --connect-timeout 30 --max-time 1800 --continue-at - -H 'Accept: application/octet-stream' --output "$file.part" "$api" >>"$state/Download.log" 2>&1
  fi
@@ -57,13 +51,13 @@ if [ -f "$descriptor" ]; then
     expected=$(printf '%s\n' "$engine_fields" | sed -n 's/.*"sha256"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
  if [ -n "$engine" ] && [ -n "$expected" ]; then
  case "$engine" in .lotraAI-build/*) ;; *) echo 'Invalid prepared engine path' >&2; exit 2;; esac
- case "$engine" in *..*|*\*) echo 'Unsafe engine path' >&2; exit 2;; esac
+ case "$engine" in *..*|*\\*) echo 'Unsafe engine path' >&2; exit 2;; esac
  if [ -f "$project/$engine" ] && [ "$(hash_file "$project/$engine")" = "$expected" ]; then python="$project/$engine"; fi
  fi
 fi
 if [ -z "$python" ]; then
  archive="$state/$engine_hash.tar.gz"
- get "$engine_url" "$archive" "$engine_hash" "$engine_api_url" "$engine_api_url" "$engine_api_url"
+ get "$engine_url" "$archive" "$engine_hash" "$engine_api_url"
  base="$project/.lotraAI-build/bootstrap/$engine_hash"
  [ ! -L "$base" ] || { echo 'Preserve redirected bootstrap' >&2; exit 2; }
  mkdir -p "$base"
@@ -72,5 +66,5 @@ if [ -z "$python" ]; then
  [ "$(hash_file "$python")" = "$exe_hash" ] || { echo 'Python executable differs' >&2; exit 2; }
 fi
 entry="$project/.lotraAI-build/bootstrap/bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6/install_lotra.py"
-get 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.3/tools/install_lotra.py' "$entry" 'bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6'
+get 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.4/tools/install_lotra.py' "$entry" 'bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6'
 exec "$python" -I -X utf8 -B "$entry" --project "$project" "$@"

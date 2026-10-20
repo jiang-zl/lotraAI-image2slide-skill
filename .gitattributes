@@ -5,3 +5,5 @@
 *.png binary
 *.zip binary
 *.md linguist-documentation
+*.sh text eol=lf
+*.sh.in text eol=lf

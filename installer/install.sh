@@ -39,6 +39,9 @@ if [ -f "$descriptor" ] && [ -f "$root/Update-manifest.json" ]; then
     case "$engine" in .lotraAI-build/*) ;; *) echo 'Invalid prepared engine path' >&2; exit 2;; esac
     case "$engine" in *..*|*\\*) echo 'Unsafe prepared engine path' >&2; exit 2;; esac
     if [ -f "$project/$engine" ] && [ "$(hash_file "$project/$engine")" = "$engine_hash" ]; then
+        if [ -f "$root/Differential-manifest.json" ]; then
+            exec "$project/$engine" -I -X utf8 -B "$root/installer/differential.py" --project "$project" --harness "$harness" --catalog "$root/Differential-manifest.json"
+        fi
         exec "$project/$engine" -I -X utf8 -B "$root/installer/online.py" --project "$project" --harness "$harness" --bundle-root "$root"
     fi
     fi

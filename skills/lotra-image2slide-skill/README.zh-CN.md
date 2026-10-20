@@ -1,4 +1,4 @@
-# lotraAI Image2Slide 1.35.3
+# lotraAI Image2Slide 1.35.4
 
 将科研图片重建为原生可编辑 PowerPoint。产品用法与案例：
 https://github.com/jiang-zl/lotraAI-image2slide-skill。

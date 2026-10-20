@@ -24,7 +24,7 @@ from pathlib import Path, PurePosixPath
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-VERSION = '1.35.3'
+VERSION = '1.35.4'
 SCHEMA = 'lotra-offline-product-bundle-1'
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 

@@ -447,8 +447,8 @@
   "private_data": "No task states, actual host font archives, observations, databases, user files or release histories.",
   "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
   "publication_revision": 1,
-  "release_status": "FOCUSED_VALIDATION_MACOS_HOST_PENDING",
-  "runtime_regressions": "See docs/v1.35.3/Validation-report.md; macOS physical-host validation remains pending",
+  "release_status": "INSTALLER_VALIDATION_MACOS_HOST_PENDING",
+  "runtime_regressions": "See docs/v1.35.4/Validation-report.md; runtime bytes unchanged; physical macOS validation pending",
   "schema": "lotra-customer-package-1",
-  "version": "1.35.3"
+  "version": "1.35.4"
 }

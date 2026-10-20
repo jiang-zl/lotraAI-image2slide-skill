@@ -1,20 +1,20 @@
 {
   "bundle": {
-    "bytes": 7728,
-    "sha256": "fdb765457695cbba583dd6fe96088fb61488bb5b73c88001eca0fbf6e0f1a36d",
-    "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.3/v1.35.3-bundle.json"
+    "bytes": 7729,
+    "sha256": "9edb83a46ced8e4c21f605b314eb642401f5838b8378a23d7ac262342b0b8f50",
+    "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.4/v1.35.4-bundle.json"
   },
   "catalog": {
-    "bytes": 543587,
-    "sha256": "71b97c50e600f153ad550bfb5dff41d945ea45b0fdfff3d0300462b8c2339ed2",
-    "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.3/release.json"
+    "bytes": 543564,
+    "sha256": "a8b66d788ef6db6095b92eff4ff6cca3ed38f60fd3c4d2a0614a803412260521",
+    "url": "https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.4/release.json"
   },
   "entry": {
     "bytes": 10287,
     "sha256": "bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6",
-    "url": "https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.3/tools/install_lotra.py"
+    "url": "https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.4/tools/install_lotra.py"
   },
   "publication_revision": 1,
   "schema": "lotra-install-channel-1",
-  "version": "1.35.3"
+  "version": "1.35.4"
 }

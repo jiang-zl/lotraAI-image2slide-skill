@@ -1,3 +1,11 @@
+## 1.35.4
+
+Fix LF shell installation entries and repeated bootstrap generation. Generate
+canonical entries idempotently from templates, validate the bytes in final
+release assets and bundles, and exercise the Windows/Linux README commands.
+Retain runtime 1.14.0/resource bytes and workflow 1.35.2. Physical macOS
+installation is pending; no reconstruction or performance claim is added.
+
 ## 1.35.3
 
 Run macOS native Math operations inside the signed LibreOffice application.
