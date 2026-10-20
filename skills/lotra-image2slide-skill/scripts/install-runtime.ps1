@@ -85,10 +85,10 @@ if(-not $python){
  }
  if((Get-FileHash -LiteralPath $python -Algorithm SHA256).Hash.ToLowerInvariant() -ne '86c4690be87a6bb6be1affe24b3c1b67ceedc86b477d6cde9f812fafd0f6d3b9'){throw 'Python executable differs.'}
 }
-$entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6'
+$entryRoot=Join-Path $projectRoot '.lotraAI-build/bootstrap/ae1a062cab42fe36e5c851fc1e3d70c64f5817bd8837378350a7b9ca56022694'
 New-Item -ItemType Directory -Path $entryRoot -Force|Out-Null
 $entry=Join-Path $entryRoot 'install_lotra.py'
-Get-LotraResource -Uri 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.4/tools/install_lotra.py' -Destination $entry -Sha256 'bc6ac125701d7b01e1f8174713ae59cc3ccdff4cac32989b5fe5371f62c05ed6' -Bytes 10287
+Get-LotraResource -Uri 'https://raw.githubusercontent.com/jiang-zl/lotraAI-image2slide-skill-runtime/1.35.5/tools/install_lotra.py' -Destination $entry -Sha256 'ae1a062cab42fe36e5c851fc1e3d70c64f5817bd8837378350a7b9ca56022694' -Bytes 10280
 $entryArgs=@('--project',$projectRoot)
 if($DownloadBundle -and $BundleRoot){throw 'Choose bundle download or local installation.'}
 if($DownloadBundle){$entryArgs+=@('--download-bundle',$DownloadBundle)}

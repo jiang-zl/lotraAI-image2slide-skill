@@ -36,7 +36,7 @@ def github_asset_api(url, size):
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
     def read(endpoint):
         request=urllib.request.Request('https://api.github.com/repos/'+repo+endpoint,
-            headers={'User-Agent':'lotraAI-installer/1.35.3','Accept':'application/vnd.github+json'})
+            headers={'User-Agent':'lotraAI-installer','Accept':'application/vnd.github+json'})
         with opener.open(request,timeout=20) as response:
             data=response.read(4*1024*1024+1)
         if len(data)>4*1024*1024:raise ValueError('GitHub asset metadata exceeds byte limit')
@@ -143,7 +143,7 @@ def _fetch(record, cache, *, attempts=3):
         span=record.get('range')
         first=int(span['offset']) if span else 0
         whole=int(span['archive_bytes']) if span else size
-        headers={'User-Agent':'lotraAI-installer/1.34.0'}
+        headers={'User-Agent':'lotraAI-installer'}
         if url.startswith('https://api.github.com/'):
             headers['Accept']='application/octet-stream'
         if span or offset:headers['Range']='bytes='+str(first+offset)+'-'+(str(first+size-1) if span else '')

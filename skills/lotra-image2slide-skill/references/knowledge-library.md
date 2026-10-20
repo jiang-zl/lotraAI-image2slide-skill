@@ -61,7 +61,12 @@ positive/counterexample/reuse promotion process. A new class need not be added t
 Python or to the main prompt. Instances own independent IDs, geometry and styles.
 
 
-## Publication revision 9: clean personal knowledge boundary
+## Historical 1.32.0 publication revision 9: clean personal knowledge boundary
+
+This section records that release. Current product metadata is in
+`config/customer-package.json`; current task policy follows SKILL.md and the
+bound workflow_version. The later connected knowledge flow is documented in
+workflow-v133.md and does not change old bound tasks.
 
 Semantic version remains 1.32.0 and component protocol design_revision remains 8.
 This source cleanup removes the developer's old component model and mandatory

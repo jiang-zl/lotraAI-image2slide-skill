@@ -1,3 +1,13 @@
+## 1.35.5
+
+Repair complete-bundle manifest/filename version bindings and allow verified
+inherited part names. Synchronize the skill packager version during generation.
+Require version consistency across source/runtime, current documentation,
+catalogs and final ZIP members on every iteration, with regressions for drift.
+Correct historical test attribution, current publication guidance and 19-part
+download documentation. Retain workflow 1.35.2, runtime 1.14.0, existing binary
+resources, private/user files and all previous published tags/assets.
+
 ## 1.35.4
 
 Fix LF shell installation entries and repeated bootstrap generation. Generate

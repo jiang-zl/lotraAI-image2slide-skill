@@ -1,6 +1,6 @@
 interface:
-  display_name: "lotraAI Image2Slide v1.35.4"
+  display_name: "lotraAI Image2Slide v1.35.5"
   short_description: "将科研参考图重建为清晰美观、分层可复用、编辑能力明确的一页 PPT"
-  default_prompt: "使用 $lotra-image2slide-skill v1.35.4，按当前原图特征和程序合同递归拆解、优先原生构建并核验科研图，交付分层可编辑的 PPTX 和简明部件指标表。"
+  default_prompt: "使用 $lotra-image2slide-skill v1.35.5，按当前原图特征和程序合同递归拆解、优先原生构建并核验科研图，交付分层可编辑的 PPTX 和简明部件指标表。"
 policy:
   allow_implicit_invocation: true

@@ -35,6 +35,7 @@ def prepare(source,runtime,version):
     for name,pattern,replacement in [
         ('installer/install.ps1',r"\$manifest\.version -ne '\d+\.\d+\.\d+'","$manifest.version -ne '"+version+"'"),
         ('installer/install.py',r"(?m)^VERSION = '\d+\.\d+\.\d+'","VERSION = '"+version+"'"),
+        ('skills/lotra-image2slide-skill/scripts/package_skill.py',r'(?m)^VERSION = \"\d+\.\d+\.\d+\"','VERSION = \"'+version+'\"'),
     ]:
         file=source/name
         if not file.is_file():continue

@@ -1,4 +1,4 @@
-# lotraAI Image2Slide 1.35.4
+# lotraAI Image2Slide 1.35.5
 
 Rebuild scientific images as native editable PowerPoint slides. Product usage
 and examples: https://github.com/jiang-zl/lotraAI-image2slide-skill.

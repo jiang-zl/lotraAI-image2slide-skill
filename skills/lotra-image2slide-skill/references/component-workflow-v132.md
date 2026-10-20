@@ -149,8 +149,9 @@ Final_editable.pptx and Report.md with the actual acceptance scope.
 ## Revision 8 ordinary packet protocol
 
 These interfaces are implementation contracts; revision 8 has not been run or
-validated. Keep semantic version 1.32.0 and use design_revision 8 for a new or
-explicitly revised contract. Retain earlier contracts and ledgers.
+validated at that release. This is the historical 1.32.0 protocol baseline;
+retain design_revision 8, and take a new contract's workflow_version from the
+current SKILL.md. Product version is independent. Retain earlier contracts and ledgers.
 
 - `component_recovery_work`: submit `component_request:{}` to recover the
   registered transaction. Recovery precedes initial construction, even without

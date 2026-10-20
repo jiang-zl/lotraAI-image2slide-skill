@@ -2,7 +2,7 @@
 
 [English](download.md) · [安装](installation.zh-CN.md)
 
-当前完整文件为 `lotraAI-image2slide-v1.35.4-bundle.zip`。大小、整包 SHA-256 与 18 个有序分块以 [完整包清单](https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.4/v1.35.4-bundle.json)为准。
+当前完整文件为 `lotraAI-image2slide-v1.35.5-bundle.zip`。大小、整包 SHA-256 与 19 个有序分块以 [完整包清单](https://github.com/jiang-zl/lotraAI-image2slide-skill/releases/download/v1.35.5/v1.35.5-bundle.json)为准。
 
 ## 让 Codex 下载并合并
 

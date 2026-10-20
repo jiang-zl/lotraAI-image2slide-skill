@@ -1,13 +1,13 @@
 # lotraAI
 
-本安装补丁修复 shell 换行与重复生成问题。所有 shell 安装入口统一为 LF，最终分发字节经过 shell 与 Windows PowerShell 解析检查。runtime 1.14.0 二进制与现有资源保持不变；Windows／Linux 安装验证范围见验证说明，macOS 实机验证仍待完成。
+本安装补丁修复完整包下载的版本绑定、历史分块复用和 skill 打包器版本。每次迭代都必须检查两个仓库及最终分发文件的版本一致性。runtime 1.14.0 资源保持不变；Windows／Linux 安装验证与 macOS 实机验证分别记录。
 
 
 
 
-**当前发布版本：1.35.4** · 开发／默认分支：`dev` · 版本分支：`1.35.4` · 正式标签：`v1.35.4`
+**当前发布版本：1.35.5** · 开发／默认分支：`dev` · 版本分支：`1.35.5` · 正式标签：`v1.35.5`
 
-当前 `dev` 与 `1.35.4` 均对应已发布的 1.35.4。分支统一使用 `dev` 或 `X.Y.Z`；正式标签使用 `vX.Y.Z`，不增加其他后缀。
+当前 `dev` 与 `1.35.5` 均对应已发布的 1.35.5。分支统一使用 `dev` 或 `X.Y.Z`；正式标签使用 `vX.Y.Z`，不增加其他后缀。
 
 
 **将科研参考图重建为分层、可编辑的 PowerPoint。**
@@ -33,7 +33,7 @@ Codex 调用维护好的安装程序，按平台准备 Python、依赖、OCR 和
 如果已有完整 ZIP，提供文件或本地绝对路径，再发送：
 
 ~~~text
-请用提供的 lotraAI-image2slide-v1.35.4-bundle.zip 在当前项目安装或更新 Image2Slide。
+请用提供的 lotraAI-image2slide-v1.35.5-bundle.zip 在当前项目安装或更新 Image2Slide。
 ~~~
 
 运行资源和私有任务状态保存在项目 `.lotraAI-build`。手动命令与平台要求见[安装说明](docs/installation.zh-CN.md)，完整包获取方式见[下载说明](docs/download.zh-CN.md)。
@@ -136,7 +136,7 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 
 任务中断后，在同一个工作项目中要求继续原来的任务。保留原图和 `.lotraAI-build`，具体操作见[使用指南](docs/usage.zh-CN.md)。
 
-## v1.35.4
+## v1.35.5
 
 从原图到部件逐层识别空间类型，冻结参考系、可观察姿态和原图锚点；按所在表面检查内容整体居中、底座承载、共享边和遮挡。优先使用原生形状、填色和边框。曲线函数、有限收敛控制、私有方法复用及排版后的字体和整图复核继续保留。
 
@@ -152,8 +152,8 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 | [安装](docs/installation.zh-CN.md) | 自动安装、差分更新、完整包与平台要求 |
 | [使用](docs/usage.zh-CN.md) | 图片重建、半成品导入与恢复任务 |
 | [案例](docs/examples/README.md) | 原图、重建截图与部件细节 |
-| [工作流](skills/lotra-image2slide-skill/references/workflow-v1352.md) | 1.35.4 的重建流程与复用规则 |
-| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.35.4 的完整主载荷 |
+| [工作流](skills/lotra-image2slide-skill/references/workflow-v1352.md) | 1.35.5 的重建流程与复用规则 |
+| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.35.5 的完整主载荷 |
 | [来源与许可](NOTICE.md) | 项目源码、第三方组件和案例素材 |
 
 需要反馈时，请描述系统、产品版本、具体操作和相关诊断；按需提供经过检查的原图或片段。项目内的私有任务数据由你管理。

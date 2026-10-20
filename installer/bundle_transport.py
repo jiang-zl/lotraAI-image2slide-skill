@@ -9,20 +9,21 @@ from pathlib import Path
 
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from download import fetch,sha
-from install import within,read_json
+from install import VERSION,within,read_json
 
 
 def download(project,manifest,output):
-    if manifest.get('schema')!='lotraai-publication-release-1' or manifest.get('version')!='1.34.0':
+    if manifest.get('schema')!='lotraai-publication-release-1' or manifest.get('version')!=VERSION:
         raise ValueError('Unsupported complete-bundle manifest')
     bundle=manifest['bundle'];parts=bundle['parts'];name=bundle['filename']
-    if not re.fullmatch(r'lotraAI-image2slide-v1\.33\.0-bundle\.zip',name):
+    if name!='lotraAI-image2slide-v'+VERSION+'-bundle.zip':
         raise ValueError('Unexpected complete-bundle filename')
     if not parts or [p['index'] for p in parts]!=list(range(1,len(parts)+1)):
         raise ValueError('Incomplete or unordered complete-bundle parts')
     if len({p['filename'] for p in parts})!=len(parts) or sum(p['bytes'] for p in parts)!=bundle['bytes']:
         raise ValueError('Complete-bundle part identities differ')
-    if any(not re.fullmatch(re.escape(name)+r'\.part[0-9]{3}',p['filename']) or
+    # Unchanged parts retain their original release filename and URL.
+    if any(not re.fullmatch(r'lotraAI-image2slide-v[0-9]+\.[0-9]+\.[0-9]+-bundle\.zip\.part'+str(p['index']).zfill(3),p['filename']) or
            p['bytes']<=0 or p['bytes']>128*1024*1024 for p in parts):
         raise ValueError('Unexpected complete-bundle part')
     if output.is_symlink() or getattr(output,'is_junction',lambda:False)():
@@ -54,7 +55,7 @@ def download(project,manifest,output):
             try:os.link(temporary,destination);temporary.unlink()
             except FileExistsError:raise ValueError('Preserve a concurrently created output')
             except OSError:temporary.rename(destination)
-    return {'status':'BUNDLE_DOWNLOADED','version':'1.34.0','bundle':str(destination),
+    return {'status':'BUNDLE_DOWNLOADED','version':VERSION,'bundle':str(destination),
             'sha256':bundle['sha256'],'parts':len(parts),'product_execution':False}
 
 

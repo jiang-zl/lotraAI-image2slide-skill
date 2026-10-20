@@ -24,7 +24,7 @@ If a prior attempt installed only the skill files, rerun the maintained installa
 
 GitHub release downloads have a bounded official asset-API fallback, retaining the exact byte count, SHA-256, range checks and cache ownership. macOS Math DMGs still use their pinned upstream URL. macOS Apple Silicon and Intel physical-host checks remain pending; Windows tests do not qualify either Mac architecture.
 
-## 1.35.4 installer entries
+## 1.35.5 installer entries
 
 Shell entries are UTF-8 without BOM and use LF. Maintainers generate them from
 `installer/templates` with `tools/prepare_install_entries.py`, then run

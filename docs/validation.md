@@ -1,20 +1,25 @@
-# 1.35.4 installation validation
+# 1.35.5 installation validation
 
-This patch validates installation entries and final distribution bytes.
+Only current 1.35.5 receipts qualify this patch. Prior 1.35.3 Math/backend and
+1.35.4 installation checks remain historical and keep their original versions.
 
-| Channel | Evidence |
+| Channel | Current evidence |
 | --- | --- |
-| Windows bootstrap regressions | Seven tests passed: primary download, one API fallback, HTTP range resume, changed-cache preservation, verified-cache reuse, repeat generation and shell LF |
-| Linux bootstrap regressions | The same seven tests passed on WSL/Linux |
-| Generator repeat | Three consecutive renders preserve output bytes and modification times |
-| Final shell distribution parsing | sh -n and bash -n inspect source/runtime entries, attachments and ZIP-contained entries; see Final-distribution-checks.json |
-| Final Windows distribution parsing | Windows PowerShell Parser.ParseFile inspects source/runtime entries, attachments and ZIP-contained entries; see Final-distribution-checks.json |
-| Actual Windows/Linux installation | Complete-bundle and public README command receipts are recorded in Installation-checks.json |
-| Resource preservation | Runtime 1.14.0 and existing engine, companion, OCR and Math records are retained; no new runtime binary Release |
-| macOS Apple Silicon/Intel | Physical-host installation/startup NOT_RUN; still pending |
-| Reconstruction, formula rendering and Office interactive editing | NOT_RUN for this installation patch |
+| Windows regressions | 23 focused checks: seven bootstrap, ten product/packager/part bindings and six release-gate counterexamples |
+| WSL/Linux regressions | The same 23 focused checks |
+| Generator repeat | Current entries and coordinator/packager version constants retain identical bytes and mtimes on repeated generation |
+| Final distribution versions | tools/validate_release_versions.py checks source/runtime, current docs, pins, catalog hashes and actual ZIP members; see Version-consistency.json |
+| Final shell/PowerShell parsing | Actual loose assets, skill ZIP, complete ZIP and nested skill members are parsed; see Final-distribution-checks.json |
+| Complete-bundle installations | Current Windows/Linux first/repeat receipts, core and Math startup readiness, one main skill and sentinel preservation: Installation-checks.json |
+| README installation commands | Exact current public command blocks are checked after source/channel publication; first/repeat results: Installation-checks.json |
+| Complete-bundle downloads | Actual current manifest, inherited part identities, hash-addressed cache and first/repeat output preservation: Installation-checks.json |
+| Runtime resources | Existing runtime 1.14.0, engines, companion, OCR and Math archive records are unchanged; no binary upload |
+| Physical macOS | NOT_RUN; Linux parsing is not Mac hardware qualification |
+| Reconstruction/formula rendering/Office interactive editing | NOT_RUN for this patch |
 | Performance/provider-token effects | NOT_RUN |
 
-1.35.3 Math/backend results are historical evidence and are not counted as new
-1.35.4 execution. Installation readiness is distinct from rendering and artwork
-acceptance. Existing user data and global skills are outside the change scope.
+Large unchanged archives may be preseeded in a hash-verified fixture cache;
+installation success descriptors are absent before first installs. Windows
+public checks use process-level direct networking where required, without
+changing saved proxy settings. Linux uses owned native WSL filesystem projects.
+Actual final public identities are verified separately from local fixture checks.
