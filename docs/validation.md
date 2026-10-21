@@ -1,4 +1,4 @@
-# 1.37.0 installation validation
+# 1.37.1 installation validation
 
 Use current byte-bound receipts; historical checks do not qualify changed code.
 The release remains a portable skill and requires no different harness or model.

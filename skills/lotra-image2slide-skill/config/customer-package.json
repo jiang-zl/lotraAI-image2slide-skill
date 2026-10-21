@@ -462,7 +462,7 @@
   "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
   "publication_revision": 1,
   "release_status": "CURRENT_HOST_VALIDATION_REQUIRED",
-  "runtime_regressions": "Current guarded/incremental workflow, delivery and distribution checks; see docs/v1.37.0/Validation-report.md",
+  "runtime_regressions": "Current packet submission hints, phase/entry consistency and retained workflow/install gates; see docs/v1.37.1/Validation-report.md",
   "schema": "lotra-customer-package-1",
-  "version": "1.37.0"
+  "version": "1.37.1"
 }

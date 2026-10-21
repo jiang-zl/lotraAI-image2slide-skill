@@ -313,8 +313,14 @@ def template(task,state,packet):
     folder=task/'packets';folder.mkdir(exist_ok=True)
     file=folder/('Submit-template-'+packet['packet_id']+'.json')
     write_json(file,result)
+    filled=Path(task)/'scratch'/('Submit-'+packet['packet_id']+'.json')
+    # Phase operations belong in the bound template, not in a legacy direct
+    # component-workflow command that the current task guard rejects.
+    packet['action']='submit'
+    packet['submission_command']=['submit',str(Path(task).resolve()),str(filled.resolve())]
     packet['submission_template']={'path':file.relative_to(task).as_posix(),'sha256':digest(file),
-        'instruction':'Copy to scratch and fill required original/visual decisions; submit the current packet only. Empty fields are not PASS.'}
+        'copy_to':filled.relative_to(task).as_posix(),
+        'instruction':'Copy this hash-bound template to copy_to, fill the current packet decisions and evidence, then run submission_command with the prepared launcher. Empty fields are not PASS.'}
     packet['completion_policy']={'accepted_export_required':True,'candidate_is_deliverable':False,
         'on_context_limit':'retain checkpoint and resume next','on_backend_failure':'retain explicit blocker; no direct-build fallback'}
     return packet

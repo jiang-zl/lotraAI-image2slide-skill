@@ -3,7 +3,7 @@ name: lotra-image2slide-skill
 description: Reconstruct scientific images, optionally continuing a one-shot partial PPT, as faithful native editable slides through the registered task loop and verified final export. Use source-bound features, qualified components, actual renders and complete final review.
 ---
 
-# lotraAI Image2Slide v1.37.0
+# lotraAI Image2Slide v1.37.1
 
 Use this self-contained skill's project-local programs with the current model
 and reasoning. Read `.lotraAI-build/Active-skill.json` for the selected entry and
@@ -18,6 +18,8 @@ Use the recorded prepared Python/launcher with `scripts/run_lotra.py --project
 PROJECT start ORIGINAL --name TASK`. Optional `--pptx PARTIAL.pptx` imports one
 partial slide once. Continue with `next TASK_PATH`, copy and fill the current
 packet's `submission_template` in scratch, then `submit TASK_PATH RESULT.json`.
+Use the packet's `submission_command` arguments with the prepared launcher;
+its `action` is `submit` and the template's `copy_to` names the scratch result.
 Resume with `context-control TASK_PATH resume`. Read current managed dependencies
 and all selector pagination; avoid whole states/databases and release logs.
 
@@ -95,7 +97,7 @@ PowerPoint/WPS, then declared LibreOffice fallback. Native open/edit/save/reopen
 checks use owned copies. Physical WPS/macOS claims require that host's evidence.
 Installation, native usability, actual rendering and artwork acceptance differ.
 
-Product 1.37.0 adds execution policy `workflow-execution-1.37.0`. Source workflow
+Product 1.37.1 retains execution policy `workflow-execution-1.37.0`. Source workflow
 1.35.2, source-features/spatial 1.35.1, design_revision 8 and runtime resources
 1.14.0 remain independent. Old tasks keep their bindings until explicit migration.
 No performance/token savings or external-art acceptance follows from fixtures,

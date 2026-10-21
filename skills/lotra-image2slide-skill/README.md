@@ -1,7 +1,7 @@
-# lotraAI Image2Slide 1.37.0
+# lotraAI Image2Slide 1.37.1
 
 
-Use the registered `start → next → submit` task loop and [1.37.0 rules](references/workflow-v137.md). Checkpoints and developer builds are unverified. Formal export plus `delivery-check` establishes the current final-file scope. No mandatory harness/service is required.
+Use the registered `start → next → submit` task loop and [1.37.1 rules](references/workflow-v137.md). Checkpoints and developer builds are unverified. Formal export plus `delivery-check` establishes the current final-file scope. No mandatory harness/service is required.
 
 Rebuild scientific images as native editable PowerPoint slides. Product usage
 and examples: https://github.com/jiang-zl/lotraAI-image2slide-skill.

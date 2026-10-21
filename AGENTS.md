@@ -60,3 +60,11 @@ resume, actual positive final export and exact final-attachment verification.
 Checkpoint/draft/installation/backend readiness are not artwork acceptance.
 No mandatory harness, daemon, model key or false local attestation is introduced.
 Version/resource and final distributed Windows/Linux gates above remain mandatory.
+
+## 1.37.1 packet entry consistency
+
+Current execution-policy packets advertise submit plus their hash-bound template
+and task-specific scratch result arguments. Keep these controls in compact
+packets. Regression-test observation, binding, recovery and final-audit hints
+against the actual parser/guard/submit route. Retain existing quality rules,
+source workflow, execution policy and runtime resource identities.

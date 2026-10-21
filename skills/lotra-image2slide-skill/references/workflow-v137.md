@@ -11,6 +11,13 @@ the delivery decision; a caller decides whether to enforce it before replying.
 `next TASK` returns a source/revision/implementation-bound packet with an immutable
 `submission_template`. Copy the template to a fresh scratch file, fill its current
 decisions, then `submit TASK RESULT`. Never edit the template or source in place.
+For current execution-policy packets, `action` is `submit`. `submission_command`
+is an argument array for the prepared launcher and names this task plus the
+scratch result file. Copy `submission_template` to its task-relative `copy_to`,
+fill the required fields, then use those arguments. Phase operations such as
+source_outline, bind_chunk, recovery and final audit remain template/packet
+data; do not execute old direct component-workflow commands. The action,
+arguments and hash-bound template remain available in compact packets.
 Large dependencies use `packet_detail.py`, current managed references and full
 pagination. Next/resume retains the current preconstruction packet until a
 submission or implementation/environment change. Empty fields are not PASS.

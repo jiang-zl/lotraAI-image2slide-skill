@@ -1,7 +1,7 @@
 """Keep evidence on disk when an action exceeds its model context budget."""
 from .common import canonical,identity,write_json,digest,read_json,safe_path
 
-CONTROL=('packet_id','kind','target','revision','objective','baseline','source','original_view','return','views','file_cost','component_implementation','submission_template','incremental','completion_policy')
+CONTROL=('packet_id','kind','target','revision','objective','baseline','source','original_view','return','views','file_cost','component_implementation','action','submission_command','submission_template','incremental','completion_policy')
 
 def _store(file,value):
     file.parent.mkdir(exist_ok=True)
@@ -48,6 +48,13 @@ def compact(task,packet,budget):
         # Preserve every retained identity exactly; restore verifies them.
         for name in ('objective','return','views'):
             result.pop(name,None)
+            if len(canonical(result).decode('utf-8'))<=budget:break
+    if len(canonical(result).decode('utf-8'))>budget:
+        # The full referenced contract remains unchanged. Optional field lists
+        # and reader prose must not crowd out the executable submit controls at
+        # the supported minimum context budget.
+        for name in ('keys','read'):
+            result.get('detail_reference',{}).pop(name,None)
             if len(canonical(result).decode('utf-8'))<=budget:break
     if len(canonical(result).decode('utf-8'))>budget:
         raise ValueError('Identity envelope exceeds the context budget; no contract fields may be silently truncated')
