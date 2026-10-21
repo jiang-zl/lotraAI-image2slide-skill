@@ -1,13 +1,13 @@
 # lotraAI
 
-本安装补丁修复完整包下载的版本绑定、历史分块复用和 skill 打包器版本。每次迭代都必须检查两个仓库及最终分发文件的版本一致性。runtime 1.14.0 资源保持不变；Windows／Linux 安装验证与 macOS 实机验证分别记录。
+优先使用通过实际能力检查的本地 PowerPoint／WPS，LibreOffice 作为可选回退。最终文件执行真实导出与保存检查；保存目录可自选，默认项目目录。复用 runtime 1.14.0 二进制；WPS／macOS 必须由对应实机资格检查确认。
 
 
 
 
-**当前发布版本：1.35.5** · 开发／默认分支：`dev` · 版本分支：`1.35.5` · 正式标签：`v1.35.5`
+**当前发布版本：1.36.0** · 开发／默认分支：`dev` · 版本分支：`1.36.0` · 正式标签：`v1.36.0`
 
-当前 `dev` 与 `1.35.5` 均对应已发布的 1.35.5。分支统一使用 `dev` 或 `X.Y.Z`；正式标签使用 `vX.Y.Z`，不增加其他后缀。
+当前 `dev` 与 `1.36.0` 均对应已发布的 1.36.0。分支统一使用 `dev` 或 `X.Y.Z`；正式标签使用 `vX.Y.Z`，不增加其他后缀。
 
 
 **将科研参考图重建为分层、可编辑的 PowerPoint。**
@@ -28,12 +28,12 @@ lotraAI 将当前 agent 对原图的理解与项目内的重建程序结合起�
 请从 https://github.com/jiang-zl/lotraAI-image2slide-skill-runtime 在当前项目安装或更新 lotraAI Image2Slide。
 ~~~
 
-Codex 调用维护好的安装程序，按平台准备 Python、依赖、OCR 和 Math，再登记唯一的 `lotra-image2slide-skill`。下载、续传、校验与分块合并由程序完成，无需逐项手动处理。
+Codex 调用维护好的安装程序，按平台准备 Python、依赖和 OCR，并资格确认本地公式／演示后端，再登记唯一的 `lotra-image2slide-skill`。下载、续传、校验与分块合并由程序完成，无需逐项手动处理。
 
 如果已有完整 ZIP，提供文件或本地绝对路径，再发送：
 
 ~~~text
-请用提供的 lotraAI-image2slide-v1.35.5-bundle.zip 在当前项目安装或更新 Image2Slide。
+请用提供的 lotraAI-image2slide-v1.36.0-bundle.zip 在当前项目安装或更新 Image2Slide。
 ~~~
 
 运行资源和私有任务状态保存在项目 `.lotraAI-build`。手动命令与平台要求见[安装说明](docs/installation.zh-CN.md)，完整包获取方式见[下载说明](docs/download.zh-CN.md)。
@@ -136,13 +136,15 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 
 任务中断后，在同一个工作项目中要求继续原来的任务。保留原图和 `.lotraAI-build`，具体操作见[使用指南](docs/usage.zh-CN.md)。
 
-## v1.35.5
+## v1.36.0
+
+本版增加本地演示后端资格确认、兼容 Office 的任意折线路径、LibreOffice 私有临时目录，以及可恢复的自选输出目录。空间重建继续沿用 workflow 1.35.2。
 
 从原图到部件逐层识别空间类型，冻结参考系、可观察姿态和原图锚点；按所在表面检查内容整体居中、底座承载、共享边和遮挡。优先使用原生形状、填色和边框。曲线函数、有限收敛控制、私有方法复用及排版后的字体和整图复核继续保留。
 
 安装与更新使用同一入口，按文件差分同步：新增的加入、变化的替换、新版移除的受管理文件删除；未变化的生效文件不重复下载或写入。个人知识库、字体、任务、原图和 PPT 保留在本地，公开包不预置作者的个人知识库。
 
-运行资源覆盖 Windows x64、Linux x64、macOS Apple Silicon 和 Intel。macOS 要求 13 或更高版本，Math 资源首次单独联网获取；Linux ARM64 尚缺完整 Math 包。具体支持范围见[安装说明](docs/installation.zh-CN.md)。
+运行资源覆盖 Windows x64、Linux x64、macOS Apple Silicon 和 Intel。macOS 要求 13 或更高版本，需要 LibreOffice 回退时才单独联网获取 Math 资源；Linux ARM64 尚缺完整 Math 包。具体支持范围见[安装说明](docs/installation.zh-CN.md)。
 
 
 ## 文档与项目结构
@@ -152,8 +154,14 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 | [安装](docs/installation.zh-CN.md) | 自动安装、差分更新、完整包与平台要求 |
 | [使用](docs/usage.zh-CN.md) | 图片重建、半成品导入与恢复任务 |
 | [案例](docs/examples/README.md) | 原图、重建截图与部件细节 |
-| [工作流](skills/lotra-image2slide-skill/references/workflow-v1352.md) | 1.35.5 的重建流程与复用规则 |
-| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.35.5 的完整主载荷 |
+| [工作流](skills/lotra-image2slide-skill/references/workflow-v1352.md) | 1.36.0 的重建流程与复用规则 |
+| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.36.0 的完整主载荷 |
 | [来源与许可](NOTICE.md) | 项目源码、第三方组件和案例素材 |
 
 需要反馈时，请描述系统、产品版本、具体操作和相关诊断；按需提供经过检查的原图或片段。项目内的私有任务数据由你管理。
+
+## 本地软件与保存目录
+
+后端必须通过真实 PDF 导出、编辑、保存、重开检查，程序存在不等于可用。Windows PowerPoint 已由测试主机验证；WPS 与 macOS PowerPoint 适配器需要对应主机的实际资格检查。公式保持可编辑 OMML。LibreOffice 回退使用任务自有 TEMP／配置目录，PNG 预览不计为 PDF 导出成功。
+
+可以直接告诉 Agent“保存到 DIRECTORY”，默认保存根目录为当前项目。每次导出建立 `output-slide-YYYY-MM-DD-HHMMSS-mmm`，只交付 `Final_editable.pptx` 和 `Report.md`；任务、探测与日志留在 `.lotraAI-build`。通过项目启动器运行 `presentation-backend --project PROJECT` 检查能力，`presentation-backend --project PROJECT --backend powerpoint --save-preferences` 保存偏好，`export TASK --output-root DIRECTORY` 指定目录，`validate-presentation FILE --project PROJECT --out NEW_AUDIT_DIRECTORY` 检查副本。明确指定的后端不可用时报告具体原因。保留已有文件。

@@ -164,10 +164,15 @@ def run(config, directory, operation='export', timeout=120, client_file=None):
         env.pop(name, None)
     if config.get('fontconfig'):
         env['FONTCONFIG_FILE'] = config['fontconfig']
+    temporary=directory/'backend-temp'
+    temporary.mkdir(exist_ok=False)
+    for name in ('TEMP','TMP','TMPDIR','XDG_CACHE_HOME','XDG_CONFIG_HOME','XDG_RUNTIME_DIR'):
+        env[name]=str(temporary)
+    env.update(GSETTINGS_BACKEND='memory',SAL_USE_VCLPLUGIN='svp')
     flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
     facts = {'policy': VERSION, 'operation': operation, 'execution_mode': mode,
              'backend_identity': before['sha256'], 'profile': str(profile),
-             'command': args, 'host': before['host'], 'status': 'FAILED'}
+             'command': args, 'host': before['host'], 'temporary_directory':str(temporary), 'status': 'FAILED'}
     process = None
     deadline=time.monotonic()+timeout
     try:

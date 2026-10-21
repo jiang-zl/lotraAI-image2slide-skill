@@ -18,7 +18,7 @@ from .session import _atomic_json, _lock
 
 def _verify_render(pptx, preview, receipt_file):
     receipt = read_json(receipt_file)
-    if receipt.get("backend") == "LibreOffice":
+    if receipt.get("backend") == "LibreOffice" or receipt.get("schema")=="presentation-backend-1.36.0":
         from .render import verify_alternative_render
         proof = verify_alternative_render(pptx, receipt_file)
     elif receipt.get("backend") == "PowerPoint":

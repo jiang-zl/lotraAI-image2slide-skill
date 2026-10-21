@@ -12,7 +12,7 @@ def arguments(argv):
     count=1 if argv and argv[0].startswith('--project=') else 2
     args=parser.parse_args(argv[:count]);remaining=list(argv[count:])
     if not remaining:raise ValueError('Supply a runtime command after --project PROJECT')
-    if remaining[0]=='start' and not any(v=='--project' or v.startswith('--project=') for v in remaining):
+    if remaining[0] in ('start','presentation-backend','validate-presentation','render','formula-render') and not any(v=='--project' or v.startswith('--project=') for v in remaining):
         remaining+=['--project',str(args.project)]
     return args,remaining
 

@@ -1,13 +1,13 @@
 # lotraAI
 
-This installation patch fixes complete-bundle version bindings, inherited part reuse and the skill packager version. Every release now has an explicit version-consistency gate across both repositories and final distributions. Runtime 1.14.0 resources are reused; Windows/Linux installation scope is recorded separately from physical macOS qualification.
+Prefer a qualified local PowerPoint/WPS backend, with optional LibreOffice fallback. Every final file gets actual export/save checks; user-selected output roots default to the project directory. Runtime 1.14.0 binaries are reused. Physical WPS/macOS qualification requires the corresponding host.
 
 
 
 
-**Current release: 1.35.5** · Development/default branch: `dev` · Version branch: `1.35.5` · Release tag: `v1.35.5`
+**Current release: 1.36.0** · Development/default branch: `dev` · Version branch: `1.36.0` · Release tag: `v1.36.0`
 
-`dev` and `1.35.5` currently contain the released 1.35.5. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
+`dev` and `1.36.0` currently contain the released 1.36.0. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
 
 
 **Reconstruct scientific figures as layered, editable PowerPoint slides.**
@@ -33,7 +33,7 @@ Codex runs the maintained installer, prepares Python, dependencies, OCR and Math
 Already have the complete ZIP? Supply the file or its absolute local path, then send:
 
 ~~~text
-Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.35.5-bundle.zip.
+Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.36.0-bundle.zip.
 ~~~
 
 Runtime resources and private task state stay in the project's `.lotraAI-build` directory. See the [installation guide](docs/installation.md) for manual commands and platform requirements, or the [download guide](docs/download.md) for complete bundles.
@@ -137,13 +137,15 @@ Use $lotra-image2slide-skill to continue rebuilding from this partial PPT, follo
 
 After an interruption, ask the agent to resume the existing task in the same working project. Keep the original and `.lotraAI-build` available. See the [usage guide](docs/usage.md).
 
-## v1.35.5
+## v1.36.0
+
+This release adds qualified local presentation backends, Office-safe arbitrary routes, private LibreOffice temporary directories and resumable user-selected output roots. The retained spatial workflow continues below.
 
 Spatial type is recognized recursively from the original to its parts. Source-owned frames, observable pose and original landmarks connect native construction, face-local aggregate centering, base support, shared edges, occlusion and saved-result checks. Native shapes, fills and outlines take priority. Functional curves, finite convergence, private method reuse and deferred font/whole review remain.
 
 Installation and updates use the same entry and managed-file synchronization: add new files, replace changed contents and remove retired managed files. Unchanged active files are neither downloaded nor rewritten. Personal knowledge, fonts, tasks, originals and PPTs stay local; public packages do not preload the author's personal knowledge library.
 
-Resources cover Windows x64, Linux x64, and macOS on Apple Silicon and Intel. macOS requires 13 or later and a separate initial Math download. Linux ARM64 still lacks a complete Math package. See the [installation guide](docs/installation.md) for the supplied routes.
+Resources cover Windows x64, Linux x64, and macOS on Apple Silicon and Intel. macOS requires 13 or later; its separate Math download is needed when the LibreOffice fallback is selected. Linux ARM64 still lacks a complete Math package. See the [installation guide](docs/installation.md) for the supplied routes.
 
 Installer generation, final distribution parsing and the Windows/Linux README installation commands are validated for this patch. Physical macOS installation remains pending. Workflow 1.35.2 and runtime binaries 1.14.0 are retained; see [validation notes](docs/validation.md).
 
@@ -154,8 +156,14 @@ Installer generation, final distribution parsing and the Windows/Linux README in
 | [Installation](docs/installation.md) | Automatic setup, differential updates, bundles and platform requirements |
 | [Usage](docs/usage.md) | Image reconstruction, partial-slide import and resuming work |
 | [Examples](docs/examples/README.md) | Originals, reconstruction screenshots and component details |
-| [Workflow](skills/lotra-image2slide-skill/references/workflow-v1352.md) | The 1.35.5 reconstruction and reuse rules |
-| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.35.5 main-skill payload |
+| [Workflow](skills/lotra-image2slide-skill/references/workflow-v1352.md) | Retained workflow 1.35.2 reconstruction and reuse rules |
+| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.36.0 main-skill payload |
 | [Provenance and licensing](NOTICE.md) | Project source, third-party components, and example assets |
 
 For feedback, include the operating system, product version, attempted operation, and relevant diagnostic. Share a reviewed reference image or excerpt when needed. Private task data remains under your control in the working project.
+
+## Local applications and output location
+
+Backend selection uses actual PDF/edit/save/reopen capability, not installation detection. Windows PowerPoint is qualified on the tested host; WPS and the macOS PowerPoint adapter require their own host probe. Native Math remains editable OMML. LibreOffice fallback uses an owned private TEMP/profile and never counts a PNG as a successful PDF.
+
+Tell the agent “save to DIRECTORY”; otherwise the project is the output root. Each export creates `output-slide-YYYY-MM-DD-HHMMSS-mmm`, containing `Final_editable.pptx` and `Report.md`. Private task/probe data remains in `.lotraAI-build`. The project launcher provides `presentation-backend --project PROJECT`, `presentation-backend --project PROJECT --backend powerpoint --save-preferences`, `export TASK --output-root DIRECTORY`, and `validate-presentation FILE --project PROJECT --out NEW_AUDIT_DIRECTORY`. An unavailable explicit backend reports its exact failure. Existing files are preserved.

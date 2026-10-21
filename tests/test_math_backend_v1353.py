@@ -196,9 +196,9 @@ class GitHubFallback(unittest.TestCase):
 
 
 class InstallationStages(unittest.TestCase):
-    def test_math_failure_does_not_claim_an_unexecuted_core(self):
+    def test_math_failure_keeps_actual_core_readiness_separate(self):
         sys.path.insert(0,str(REPO/'installer'))
-        import differential
+        import differential,presentation_install
         from types import SimpleNamespace
         with fixture_directory() as project:
             catalog={'schema':'lotra-differential-release-1','version':'1.35.3','release_id':'fixture',
@@ -210,15 +210,16 @@ class InstallationStages(unittest.TestCase):
                  patch.object(differential,'runtime_checkpoint'),patch.object(differential,'restore_runtime'), \
                  patch.object(differential,'rollback'), \
                  patch.object(differential,'math_runtime',side_effect=ValueError('fixture Math failure')), \
-                 patch.object(differential,'runtime') as core:
+                 patch.object(differential,'runtime',return_value={'status':'OFFLINE_RUNTIME_READY'}) as core, \
+                 patch.object(presentation_install,'qualify',return_value=None):
                 with self.assertRaisesRegex(ValueError,'fixture Math failure'):
                     differential.install(project,catalog,REPO/'installer','codex')
-                core.assert_not_called()
+                core.assert_called_once()
             failure=json.loads((project/'.lotraAI-build/updates/fixture/Failure.json').read_bytes())
             self.assertEqual(failure['phase'],'MATH_BACKEND')
-            self.assertEqual(failure['stages']['core_runtime'],'NOT_RUN')
+            self.assertEqual(failure['stages']['core_runtime'],'READY')
             self.assertEqual(failure['stages']['math_backend'],'FAILED')
-            self.assertIsNone(failure['core_ready'])
+            self.assertTrue(failure['core_ready'])
             self.assertFalse(failure['math_backend_ready'])
 
 

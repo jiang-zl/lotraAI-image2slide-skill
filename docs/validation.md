@@ -1,25 +1,26 @@
-# 1.35.5 installation validation
+# 1.36.0 installation validation
 
-Only current 1.35.5 receipts qualify this patch. Prior 1.35.3 Math/backend and
-1.35.4 installation checks remain historical and keep their original versions.
+Current receipts are required; historical versions do not qualify this release.
+Read Installation-checks.json, Backend-and-delivery-checks.json,
+Final-distribution-checks.json and Version-consistency.json for exact byte-bound
+results. Fixtures are not acceptance of the user's artwork.
 
-| Channel | Current evidence |
+| Channel | Scope |
 | --- | --- |
-| Windows regressions | 23 focused checks: seven bootstrap, ten product/packager/part bindings and six release-gate counterexamples |
-| WSL/Linux regressions | The same 23 focused checks |
-| Generator repeat | Current entries and coordinator/packager version constants retain identical bytes and mtimes on repeated generation |
-| Final distribution versions | tools/validate_release_versions.py checks source/runtime, current docs, pins, catalog hashes and actual ZIP members; see Version-consistency.json |
-| Final shell/PowerShell parsing | Actual loose assets, skill ZIP, complete ZIP and nested skill members are parsed; see Final-distribution-checks.json |
-| Complete-bundle installations | Current Windows/Linux first/repeat receipts, core and Math startup readiness, one main skill and sentinel preservation: Installation-checks.json |
-| README installation commands | Exact current public command blocks are checked after source/channel publication; first/repeat results: Installation-checks.json |
-| Complete-bundle downloads | Actual current manifest, inherited part identities, hash-addressed cache and first/repeat output preservation: Installation-checks.json |
-| Runtime resources | Existing runtime 1.14.0, engines, companion, OCR and Math archive records are unchanged; no binary upload |
-| Physical macOS | NOT_RUN; Linux parsing is not Mac hardware qualification |
-| Reconstruction/formula rendering/Office interactive editing | NOT_RUN for this patch |
-| Performance/provider-token effects | NOT_RUN |
+| Focused regressions | 96 checks: 17 installer/transport, 20 Math/backend/rollback, 42 native/source counterexamples, 10 backend/delivery/geometry, 7 release consistency |
+| Windows PowerPoint | Actual fixture PDF, genuine Office Math, native save, edit/save/reopen, native descendant preservation; independent final-file check |
+| Windows LibreOffice | Actual formula PDF, PPTX save and actual reopen/export; owned process-local temporary directories |
+| Linux / WSL | Actual existing Linux runtime/LO resources, native Linux filesystem install and fallback fixture PDF/save/reopen; does not qualify physical macOS |
+| Delivery | Final optimized PPTX actual same-backend equivalence, user-root stage/hash/no-replace publication, exact two-file output and unchanged repeat |
+| Installer | Windows/Linux first/repeat local bundle and README paths, core/Math capability separation, one skill and user-sentinel preservation |
+| Native-first install | Local Office fixture can qualify without an installed LO tree; null UNO-import claim for local application mode |
+| Final package | Supplied skill packager validates its ZIP; all distributed entry bytes use LF for shell and parse on their relevant OS; new native PowerShell worker has its own parser check |
+| Version identity | Source/runtime/current READMEs/channels, core/packager/installer, payload, nested ZIPs, parts and public asset identities checked together |
+| Runtime resources | Immutable 1.14.0 binary/resource/catalog platform records retained, no new runtime binary Release |
+| WPS and physical macOS | NOT_RUN on physical hosts; adapters require that actual host's complete capability probe |
+| External artwork and performance/token effects | NOT_RUN; no acceptance or performance claim |
 
-Large unchanged archives may be preseeded in a hash-verified fixture cache;
-installation success descriptors are absent before first installs. Windows
-public checks use process-level direct networking where required, without
-changing saved proxy settings. Linux uses owned native WSL filesystem projects.
-Actual final public identities are verified separately from local fixture checks.
+Large immutable archives may be preseeded in hash-verified caches. First-install
+success descriptors must be absent; repeat checks preserve skill bytes/mtimes.
+Public README commands and final public attachment/channel bytes are verified
+after publication. Any transport-specific retry remains separate evidence.

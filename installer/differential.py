@@ -12,7 +12,7 @@ from file_sync import prepare,apply,rollback,put,reuse,owned
 def runtime_checkpoint(project,state,key,math_record):
     names={'.lotraAI-build/Portable-renderer.json','.lotraAI-build/toolchain/core-runtime-'+key+'.json',
            '.lotraAI-build/toolchain/ocr-runtime-'+key+'.json','.lotraAI-build/toolchain/ocr-runtime.json',
-           '.lotraAI-build/toolchain/install-code-'+key+'.json'}
+           '.lotraAI-build/toolchain/install-code-'+key+'.json', '.lotraAI-build/Presentation-backend.json'}
     math_marker='.lotraAI-build/toolchain/LibreOffice-'+math_record['version']+'-'+key+'/lotra-runtime.json'
     if within(project,math_marker).is_file():names.add(math_marker)
     for name in list(names):
@@ -199,24 +199,30 @@ def install(project,catalog,root,harness):
             if same_bytes(local,math_record):
                 linked=within(state,math_record['path'])
                 if not linked.exists():reuse(local,linked)
-        phase='MATH_BACKEND'
-        math=math_runtime(project,bundle,key,cache,state,candidate)
-        stages['math_backend']='READY'
         phase='CORE_RUNTIME'
         facts=runtime(project,candidate,root,catalog['platforms'][key],key,cache,state)
         stages['core_runtime']='READY'
+        phase='MATH_BACKEND'
+        from presentation_install import qualify,readiness,qualify_fallback
+        math=qualify(project,candidate,key,state)
+        if math is None:
+            math=math_runtime(project,bundle,key,cache,state,candidate)
+            math['presentation_probe']=qualify_fallback(project,candidate,key,state)
+        stages['math_backend']='READY'
+        presentation=readiness(math)
         phase='REGISTRATION'
         selected=project/'.lotraAI-build/Active-skill.json'
         if (not any(plan[n] for n in ('add','replace','delete')) and selected.exists()
                 and read_json(selected).get('release_id')==catalog['release_id']):
             result=read_json(project/'.lotraAI-build/Bundle-install.json')
-            result.update(runtime=facts,math_renderer=math,math_import_ready=True,math_backend_ready=True,
-                          math_execution_mode=math['backend']['execution_mode'],stages=stages)
+            result.update(runtime=facts,math_renderer=math,math_import_ready=None if math['status']=='LOCAL_NATIVE_READY' else True,math_backend_ready=True,
+                          math_execution_mode=math['backend']['execution_mode'],stages=stages,capabilities=presentation,
+                          render_ready=presentation['render_ready'],native_edit_ready=presentation['native_edit_ready'])
             write_json(project/'.lotraAI-build/Bundle-install.json',result)
             write_json(state/'Result.json',result)
             finish_runtime(state)
             print(json.dumps({'status':'ALREADY_CURRENT','version':catalog['version'],'skill_entry':str(target/'SKILL.md'),
-                              'core_ready':True,'render_status':'NOT_RUN','report':str(state/'Result.json')}))
+                              'core_ready':True,'render_status':presentation['render_status'],'report':str(state/'Result.json')}))
             return
         profile=read_json(project/'.lotraAI-build/toolchain'/('core-runtime-'+key+'.json'))
         engine=within(project,profile['engine']['path'])
@@ -239,11 +245,11 @@ def install(project,catalog,root,harness):
         prefix=[str(engine),'-I','-X','utf8','-B',str(target/'scripts/run_lotra.py'),'--project',str(project)]
         result={'schema':'lotra-product-install-result-1','version':catalog['version'],'publication_revision':catalog['publication_revision'],
                 'bundle_id':catalog['bundle_id'],'environment':key,'project':str(project),'status':'INSTALLED_READY_SINGLE_SKILL',
-                'core_ready':True,'runtime':facts,'math_renderer':math,'math_import_ready':True,'math_backend_ready':True,
+                'core_ready':True,'runtime':facts,'math_renderer':math,'math_import_ready':None if math['status']=='LOCAL_NATIVE_READY' else True,'math_backend_ready':True,
                 'math_execution_mode':math['backend']['execution_mode'],'stages':stages,'runtime_python':str(engine),
                 'command_prefix':prefix,'command_text':subprocess.list2cmdline(prefix) if os.name=='nt' else shlex.join(prefix),
-                'render_ready':False,'native_edit_ready':False,'whole_drawing_acceptance':False,
-                'capabilities':{'render_ready':False,'render_status':'NOT_RUN','native_edit_ready':False},
+                'render_ready':presentation['render_ready'],'native_edit_ready':presentation['native_edit_ready'],'whole_drawing_acceptance':False,
+                'capabilities':presentation,
                 'installed_skill_count':1,'setup_skill_registered':False,'global_skills':'preserved','global_packages_changed':False,
                 'delta':{name:plan[name] for name in ('add','replace','delete','keep')},'report':str(state/'Result.json')}
         register(project,target,bundle,harness,result)
@@ -255,7 +261,7 @@ def install(project,catalog,root,harness):
         committed=True;finish_runtime(state)
         if relocated:write_json(state/'Relocation.json',{'status':'COMPLETE'})
         print(json.dumps({'status':result['status'],'version':catalog['version'],'revision':catalog['publication_revision'],
-                          'skill_entry':'.agents/skills/lotra-image2slide-skill/SKILL.md','core_ready':True,'render_status':'NOT_RUN','report':str(state/'Result.json')}))
+                          'skill_entry':'.agents/skills/lotra-image2slide-skill/SKILL.md','core_ready':True,'render_status':presentation['render_status'],'report':str(state/'Result.json')}))
     except Exception as error:
         if committed:raise
         failed_stage={'SKILL_FILES':'skill_files','MATH_BACKEND':'math_backend','CORE_RUNTIME':'core_runtime'}.get(phase)

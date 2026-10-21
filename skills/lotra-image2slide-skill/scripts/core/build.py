@@ -492,6 +492,8 @@ def build(scene, base, output):
         storage=compact_construction(tmp)
         from .font_contract import finalize as finalize_fonts
         fonts=finalize_fonts(scene,tmp)
+        from .office_compatibility import validate as office_compatibility
+        office_compatibility(tmp)
         os.replace(tmp, output)
         record = {"implementation_version":VERSION,"implementation":implementation,"scene_hash": identity(scene), "scene_revision": scene["revision"], "pptx_hash": digest(output), "objects": mapping,"font_delivery":fonts,"construction_storage":storage}
         write_json(output.with_suffix(".mapping.json"), record)

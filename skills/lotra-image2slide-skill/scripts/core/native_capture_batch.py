@@ -80,6 +80,9 @@ def verify_actual_render(pptx,receipt_file):
     """Check the actual backend's own export chain, without relabelling it."""
     from pathlib import Path
     pptx,receipt_file=Path(pptx),Path(receipt_file);receipt=read_json(receipt_file)
+    if receipt.get('schema')=='presentation-backend-1.36.0':
+        from .presentation_backend import verify_render
+        return verify_render(pptx,receipt_file)
     if receipt.get('backend')=='LibreOffice':
         from .render import verify_alternative_render
         return verify_alternative_render(pptx,receipt_file)
@@ -129,7 +132,7 @@ def verify_record(task,state,candidate,native,row,render_folder):
     if len(artifacts)!=2:raise ValueError('Both actual backdrop observations are required')
     for colour,artifact in zip(('black','white'),artifacts):
         pptx=_ref(task,artifact);receipt=_ref(task,artifact['render']);observed=read_json(receipt)
-        office=observed.get('backend')=='PowerPoint'
+        office=observed.get('backend')=='PowerPoint' and observed.get('schema')!='presentation-backend-1.36.0'
         _verified_render(str(pptx),digest(pptx),str(receipt),digest(receipt),digest(receipt.parent/'Final.pdf'),
                          digest(receipt.parent/'job-receipt.json') if office else None,
                          digest(receipt.parent/'office-session.json') if office else None)

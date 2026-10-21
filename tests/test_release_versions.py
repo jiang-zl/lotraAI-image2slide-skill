@@ -23,7 +23,7 @@ class ReleaseVersions(unittest.TestCase):
         source_names=['publication.json','AGENTS.md','README.md','README.zh-CN.md','install-lotra.sh','install-lotra.ps1',
             'installer/install.py','installer/install.ps1','installer/Current-release.json']
         source_names += [SKILL+n for n in ('config/customer-package.json','MANIFEST.json','.lotraai-image2slide-install.json',
-            'SKILL.md','agents/openai.yaml','scripts/package_skill.py','scripts/install-runtime.ps1','scripts/install-runtime.sh')]
+            'SKILL.md','agents/openai.yaml','scripts/package_skill.py','scripts/core/__init__.py','scripts/install-runtime.ps1','scripts/install-runtime.sh')]
         for origin,target,names in [(ROOT,self.source,source_names),(RUNTIME,self.runtime,
             ['README.md','README.zh-CN.md','releases/current.json','tools/install_lotra.py','tools/install_lotra.ps1','tools/install_lotra.sh',
              'docs/publication-checklist.md','docs/publishing.md','docs/bundle-contents.md','docs/release-status.md'])]:
@@ -35,6 +35,12 @@ class ReleaseVersions(unittest.TestCase):
         result=gate.validate(self.source,self.runtime)
         self.assertEqual(result['status'],'PASS')
         self.assertEqual(result['independent_versions'],{'workflow_version':'1.35.2','runtime_version':'1.14.0'})
+
+    def test_stale_product_core_version_is_rejected(self):
+        file=self.source/SKILL/'scripts/core/__init__.py'
+        file.write_text('VERSION = "0.0.1"\n',encoding='utf-8')
+        with self.assertRaisesRegex(ValueError,'core/__init__'):
+            gate.validate(self.source,self.runtime)
 
     def test_stale_packager_constant_blocks_release(self):
         file=self.source/SKILL/'scripts/package_skill.py'

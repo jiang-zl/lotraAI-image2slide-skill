@@ -213,7 +213,7 @@ def verify(proof,pptx):
             or proof.get('all_page_pixels')!='EXACT' or proof.get('preview_pixels')!='EXACT'
             or proof.get('native_xml_and_fonts')!='BYTE_IDENTICAL' or proof.get('output_pptx_sha256')!=digest(pptx)
             or proof.get('validator_code_sha256')!=digest(__file__)
-            or proof.get('backend') not in ('PowerPoint','LibreOffice')):raise ValueError('Current final PPTX lacks current actual export/equivalence proof')
+            or proof.get('backend') not in ('PowerPoint','WPS','LibreOffice')):raise ValueError('Current final PPTX lacks current actual export/equivalence proof')
     observation=proof.get('observation',{})
     if observation.get('scales')!=list(SCALES) or observation.get('base_long_side_px')!=720 or not observation.get('pages'):
         raise ValueError('Incomplete multi-scale export observation')

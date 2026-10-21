@@ -31,7 +31,7 @@ def implementation():
              'agent_runtime','quality_loop','workflow_control','execution_contract','build',
              'curve_functions','problem_control','knowledge_flow','component_source_features','native_surfaces','surface_metrics',
              'spatial_frames','spatial_checks','spatial_constructors','spatial_observation',
-             'spatial_footprints','spatial_fit','spatial_repair')
+             'spatial_footprints','spatial_fit','spatial_repair','presentation_backend','office_compatibility','export_destination','libreoffice_backend')
     files={name:digest(ROOT/'scripts/core'/(name+'.py')) for name in names}
     for name in ('config/component-workflow.json','config/font-collections.json','schemas/component-contract.schema.json'):
         files[name]=digest(ROOT/name)
@@ -42,7 +42,7 @@ def actual_render(task, state, candidate, independent=False):
     """A preview path alone does not prove that it renders these native bytes."""
     for key in ('pptx','preview','render'): _resource(task,candidate[key])
     receipt=read_json(_resource(task,candidate['render']))
-    if (receipt.get('status') != 'PASS' or receipt.get('backend') not in ('PowerPoint','LibreOffice') or
+    if (receipt.get('status') != 'PASS' or receipt.get('backend') not in ('PowerPoint','WPS','LibreOffice') or
         receipt.get('pptx_hash') != candidate['pptx']['sha256'] or receipt.get('preview_hash') != candidate['preview']['sha256']):
         raise ValueError('Actual preview belongs to another saved candidate')
     if candidate.get('render_environment')!=state['capabilities'].get('fingerprint'):
@@ -1012,9 +1012,9 @@ def run(task):
     return {'status':'ACCEPTED','acceptance':acceptance,'report':state['quality_result']}
 
 
-def export(task,output):
+def export(task,output=None,**options):
     from .component_final import export as export_final
-    return export_final(task,output)
+    return export_final(task,output,**options)
 
 
 def fit(task,request):

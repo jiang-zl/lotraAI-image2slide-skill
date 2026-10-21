@@ -365,6 +365,33 @@ def bounds(points):
 
 
 def native_route_spec(points,scale):
+    p=[]
+    for point in points:
+        if not p or point!=p[-1]:p.append(list(point))
+    if not 2<=len(p)<=4096:raise ValueError('Bounded nonempty native route required')
+    horizontal=abs(p[1][1]-p[0][1])<1e-7
+    orthogonal=len(p)<=6 and all((abs(a[1]-b[1])<1e-7 if horizontal==(i%2==0) else abs(a[0]-b[0])<1e-7) for i,(a,b) in enumerate(zip(p,p[1:])))
+    if len(p)>2 and not orthogonal:
+        xs,ys=zip(*p);x,y=min(xs),min(ys);w,h=max(max(xs)-x,.001),max(max(ys)-y,.001)
+        return {'preset':'nativeFreeform','off':[round(x*scale),round(y*scale)],
+            'ext':[max(1,round(w*scale)),max(1,round(h*scale))],'rot':0,'flipH':False,'flipV':False,
+            'guides':[],'points':[[round((px-x)/w*100000),round((py-y)/h*100000)] for px,py in p],
+            'endpoint_quantization_px':[abs(round(w*scale)/scale-w),abs(round(h*scale)/scale-h)]}
+    return _preset_route_spec(p,scale)
+
+
+def freeform_route_exact(node,spec):
+    from lxml import etree as E
+    paths=node.findall('p:spPr/a:custGeom/a:pathLst/a:path',NS)
+    if len(paths)!=1 or node.tag!='{'+NS['p']+'}sp' or node.find('p:spPr/a:noFill',NS) is None:return False
+    path=paths[0]
+    if path.get('fill')!='none' or path.get('w')!='100000' or path.get('h')!='100000':return False
+    if [E.QName(n).localname for n in path]!=['moveTo']+['lnTo']*(len(spec['points'])-1):return False
+    actual=[[int(p.get('x')),int(p.get('y'))] for p in path.findall('*/a:pt',NS)]
+    return actual==spec['points']
+
+
+def _preset_route_spec(points,scale):
     """Encode orthogonal routes as PowerPoint's supported bentConnector presets.
 
     A collinear U-route uses the smallest nonzero EMU extent that keeps guide
@@ -417,13 +444,15 @@ def set_native_route(shape,points,scale):
         orthogonal=len(p)<=6 and all((abs(a[1]-b[1])<1e-7 if horizontal_first==(i%2==0) else abs(a[0]-b[0])<1e-7) for i,(a,b) in enumerate(zip(p,p[1:])))
         if not orthogonal:
             if not 2<=len(p)<=4096:raise ValueError('Bounded native connector contour required')
+            from .office_compatibility import freeform_route
+            freeform_route(shape)
             xs,ys=zip(*p);x,y=min(xs),min(ys);w,h=max(max(xs)-x,.001),max(max(ys)-y,.001)
             xf=shape._element.spPr.xfrm
             for key in ('rot','flipH','flipV'):xf.attrib.pop(key,None)
             for element,attrs in [('off',{'x':round(x*scale),'y':round(y*scale)}),('ext',{'cx':max(1,round(w*scale)),'cy':max(1,round(h*scale))})]:
                 for key,value in attrs.items():xf.find('a:'+element,NS).set(key,str(value))
             custom_geometry(shape,[{'points':[[(px-x)/w,(py-y)/h] for px,py in p],'closed':False}],fill=False)
-            return {'preset':'customConnector','scope':'explicit_source_route','automatic_rerouting':'not_promised'}
+            return {'preset':'nativeFreeform','scope':'explicit_source_route','automatic_rerouting':'not_promised'}
     spec=native_route_spec(points,scale);props=shape._element.spPr
     xfrm=props.xfrm
     xfrm.find('a:off',NS).set('x',str(spec['off'][0]));xfrm.find('a:off',NS).set('y',str(spec['off'][1]))

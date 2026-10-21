@@ -40,3 +40,14 @@ Keep user data, private knowledge/fonts/tasks, active runtime, local modificatio
 and global skills intact. Prepared release checkouts are separate from a modified
 active installed skill; never force or falsely relabel that installation.
 <!-- lotraAI-version-consistency:end -->
+
+## 1.36.0 backend and delivery gates
+
+Every iteration also verifies the final generated PPTX against Office package
+constraints, the selected backend's actual PDF/save/reopen behavior, immutable
+user inputs and output-root publication without overwrite. Native-application
+qualification, LO fallback, installation and artwork acceptance stay distinct.
+Windows PowerPoint/WPS and macOS adapters must pass on their actual host before
+claiming that host qualified. Do not infer WPS/macOS PASS from Windows or WSL.
+Keep .sh entries LF/no BOM and generator repeat-safe; preserve independent
+workflow 1.35.2, Math policy 1.35.3, runtime 1.14.0 and protected active local edits.

@@ -312,7 +312,7 @@ def check(scene, base, pptx, owners=None, phase=None, validated=False):
             from .geometry import connector_points,bounds,native_route_spec
             c=o['content'];points=connector_points(expected,o);bx,by,bw,bh=bounds(points)
             spec=native_route_spec(points,round(scene['canvas']['target_width_inches']*914400)/scene['canvas']['width'])
-            add(id,'native_connector',tag=='cxnSp','Routed p:cxnSp with builtin arrow ends')
+            add(id,'native_connector',tag==('sp' if spec['preset']=='nativeFreeform' else 'cxnSp'),'Native preset connector or unfilled native source freeform with builtin arrow ends')
             for which,end,default in [('source','stCxn',3),('target','endCxn',1)]:
                 conn=n.find('p:nvCxnSpPr/p:cNvCxnSpPr/a:'+end,NS)
                 if c.get(which) and c.get(which+'_anchor',True):
@@ -323,7 +323,8 @@ def check(scene, base, pptx, owners=None, phase=None, validated=False):
             preset=n.find('p:spPr/a:prstGeom',NS)
             guides=[] if preset is None else [(g.get('name'),g.get('fmla')) for g in preset.findall('a:avLst/a:gd',NS)]
             wanted=[('adj'+str(i),'val '+str(v)) for i,v in enumerate(spec['guides'],1)]
-            valid=preset is not None and preset.get('prst')==spec['preset'] and guides==wanted and n.find('p:spPr/a:custGeom',NS) is None
+            from .geometry import freeform_route_exact
+            valid=freeform_route_exact(n,spec) if spec['preset']=='nativeFreeform' else preset is not None and preset.get('prst')==spec['preset'] and guides==wanted and n.find('p:spPr/a:custGeom',NS) is None
             add(id,'routed_path_exact',valid,{'preset':spec['preset'],'actual_guides':guides,'expected_guides':wanted,'endpoint_quantization_px':spec['endpoint_quantization_px']})
             xf=n.find('p:spPr/a:xfrm',NS)
             actual=[] if xf is None else [int(xf.find('a:off',NS).get(k)) for k in ('x','y')]+[int(xf.find('a:ext',NS).get(k)) for k in ('cx','cy')]

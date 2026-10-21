@@ -1,3 +1,3 @@
-"""Portable deterministic sci-rebuild core. No host/model API dependencies."""
+"""Shared deterministic OOXML core with optional local presentation adapters."""
 
-VERSION = "1.35.2"
+VERSION = "1.36.0"

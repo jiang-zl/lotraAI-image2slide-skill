@@ -49,6 +49,7 @@ def validate_skill_members(archive,gate,label):
     gate.product(label+'/MANIFEST',manifest['version'])
     gate.product(label+'/customer-package',json.loads(archive.read('config/customer-package.json'))['version'])
     gate.product(label+'/packager',constant(archive.read('scripts/package_skill.py')))
+    gate.product(label+'/product-core',constant(archive.read('scripts/core/__init__.py')))
     gate.contains(label+'/SKILL',archive.read('SKILL.md').decode(),f'# lotraAI Image2Slide v{gate.version}')
     gate.contains(label+'/agent',archive.read('agents/openai.yaml').decode(),f'display_name: "lotraAI Image2Slide v{gate.version}"')
     gate.equal(label+'/inventory',set(archive.namelist()),set(manifest['files'])|{'MANIFEST.json'})
@@ -71,7 +72,7 @@ def validate(source,runtime=None,assets=None,bundle=None,final=False):
     gate.equal('publication/release_url',publication['release_url'],SOURCE_REPO+'/releases/tag/v'+version)
     for name in ('config/customer-package.json','MANIFEST.json','.lotraai-image2slide-install.json'):
         gate.product('source/skill/'+name,load(skill/name)['version'])
-    for name in ('installer/install.py',SKILL_PATH+'/scripts/package_skill.py'):
+    for name in ('installer/install.py',SKILL_PATH+'/scripts/package_skill.py',SKILL_PATH+'/scripts/core/__init__.py'):
         gate.product('source/'+name,constant((source/name).read_bytes()))
     gate.contains('source/SKILL', (skill/'SKILL.md').read_text(encoding='utf-8'),f'# lotraAI Image2Slide v{version}')
     gate.contains('source/agent',(skill/'agents/openai.yaml').read_text(encoding='utf-8'),f'display_name: "lotraAI Image2Slide v{version}"')

@@ -1,3 +1,14 @@
+## 1.36.0
+
+Qualify local PowerPoint/WPS and the experimental macOS PowerPoint adapter by
+actual PDF/edit/save/reopen behavior. Reuse one Office-safe native generator;
+replace unsupported arbitrary connector geometry with unfilled native freeforms
+without dropping attached endpoints. Isolate LibreOffice profiles and TEMP.
+Make LibreOffice optional when local native capabilities cover the task. Add
+user-selected output roots, project defaults, resumable unique delivery folders,
+atomic no-replace publication and final-file native validation. Keep runtime
+1.14.0 binary resources, workflow 1.35.2, private/user files and prior releases.
+
 ## 1.35.5
 
 Repair complete-bundle manifest/filename version bindings and allow verified

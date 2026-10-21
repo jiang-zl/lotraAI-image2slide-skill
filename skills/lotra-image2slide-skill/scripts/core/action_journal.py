@@ -219,7 +219,7 @@ def verify(workdir, operation_id, evidence):
             receipt = safe_path(workdir, record["outputs"]["render.json"]["path"])
             pptx = safe_path(workdir, record["inputs"]["pptx"]["path"])
             backend = read_json(receipt).get("backend")
-            if backend == "LibreOffice":
+            if backend == "LibreOffice" or read_json(receipt).get("schema")=="presentation-backend-1.36.0":
                 from .render import verify_alternative_render
                 verify_alternative_render(pptx, receipt)
             elif backend == "PowerPoint":
@@ -379,7 +379,7 @@ def audit_verified(workdir, record):
         receipt_file = safe_path(workdir, record["outputs"]["render.json"]["path"])
         pptx = safe_path(workdir, record["inputs"]["pptx"]["path"])
         receipt = read_json(receipt_file)
-        if receipt.get("backend") == "LibreOffice":
+        if receipt.get("backend") == "LibreOffice" or receipt.get("schema")=="presentation-backend-1.36.0":
             from .render import verify_alternative_render
             verify_alternative_render(pptx, receipt_file)
         elif receipt.get("backend") == "PowerPoint":

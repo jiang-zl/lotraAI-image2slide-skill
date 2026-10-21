@@ -23,7 +23,8 @@ def parser():
         parser.add_argument('--request',type=Path);parser.add_argument('--out',type=Path,required=True)
     components=sub.add_parser('component-workflow');components.add_argument('task',type=Path)
     components.add_argument('operation',choices=('observe_source','bind','migrate','build','instantiate','reproject','evaluate','qualify','layout','status','review','fit','source_prepare','source_or_measurement_decision','repair','lock','unlock','edit','fonts','commit','recover','rollback','advance','final','export'))
-    components.add_argument('--request',type=Path);components.add_argument('--out',type=Path,required=True)
+    components.add_argument('--request',type=Path);components.add_argument('--out',type=Path)
+    components.add_argument('--output-root',type=Path);components.add_argument('--new-export',action='store_true')
     batch=sub.add_parser('batch');batch.add_argument('task',type=Path);batch.add_argument('--request',type=Path,required=True);batch.add_argument('--out',type=Path,required=True)
     neighbors=sub.add_parser('neighbor-check')
     neighbors.add_argument('task',type=Path);neighbors.add_argument('operation',choices=('bind','capture','compile','report','next','repair','refresh-execution'))
@@ -101,7 +102,17 @@ def parser():
     render = sub.add_parser("render")
     render.add_argument("pptx", type=Path)
     render.add_argument("--out", type=Path, required=True)
-    render.add_argument("--backend", choices=["libreoffice","powerpoint"], default="libreoffice")
+    render.add_argument('--backend',choices=('auto','libreoffice','powerpoint','wps'))
+    render.add_argument('--project',type=Path,default=Path.cwd())
+    backend=sub.add_parser('presentation-backend')
+    backend.add_argument('--project',type=Path,required=True)
+    backend.add_argument('--backend',choices=('auto','libreoffice','powerpoint','wps'))
+    backend.add_argument('--output-root',type=Path);backend.add_argument('--refresh',action='store_true')
+    backend.add_argument('--save-preferences',action='store_true');backend.add_argument('--out',type=Path)
+    final_check=sub.add_parser('validate-presentation')
+    final_check.add_argument('pptx',type=Path);final_check.add_argument('--project',type=Path,required=True)
+    final_check.add_argument('--out',type=Path,required=True)
+    final_check.add_argument('--backend',choices=('auto','libreoffice','powerpoint','wps'))
     render.add_argument('--width',type=int,default=1440)
     host=sub.add_parser('import-host-render')
     host.add_argument('pptx',type=Path);host.add_argument('pdf',type=Path);host.add_argument('observation',type=Path)
@@ -252,7 +263,8 @@ def parser():
     agent_start.add_argument('--pptx',type=Path,help='Optional one-shot partial PPT input paired with the reference image')
     agent_next=sub.add_parser('next');agent_next.add_argument('task',type=Path);agent_next.add_argument('--configuration',type=Path)
     agent_submit=sub.add_parser('submit');agent_submit.add_argument('task',type=Path);agent_submit.add_argument('result',type=Path)
-    agent_export=sub.add_parser('export');agent_export.add_argument('task',type=Path);agent_export.add_argument('--out',type=Path,required=True)
+    agent_export=sub.add_parser('export');agent_export.add_argument('task',type=Path);agent_export.add_argument('--out',type=Path)
+    agent_export.add_argument('--output-root',type=Path);agent_export.add_argument('--new-export',action='store_true')
     agent_sync=sub.add_parser('sync');agent_sync.add_argument('task',type=Path);agent_sync.add_argument('pptx',type=Path)
     agent_priority=sub.add_parser('prioritize');agent_priority.add_argument('task',type=Path);agent_priority.add_argument('request',type=Path)
     agent_batch=sub.add_parser('review-batch');agent_batch.add_argument('task',type=Path);agent_batch.add_argument('request',type=Path)
@@ -303,12 +315,37 @@ def _dispatch(args,p):
                 event(task,'command',args.command,seconds=time.monotonic()-started,detail={'inclusive':True})
 
 def _dispatch_impl(args,p):
+    if args.command=='presentation-backend':
+        from core.presentation_backend import preferences
+        from core.tool_router import capabilities
+        if args.save_preferences:
+            preferences(args.project,backend=args.backend,output_root=args.output_root)
+        config={'render_preference':args.backend} if args.backend else None
+        current=capabilities(config,args.project)
+        result=current['presentation_backend']
+        if args.refresh:
+            from core.presentation_backend import select
+            result=select(args.project,args.backend,refresh=True,libreoffice=current['libreoffice'] if current['libreoffice']['available'] else None)
+        if args.out:write_json(args.out,result)
+        print(json.dumps(result,ensure_ascii=False));return 0 if result.get('status')=='READY' else 2
+    if args.command=='validate-presentation':
+        from core.tool_router import capabilities,render_saved
+        from core.presentation_backend import validate_delivery
+        from core.office_compatibility import validate
+        if args.out.exists():raise FileExistsError(args.out)
+        args.out.mkdir(parents=True)
+        caps=capabilities({'render_preference':args.backend},args.project)
+        result={'package':validate(args.pptx),'render':render_saved(args.pptx,args.out/'render',caps,1440),
+                'native_validation':validate_delivery(args.pptx,args.out,caps),'whole_drawing_acceptance':'NOT_RUN'}
+        write_json(args.out/'Validation.json',result)
+        print(json.dumps(result,ensure_ascii=False));return 0
     if args.command=='component-workflow':
         from core.component_workflow import dispatch
         if args.operation=='export':
             from core.component_workflow import export
-            result=export(args.task,args.out)
+            result=export(args.task,args.out,output_root=args.output_root,new_export=args.new_export)
         else:
+            if args.out is None:raise ValueError('--out is required for non-export operations')
             result=dispatch(args.task,args.operation,read_json(args.request) if args.request else None)
             write_json(args.out,result)
         print(json.dumps({k:result[k] for k in ('status','components','component','count','ready') if k in result},ensure_ascii=False));return 0
@@ -580,7 +617,7 @@ def _dispatch_impl(args,p):
                     objectives=read_json(args.objectives) if args.objectives else None,configuration=args.configuration,pptx=args.pptx)
         elif args.command=='next':result=agent_runtime.next_packet(args.task,args.configuration)
         elif args.command=='submit':result=agent_runtime.submit(args.task,read_json(args.result))
-        elif args.command=='export':result=agent_runtime.export(args.task,args.out)
+        elif args.command=='export':result=agent_runtime.export(args.task,args.out,output_root=args.output_root,new_export=args.new_export)
         elif args.command=='prioritize':result=agent_runtime.prioritize(args.task,read_json(args.request))
         elif args.command=='review-batch':
             from core.review_batches import prepare
@@ -970,12 +1007,9 @@ def _dispatch_impl(args,p):
         from core.build import build
         result = build(read_json(args.scene), scene_base(args.scene,args.resources), args.out)
     elif args.command == "render":
-        if args.backend=="powerpoint":
-            from core.office import probe
-            result=probe(args.pptx,args.out,render_only=True,preview_width=args.width)
-        else:
-            from core.render import render
-            result = render(args.pptx, args.out, width=args.width)
+        from core.tool_router import capabilities,render_saved
+        caps=capabilities({'render_preference':args.backend},args.project)
+        result=render_saved(args.pptx,args.out,caps,args.width)
     elif args.command == "inspect":
         from core.inspect import check
         result = check(read_json(args.scene), scene_base(args.scene,args.resources), args.pptx)

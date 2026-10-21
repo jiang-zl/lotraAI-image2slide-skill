@@ -1,7 +1,6 @@
-"""Single declared LibreOffice backend, direct OOXML/font path, shared renders.
+"""Qualified local application first; bounded declared LibreOffice fallback.
 
-No Office discovery, COM, AppleScript, GUI fallback or alternate host probing.
-Missing capability is reported before construction and never starts a search.
+Render keys bind the exact application, generator, fonts and saved input.
 """
 from copy import deepcopy
 import os
@@ -16,9 +15,15 @@ from .common import digest, identity, read_json, write_json, writer
 VERSION = 'portable-runtime-1.31'
 
 
-def capabilities(project, configuration=None):
+def capabilities(project, configuration=None,requested=None):
     from .editor_backend import execution_mode, identity as backend_identity
     project = Path(project).resolve()
+    from .presentation_backend import select
+    native=select(project,requested)
+    if native.get('status')=='READY':
+        return {**native,'project':str(project),'identity':identity(native),'executable_sha256':digest(native['executable'])}
+    if native.get('backend') not in ('auto','LibreOffice'):
+        return native
     config_path = project/'.lotraAI-build/Portable-renderer.json'
     config = configuration or (read_json(config_path) if config_path.is_file() else {})
     configured = config.get('platforms', {}).get(platform.system(), config)
@@ -118,6 +123,10 @@ def render_key(pptx, caps, scene, width):
         raise ValueError('Renderer changed after preflight')
     if caps.get('uno_python_sha256') and digest(caps['uno_python']) != caps['uno_python_sha256']:
         raise ValueError('Math editor client runtime changed after preflight')
+    if caps.get('backend') in ('PowerPoint','WPS'):
+        from .presentation_backend import _code
+        return identity({'pptx':digest(pptx),'application':caps,'code':_code(),'fonts':fonts,
+            'width':width,'canvas':scene['canvas'],'policy':VERSION})
     from .editor_backend import identity as backend_identity
     if caps.get('backend_identity') != backend_identity(caps):
         raise ValueError('Math execution mode, worker or native resources changed after preflight')
@@ -172,7 +181,13 @@ def shared_render(task, pptx, caps, scene, width=1440, independent=False):
         write_json(ledger_file, ledger)
         begin = time.monotonic()
         try:
-            render(pptx, root/attempt['directory'], caps, width=width)
+            if caps.get('backend') in ('PowerPoint','WPS'):
+                from .tool_router import capabilities as routed_capabilities,render_saved
+                routed=routed_capabilities(project=caps['project'])
+                if routed.get('presentation_backend',{}).get('backend')!=caps['backend']:
+                    raise ValueError('Native application selection changed after preflight')
+                render_saved(pptx,root/attempt['directory'],routed,width)
+            else:render(pptx, root/attempt['directory'], caps, width=width)
         except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
             attempt['status'] = 'TRANSIENT_FAILURE' if isinstance(error, (TimeoutError, subprocess.TimeoutExpired)) else 'FAILED'
             attempt['error'] = str(error)[-1000:]

@@ -39,12 +39,14 @@ def expose(pptx,pdf,metrics,output,audits,*,status='ACCEPTED',acceptance=None,ca
             continue
         attempts.append({'profile':profile,'status':'ACTUALLY_VERIFIED','after_bytes':pp['after_bytes']});break
     else:raise ValueError('No storage candidate passed actual equivalence; immutable source retained for host diagnosis')
+    from .presentation_backend import validate_delivery
+    native=validate_delivery(output/'Final_editable.pptx',audits,current_caps,destination=output)
     report=f"PPTX：{pp['before_bytes']/1048576:.2f} → {pp['after_bytes']/1048576:.2f} MiB；显示比对一致，PDF 导出验证通过。\n\n"
-    (output/'Report.md').write_text(report+table(metrics,status),encoding='utf8')
+    (output/'Report.md').write_text(report+table(metrics,status)+'\nNative application validation: '+native['status']+' ('+native['backend']+').\n',encoding='utf8')
     files={p.name:digest(p) for p in output.iterdir() if p.is_file()}
     if set(files)!={'Final_editable.pptx','Report.md'}:raise ValueError('Unexpected user artifact')
     receipt={'kind':'compact-user-delivery-2','status':status,'output':str(output.resolve()),'files':files,
-        'input_pptx':str(pptx.resolve()),'pptx':pp,'pdf_validation':pd,'acceptance':acceptance,'storage_attempts':attempts}
+        'native_validation':native,'input_pptx':str(pptx.resolve()),'pptx':pp,'pdf_validation':pd,'acceptance':acceptance,'storage_attempts':attempts}
     file=audits/'Receipt.json';write_json(file,receipt)
     runtime=next((p for p in audits.resolve().parents if p.name=='.lotraAI-build'),None)
     if runtime:write_json(runtime/'delivery-receipts'/(identity(str(output.resolve()))+'.json'),{'receipt':str(file),'sha256':digest(file)})
@@ -75,6 +77,14 @@ def verify(directory,receipt=None):
     if r['pptx']['selection']=='COMPACTED':verify_package(r['input_pptx'],directory/'Final_editable.pptx',package_plan(r['input_pptx']))
     elif digest(r['input_pptx'])!=digest(directory/'Final_editable.pptx'):raise ValueError('Retained original package changed')
     verify_coverage(r['input_pptx'],r['pptx'])
+    native=r.get('native_validation',{})
+    if native.get('status')=='PASS':
+        if native.get('input_sha256')!=digest(directory/'Final_editable.pptx') or digest(native['receipt'])!=native['receipt_sha256']:
+            raise ValueError('Native final-file validation binding changed')
+        proof=read_json(native['receipt'])
+        if proof.get('native_editing_claim')!='PASS_OWNED_COPY_EDIT_SAVE_REOPEN':raise ValueError('Missing actual native save/reopen proof')
+        from .presentation_backend import _code
+        if proof.get('renderer_script_hash')!=identity(_code()):raise ValueError('Final native proof belongs to a different adapter implementation')
     from .transient_export import verify as verify_export
     verify_export(r['pdf_validation'],directory/'Final_editable.pptx')
     return {'integrity':'PASS','product_status':r['status'],'file_count':2,'scope':'lossless delivery and preserved acceptance scope'}

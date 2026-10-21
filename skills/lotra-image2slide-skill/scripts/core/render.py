@@ -77,12 +77,18 @@ def render(pptx, output, timeout=120, width=1440, executable=None,fontconfig=Non
     if fontconfig:
         if not Path(fontconfig).is_file():raise ValueError('Configured renderer font discovery file is missing')
         render_env['FONTCONFIG_FILE']=str(Path(fontconfig).resolve())
-    with tempfile.TemporaryDirectory(prefix='lotraai-lo-') as profile:
+    with tempfile.TemporaryDirectory(prefix='lotraai-lo-',dir=output) as profile:
         import subprocess
-        render_env.update(XDG_CACHE_HOME=profile,XDG_CONFIG_HOME=profile,XDG_RUNTIME_DIR=profile,
+        render_env.update(TEMP=profile,TMP=profile,TMPDIR=profile,XDG_CACHE_HOME=profile,XDG_CONFIG_HOME=profile,XDG_RUNTIME_DIR=profile,
             GSETTINGS_BACKEND='memory',SAL_USE_VCLPLUGIN='svp')
-        proc=subprocess.run([exe,'-env:UserInstallation='+Path(profile).as_uri(),'--headless','--convert-to','pdf','--outdir',str(output),str(pptx)],
+        try:
+            proc=subprocess.run([exe,'-env:UserInstallation='+Path(profile).as_uri(),'--headless','--convert-to','pdf','--outdir',str(output),str(pptx)],
                             timeout=timeout,check=False,capture_output=True,text=True,env=render_env)
+        except (OSError,subprocess.TimeoutExpired) as error:
+            write_json(output/'render-failure.json',{'status':'ACTUAL_RENDER_FAILED','backend':'LibreOffice',
+                'stage':'pdf-export','pptx_hash':before,'reason':str(error),'timeout':isinstance(error,subprocess.TimeoutExpired),
+                'temporary_directory':profile,'drawing_bytes_changed':digest(pptx)!=before})
+            raise
         if proc.returncode:
             write_json(output/'render-failure.json',{'status':'ACTUAL_RENDER_FAILED','backend':'LibreOffice',
                 'pptx_hash':before,'exit_code':proc.returncode,'stdout':proc.stdout[-2500:],
@@ -92,6 +98,9 @@ def render(pptx, output, timeout=120, width=1440, executable=None,fontconfig=Non
         stdout=proc.stdout
     generated=output/(pptx.stem+'.pdf')
     if not generated.is_file() or not generated.stat().st_size:
+        write_json(output/'render-failure.json',{'status':'ACTUAL_RENDER_FAILED','backend':'LibreOffice',
+            'stage':'pdf-output','pptx_hash':before,'exit_code':proc.returncode,'stdout':stdout[-2500:],
+            'stderr':proc.stderr[-2500:],'reason':'No nonempty PDF; PNG is not a substitute'})
         raise RuntimeError('Renderer produced no PDF: '+stdout)
     final=output/'Final.pdf'
     if generated!=final:generated.rename(final)
@@ -99,7 +108,7 @@ def render(pptx, output, timeout=120, width=1440, executable=None,fontconfig=Non
     pages=rasterize_pdf(final,output,width,len(prs.slides),round(width*prs.slide_height/prs.slide_width))
     if digest(pptx)!=before:raise RuntimeError('Renderer changed input PPTX')
     receipt={'status':'PASS','scope':'alternative_render_only','backend':'LibreOffice',
-             'backend_version':run([exe,'--version']),'executable':str(exe),
+             'backend_version':subprocess.run([exe,'--version'],capture_output=True,text=True,timeout=15,env=render_env).stdout.strip(),'executable':str(exe),
              'target_powerpoint':'UNVERIFIED','pptx_hash':before,'pdf':{'status':'EXPORTED','path':'Final.pdf'},'pdf_hash':digest(final),
              'preview_hash':pages[0]['sha256'],'pages':pages,'environment':environment(),
              'mapping':'fixed_canvas_no_content_registration'}
@@ -126,6 +135,9 @@ def verify_alternative_render(pptx, receipt_file):
     from .common import read_json
     pptx,receipt_file=Path(pptx),Path(receipt_file)
     receipt=read_json(receipt_file);directory=receipt_file.parent
+    if receipt.get('schema')=='presentation-backend-1.36.0':
+        from .presentation_backend import verify_render
+        return verify_render(pptx,receipt_file)
     if (receipt.get('status')!='PASS' or receipt.get('backend')!='LibreOffice'
             or receipt.get('scope')!='alternative_render_only'
             or receipt.get('target_powerpoint')!='UNVERIFIED'

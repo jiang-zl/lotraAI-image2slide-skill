@@ -21,6 +21,9 @@ def export_pdf(pptx,output,caps,timeout=120):
 def render(pptx,output,caps,width=1440,timeout=120):
     from pptx import Presentation
     from .render import rasterize_pdf
+    if caps.get('backend') in ('PowerPoint','WPS'):
+        from .presentation_backend import render as native_render
+        return native_render(pptx,output,caps,width=width,timeout=timeout)
     result=export_pdf(pptx,output,caps,timeout);output=Path(output)
     prs=Presentation(pptx)
     pages=rasterize_pdf(output/'Final.pdf',output,width,len(prs.slides),round(width*prs.slide_height/prs.slide_width))

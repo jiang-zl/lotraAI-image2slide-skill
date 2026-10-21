@@ -877,7 +877,7 @@ def _candidate(task, state, scene, *, baseline=None, allowed=None, reason=None, 
             state['reviews']={}
         _save(task,state)
         return candidate
-    if state['capabilities']['libreoffice']['available'] and state.get('render_dispatch',{}).get('mode')!='native_host_tool':
+    if (state['capabilities'].get('saved_render_available') or state['capabilities']['libreoffice']['available']) and state.get('render_dispatch',{}).get('mode')!='native_host_tool':
         begin = time.monotonic()
         render_saved(pptx, folder/'render', state['capabilities'], state['objectives']['render_width'])
         state['telemetry']['program_seconds'] += time.monotonic()-begin
@@ -1065,7 +1065,7 @@ def _user_edit_candidate(task,state,result):
         scene_file=folder/'scene.json';write_json(scene_file,mirrored)
         candidate['scene']=_file(task,scene_file)
     font_pending=candidate.get('font_delivery',{}).get('embedding',{}).get('status')=='FONT_EMBEDDING_PROVIDER_REQUIRED'
-    if not font_pending and state['capabilities']['libreoffice']['available'] and state.get('render_dispatch',{}).get('mode')!='native_host_tool':
+    if not font_pending and (state['capabilities'].get('saved_render_available') or state['capabilities']['libreoffice']['available']) and state.get('render_dispatch',{}).get('mode')!='native_host_tool':
         render_saved(output,folder/'render',state['capabilities'],state['objectives']['render_width'])
         candidate['preview']=_file(task,folder/'render/Final_preview.png')
         candidate['render']=_file(task,folder/'render/render.json')
@@ -2473,7 +2473,18 @@ def submit(task, result):
 
 
 @transaction
-def export(task, output):
+def export(task,output=None,*,output_root=None,new_export=False):
+    task,state=_state(task)
+    if state.get('objectives',{}).get('component_first'):
+        from .component_final import export as component_export
+        return component_export(task,output,output_root=output_root,new_export=new_export)
+    from .export_destination import reserve,publish
+    plan=reserve(state['project'],state.get('selected'),output_root=output_root,exact=output,new=new_export)
+    if plan['status']=='PUBLISHED':return publish(plan,None)
+    return publish(plan,_export_into(task,plan['stage']))
+
+
+def _export_into(task, output):
     task, state = _state(task)
     if state.get('objectives',{}).get('component_first'):
         from .component_workflow import export as component_export

@@ -53,7 +53,7 @@ def freeze_baseline(scene, base, pptx, preview, render_receipt, approval):
         raise ValueError("Approved baseline requires actual saved preview and render receipt")
     if receipt.get("preview_hash") != digest(preview):
         raise ValueError("Baseline preview differs from the saved render receipt")
-    if receipt.get("backend") == "LibreOffice":
+    if receipt.get("backend") == "LibreOffice" or receipt.get("schema")=="presentation-backend-1.36.0":
         from .render import verify_alternative_render
         verify_alternative_render(pptx, render_receipt)
     elif receipt.get("backend") == "PowerPoint":

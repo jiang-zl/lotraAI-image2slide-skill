@@ -33,7 +33,7 @@ ALLOWED_ROLES = {"environment_asset", "material_texture", "decorative_texture"}
 def _rendered(pptx, receipt_file):
     receipt_file = Path(receipt_file)
     receipt = read_json(receipt_file)
-    if receipt.get("backend") != "LibreOffice":
+    if receipt.get("backend") != "LibreOffice" and receipt.get("schema")!="presentation-backend-1.36.0":
         # The Office importer has a separate observation route. Until it has
         # a same-protocol pair, this bounded comparator refuses to guess.
         raise ValueError("Raster exception currently requires two verified LibreOffice receipts")

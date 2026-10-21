@@ -246,7 +246,7 @@ def check_conformance(plan, analysis, scene, base, pptx, *, render_receipt=None,
     else:
         receipt = read_json(render_receipt)
         try:
-            if receipt.get("backend") == "LibreOffice":
+            if receipt.get("backend") == "LibreOffice" or receipt.get("schema")=="presentation-backend-1.36.0":
                 from .render import verify_alternative_render
                 verified = verify_alternative_render(pptx, render_receipt)
             elif receipt.get("backend") == "PowerPoint":

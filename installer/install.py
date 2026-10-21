@@ -24,7 +24,7 @@ from pathlib import Path, PurePosixPath
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-VERSION = '1.35.5'
+VERSION = '1.36.0'
 SCHEMA = 'lotra-offline-product-bundle-1'
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -466,8 +466,6 @@ def main():
             companion=compatible_companion(readable_windows_path(project),manifest,key)
             if companion is None or companion.resolve()!=args.reuse_companion.resolve():raise ValueError('Prepared companion compatibility changed')
         else:companion = prepare_companion(root, project, manifest, key, state)
-        from renderer_install import install_renderer
-        result['math_renderer'] = install_renderer(root, project, manifest, key)
         readiness = state_dir / 'Runtime-readiness.json'
         command([engine, '-I', '-X', 'utf8', '-B', root / 'installer/bootstrap.py',
                  '--skill', script_skill, '--project', project, '--companion', companion,
@@ -476,25 +474,33 @@ def main():
         result['core_ready'] = result['runtime'].get('status') == 'OFFLINE_RUNTIME_READY'
         if not result['core_ready']:
             raise ValueError('Runtime bootstrap did not confirm actual core readiness')
-        if result['math_renderer'].get('status') != 'INSTALLED_NOT_TESTED':
+        from presentation_install import qualify,qualify_fallback,readiness as presentation_readiness
+        math=qualify(Path(readable_windows_path(project)),Path(script_skill),key,Path(readable_windows_path(state_dir)))
+        if math is None:
+            from renderer_install import install_renderer
+            math=install_renderer(root,project,manifest,key)
+        result['math_renderer']=math
+        if math.get('status') not in ('INSTALLED_NOT_TESTED','LOCAL_NATIVE_READY'):
             raise ValueError('Required Math runtime is not supplied for this platform; skill has not been published')
         # Import readiness is distinct from opening/editing/rendering a document.
         from renderer_install import verify_backend
-        math_backend=verify_backend(Path(readable_windows_path(project)),Path(script_skill),
-                                    Path(readable_windows_path(state_dir)),key)
+        math_backend=math['backend'] if math.get('status')=='LOCAL_NATIVE_READY' else verify_backend(
+            Path(readable_windows_path(project)),Path(script_skill),Path(readable_windows_path(state_dir)),key)
         result['math_renderer']['backend']=math_backend
+        if math.get('status')!='LOCAL_NATIVE_READY':
+            math['presentation_probe']=qualify_fallback(Path(readable_windows_path(project)),Path(script_skill),key,Path(readable_windows_path(state_dir)))
         result['math_backend_ready']=True
         result['math_execution_mode']=math_backend['execution_mode']
-        result['math_import_ready']=True
+        result['math_import_ready']=None if math.get('status')=='LOCAL_NATIVE_READY' else True
         from installer_publication import publish_skill
         skill = publish_skill(root, project, manifest, state_dir, state)
         script_skill = readable_windows_path(skill)
         descriptor = read_json(project / '.lotraAI-build/toolchain' / ('core-runtime-' + key + '.json'))
         runtime_engine = within(project, descriptor['engine']['path'])
-        result['capabilities'] = {'render_ready':False,'render_status':'NOT_RUN','native_edit_ready':False}
+        result['capabilities'] = presentation_readiness(math)
         result.update(status='INSTALLED_READY_SINGLE_SKILL', runtime_python=str(runtime_engine),
                       command_prefix=[str(runtime_engine), '-I', '-X', 'utf8', '-B', str(script_skill / 'scripts/run_lotra.py'), '--project', str(project)],
-                      render_ready=result['capabilities']['render_ready'], native_edit_ready=False)
+                      render_ready=result['capabilities']['render_ready'], native_edit_ready=result['capabilities']['native_edit_ready'])
         result['command_text'] = subprocess.list2cmdline(result['command_prefix']) if os.name == 'nt' else shlex.join(result['command_prefix'])
         result['installed_skill_count'] = 1
         result['setup_skill_registered'] = False
@@ -508,8 +514,8 @@ def main():
         publication_journal=state_dir/'Publication-rollback.json'
         if publication_journal.exists():
             completed=read_json(publication_journal);completed['status']='COMPLETE';write_json(publication_journal,completed)
-        print(json.dumps({'status':'INSTALLED_READY_SINGLE_SKILL','version':VERSION,'core_ready':True,'math_import_ready':True,
-            'render_status':'NOT_RUN','skill_entry':'.agents/skills/lotra-image2slide-skill/SKILL.md',
+        print(json.dumps({'status':'INSTALLED_READY_SINGLE_SKILL','version':VERSION,'core_ready':True,'math_import_ready':result['math_import_ready'],
+            'render_status':result['capabilities']['render_status'],'skill_entry':'.agents/skills/lotra-image2slide-skill/SKILL.md',
             'report':'.lotraAI-build/Bundle-install.json','global_skills':'preserved'},ensure_ascii=True))
         return 0
     except Exception as error:

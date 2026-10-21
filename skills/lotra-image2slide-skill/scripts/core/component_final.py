@@ -193,7 +193,21 @@ def report(result,compact,render):
     return '\n'.join(lines)
 
 
-def export(task,output):
+def export(task,output=None,*,output_root=None,new_export=False):
+    from . import agent_runtime as a,component_workflow as c
+    from .export_destination import reserve,publish
+    task,state=a._state(task);candidate=c._candidate(state)
+    plan=reserve(state['project'],candidate['pptx'],output_root=output_root,exact=output,new=new_export)
+    if plan['status']=='PUBLISHED':return publish(plan,None)
+    delivered=publish(plan,_export_into(task,plan['stage']))
+    # Publishing changes the receipt's destination/hash after the inner audit.
+    current=a._read_state(task/'state.json')
+    current['official_delivery']=c._ref(task,Path(delivered['audit_receipt']))
+    with writer(task):a._save(task,current)
+    return delivered
+
+
+def _export_into(task,output):
     from . import agent_runtime as a,component_workflow as c
     from .delivery_size import optimize_pptx
     from .transient_export import validate
@@ -207,10 +221,12 @@ def export(task,output):
     original=c._resource(task,candidate['pptx']);delivery=output/'Final_editable.pptx'
     compact=optimize_pptx(original,delivery,profile='storage')
     rendered=validate(original,delivery,audit_dir/'actual-equivalence',state['capabilities'],base_render=c._resource(task,candidate['render']))
-    (output/'Report.md').write_text(report(result,compact,rendered),encoding='utf-8')
+    from .presentation_backend import validate_delivery
+    native=validate_delivery(delivery,audit_dir,state['capabilities'],destination=output)
+    (output/'Report.md').write_text(report(result,compact,rendered)+'\nNative application validation: '+native['status']+' ('+native['backend']+').\n',encoding='utf-8')
     receipt={'kind':'compact-user-delivery-2','status':'ACCEPTED','output':str(output),
         'files':{p.name:digest(p) for p in output.iterdir() if p.is_file()},'input_pptx':str(original),
-        'pptx':compact,'pdf_validation':rendered,'acceptance':acceptance,
+        'pptx':compact,'pdf_validation':rendered,'acceptance':acceptance,'native_validation':native,
         'storage_attempts':[{'profile':'storage','status':'ACTUALLY_VERIFIED','after_bytes':compact['after_bytes']}]}
     file=audit_dir/'Receipt.json';write_json(file,receipt);verify(output,file)
     index=task.parents[1]/'delivery-receipts'/(identity(str(output))+'.json')
@@ -218,4 +234,4 @@ def export(task,output):
     state['official_delivery']=c._ref(task,file);state.update(stage='delivered',packet=None)
     with writer(task):a._save(task,state)
     return {'status':'ACCEPTED','output':str(output),'pptx':str(delivery),'report':str(output/'Report.md'),
-            'audit_receipt':str(file),'office_behavior_executed':False,'whole_audit_executed':False}
+            'audit_receipt':str(file),'office_behavior_executed':native['status']=='PASS','whole_audit_executed':False}
