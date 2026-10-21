@@ -1,26 +1,24 @@
-# 1.36.0 installation validation
+# 1.37.0 installation validation
 
-Current receipts are required; historical versions do not qualify this release.
-Read Installation-checks.json, Backend-and-delivery-checks.json,
-Final-distribution-checks.json and Version-consistency.json for exact byte-bound
-results. Fixtures are not acceptance of the user's artwork.
+Use current byte-bound receipts; historical checks do not qualify changed code.
+The release remains a portable skill and requires no different harness or model.
 
-| Channel | Scope |
+| Evidence | Scope |
 | --- | --- |
-| Focused regressions | 96 checks: 17 installer/transport, 20 Math/backend/rollback, 42 native/source counterexamples, 10 backend/delivery/geometry, 7 release consistency |
-| Windows PowerPoint | Actual fixture PDF, genuine Office Math, native save, edit/save/reopen, native descendant preservation; independent final-file check |
-| Windows LibreOffice | Actual formula PDF, PPTX save and actual reopen/export; owned process-local temporary directories |
-| Linux / WSL | Actual existing Linux runtime/LO resources, native Linux filesystem install and fallback fixture PDF/save/reopen; does not qualify physical macOS |
-| Delivery | Final optimized PPTX actual same-backend equivalence, user-root stage/hash/no-replace publication, exact two-file output and unchanged repeat |
-| Installer | Windows/Linux first/repeat local bundle and README paths, core/Math capability separation, one skill and user-sentinel preservation |
-| Native-first install | Local Office fixture can qualify without an installed LO tree; null UNO-import claim for local application mode |
-| Final package | Supplied skill packager validates its ZIP; all distributed entry bytes use LF for shell and parse on their relevant OS; new native PowerShell worker has its own parser check |
-| Version identity | Source/runtime/current READMEs/channels, core/packager/installer, payload, nested ZIPs, parts and public asset identities checked together |
-| Runtime resources | Immutable 1.14.0 binary/resource/catalog platform records retained, no new runtime binary Release |
-| WPS and physical macOS | NOT_RUN on physical hosts; adapters require that actual host's complete capability probe |
-| External artwork and performance/token effects | NOT_RUN; no acceptance or performance claim |
+| Workflow-checks.json | Real Windows/Linux current-packet fixture through formal export; source/binding checkpoints, exact final-byte checker, negative delivery tests and current protocol regression logs |
+| Focused regression logs | Installer/transport, Math/backend, native/source-feature counterexamples, backend/native geometry, new workflow policy and release identity; actual counts are recorded per host |
+| 40 components / 200 features | Bounded source/binding chunks close complete existing validators without native construction during staging; a protocol fixture, not recognition-quality proof |
+| Backend-and-delivery-checks.json | Actual PowerPoint/LibreOffice render and owned native-save behavior; exact two-file no-overwrite publication and unchanged repeats |
+| Installation-checks.json | Current Windows/Linux final bundle, differential update, README and full-bundle download/repeat with protected user sentinels and one discoverable skill |
+| Final-distribution-checks.json | Actual loose/archive/nested-archive shell and PowerShell parsing, LF/no BOM shell entries and byte/mtime-idempotent generators |
+| Version-consistency.json | Product/core/packager/installers, independent execution policy, both repositories, current README/channel/URL/hash identities and final nested payload bytes |
+| Preserved resources | Independent runtime 1.14.0 binaries/resources, user files, private data, active custom skill and global skills are unchanged |
+| Physical WPS/macOS | NOT_RUN here; actual host qualification remains required |
+| External user art, performance and provider-token effects | NOT_RUN; no acceptance or measured savings claim |
 
-Large immutable archives may be preseeded in hash-verified caches. First-install
-success descriptors must be absent; repeat checks preserve skill bytes/mtimes.
-Public README commands and final public attachment/channel bytes are verified
-after publication. Any transport-specific retry remains separate evidence.
+Only immutable hash-verified resource archives/parts may be preseeded. Fresh
+installation success descriptors must be absent; repeat checks compare managed
+skill bytes and mtimes. Differential checks compare old/new manifest ownership
+and prove unchanged runtime/resources and unchanged skill members are retained.
+Public README commands and final public attachment/channel bytes are checked
+after publication. An infrastructure retry is separately recorded, never PASS.

@@ -1,13 +1,23 @@
 # lotraAI
 
+
+<!-- workflow-v137:start -->
+1.37.0 remains a portable skill: project-local `start → next → submit` packets,
+incremental original observation/binding, complete quality gates and formal export.
+A checkpoint or native build is not an accepted result. Use `delivery-check` for
+the current task and exact final PPTX bytes. No replacement harness, resident
+service or extra model key is required; an optional checker does not control a
+third-party harness's reply.
+<!-- workflow-v137:end -->
+
 Prefer a qualified local PowerPoint/WPS backend, with optional LibreOffice fallback. Every final file gets actual export/save checks; user-selected output roots default to the project directory. Runtime 1.14.0 binaries are reused. Physical WPS/macOS qualification requires the corresponding host.
 
 
 
 
-**Current release: 1.36.0** · Development/default branch: `dev` · Version branch: `1.36.0` · Release tag: `v1.36.0`
+**Current release: 1.37.0** · Development/default branch: `dev` · Version branch: `1.37.0` · Release tag: `v1.37.0`
 
-`dev` and `1.36.0` currently contain the released 1.36.0. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
+`dev` and `1.37.0` currently contain the released 1.37.0. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
 
 
 **Reconstruct scientific figures as layered, editable PowerPoint slides.**
@@ -33,7 +43,7 @@ Codex runs the maintained installer, prepares Python, dependencies, OCR and Math
 Already have the complete ZIP? Supply the file or its absolute local path, then send:
 
 ~~~text
-Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.36.0-bundle.zip.
+Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.37.0-bundle.zip.
 ~~~
 
 Runtime resources and private task state stay in the project's `.lotraAI-build` directory. See the [installation guide](docs/installation.md) for manual commands and platform requirements, or the [download guide](docs/download.md) for complete bundles.
@@ -137,7 +147,7 @@ Use $lotra-image2slide-skill to continue rebuilding from this partial PPT, follo
 
 After an interruption, ask the agent to resume the existing task in the same working project. Keep the original and `.lotraAI-build` available. See the [usage guide](docs/usage.md).
 
-## v1.36.0
+## v1.37.0
 
 This release adds qualified local presentation backends, Office-safe arbitrary routes, private LibreOffice temporary directories and resumable user-selected output roots. The retained spatial workflow continues below.
 
@@ -157,7 +167,7 @@ Installer generation, final distribution parsing and the Windows/Linux README in
 | [Usage](docs/usage.md) | Image reconstruction, partial-slide import and resuming work |
 | [Examples](docs/examples/README.md) | Originals, reconstruction screenshots and component details |
 | [Workflow](skills/lotra-image2slide-skill/references/workflow-v1352.md) | Retained workflow 1.35.2 reconstruction and reuse rules |
-| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.36.0 main-skill payload |
+| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.37.0 main-skill payload |
 | [Provenance and licensing](NOTICE.md) | Project source, third-party components, and example assets |
 
 For feedback, include the operating system, product version, attempted operation, and relevant diagnostic. Share a reviewed reference image or excerpt when needed. Private task data remains under your control in the working project.

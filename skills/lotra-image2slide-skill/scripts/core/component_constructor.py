@@ -5,6 +5,8 @@ from .common import read_json,write_json,identity,safe_path
 
 
 def construct(task,state,scene,baseline=None,allowed=None,reason=None,transaction=None):
+    from .workflow_guard import require
+    require(task,'native construction')
     from . import agent_runtime as a,component_workflow as c,font_contract as fonts
     from .build import build
     from .scene import validate

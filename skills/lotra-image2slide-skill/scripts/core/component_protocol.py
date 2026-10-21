@@ -68,7 +68,9 @@ def validate_contract(value, scene, source_hash):
     if value.get('design_revision',8)!=8: raise ValueError('Unsupported component design revision; migrate explicitly')
     import jsonschema
     try:jsonschema.validate(value,read_json(ROOT/'schemas/component-contract.schema.json'))
-    except jsonschema.ValidationError as error:raise ValueError('Invalid component contract: '+error.message) from error
+    except jsonschema.ValidationError as error:
+        address='/'.join(str(v) for v in error.absolute_path) or '/'
+        raise ValueError('Invalid component contract at '+address+': '+error.message) from error
     if value.get('schema') != VERSION or value.get('source_hash') != source_hash:
         raise ValueError('Component contract requires this original and schema')
     nodes = {node['id']: node for node in scene['objects']}
@@ -326,7 +328,8 @@ def ready_for_final(contract, ledger, state=None):
     obligations = bool(ledger.get('pending_decision') or ledger.get('structural_grant') or
         (state or {}).get('spatial_source_decision') or (state or {}).get('source_observation_rebind_required') or
         (ledger.get('repair_batch') or {}).get('status') in ('PLAN_REQUIRED','DIAGNOSIS_REQUIRED','SOURCE_DECISION_REQUIRED'))
-    return {'ready': not obligations and not pending and not relation_pending and ledger.get('layout_ready') is True and
+    return {'ready': bool(required) and len(required)==len(set(required)) and set(ledger.get('components',{}))==set(required) and
+                    not obligations and not pending and not relation_pending and ledger.get('layout_ready') is True and
                     not any(r.get('spatial_repair_schedule') for r in ledger.get('components',{}).values()) and
                     not ledger.get('pending_transaction') and not ledger.get('user_reconciliation') and
                     not ledger.get('source_observation_dirty') and

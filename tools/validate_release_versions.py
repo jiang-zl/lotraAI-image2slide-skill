@@ -48,6 +48,10 @@ def validate_skill_members(archive,gate,label):
     manifest=json.loads(archive.read('MANIFEST.json'))
     gate.product(label+'/MANIFEST',manifest['version'])
     gate.product(label+'/customer-package',json.loads(archive.read('config/customer-package.json'))['version'])
+    execution=json.loads(archive.read('config/customer-package.json')).get('execution_policy')
+    if execution:
+        gate.equal(label+'/execution-policy',constant(archive.read('scripts/core/workflow_guard.py'),'POLICY'),execution)
+        gate.contains(label+'/execution-policy-entry',archive.read('SKILL.md').decode(),execution)
     gate.product(label+'/packager',constant(archive.read('scripts/package_skill.py')))
     gate.product(label+'/product-core',constant(archive.read('scripts/core/__init__.py')))
     gate.contains(label+'/SKILL',archive.read('SKILL.md').decode(),f'# lotraAI Image2Slide v{gate.version}')
@@ -66,6 +70,11 @@ def validate(source,runtime=None,assets=None,bundle=None,final=False):
     publication=load(source/'publication.json');version=publication['version']
     if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',version):raise ValueError('Numeric product version required')
     gate=Gate(version);skill=source/SKILL_PATH
+    execution=load(skill/'config/customer-package.json').get('execution_policy')
+    if execution:
+        gate.equal('source/execution-policy',constant((skill/'scripts/core/workflow_guard.py').read_bytes(),'POLICY'),execution)
+        gate.equal('publication/execution-policy',publication.get('execution_policy'),execution)
+        gate.contains('source/execution-policy-entry',(skill/'SKILL.md').read_text(encoding='utf-8'),execution)
     gate.equal('publication/release_tag',publication['release_tag'],'v'+version)
     gate.product('publication/version_branch',publication['version_branch'])
     gate.equal('publication/release_branch',publication['release_branch'],'dev')

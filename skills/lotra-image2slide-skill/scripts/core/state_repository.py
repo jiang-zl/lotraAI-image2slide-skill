@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import shutil
 import sqlite3
+from contextlib import contextmanager
 
 SCHEMA = 'lotra-indexed-document-1'
 CHUNK = 16384
@@ -95,11 +96,14 @@ class Repository:
                 kind TEXT NOT NULL, id TEXT NOT NULL, resource TEXT NOT NULL,
                 PRIMARY KEY(kind,id));
             """)
+    @contextmanager
     def connection(self):
         db=sqlite3.connect(self.database,timeout=30)
-        db.execute('PRAGMA foreign_keys=ON')
-        db.execute('PRAGMA synchronous=FULL')
-        return db
+        try:
+            db.execute('PRAGMA foreign_keys=ON')
+            db.execute('PRAGMA synchronous=FULL')
+            with db:yield db
+        finally:db.close()
     def blob(self,payload):
         data=encoded(payload); key=hashlib.sha256(data).hexdigest()
         file=self.resources/(key+'.json')

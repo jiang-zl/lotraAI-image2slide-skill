@@ -204,6 +204,8 @@ from .presets import PRESETS
 
 
 def build(scene, base, output):
+    from .workflow_guard import require_build
+    require_build(base,output)
     from .semantic_curves import compile_scene as compile_curves
     scene=compile_curves(scene,scene.get('curve_write_scope'))
     from .font_contract import compile_scene
@@ -231,6 +233,11 @@ def build(scene, base, output):
     implementation=implementation_identity()
     prs.core_properties.identifier='lotraai-image2slide/'+VERSION+';scene='+identity(scene)+';implementation='+implementation['files_sha256']
     prs.core_properties.title='Scientific figure reconstruction'
+    from .workflow_guard import developer_active
+    if developer_active():
+        prs.core_properties.title='lotraAI developer draft - unverified'
+        prs.core_properties.category='DEVELOPER_DRAFT'
+        prs.core_properties.subject='Native construction only; component and artwork acceptance NOT_RUN'
     from .native_input import scene_dimensions
     width,height=scene_dimensions(scene)
     scale = width / scene["canvas"]["width"]

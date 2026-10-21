@@ -1,5 +1,6 @@
 {
   "design_revision": 8,
+  "execution_policy": "workflow-execution-1.37.0",
   "included_paths": [
     "README.md",
     "README.zh-CN.md",
@@ -105,6 +106,7 @@
     "references/workflow-v135.md",
     "references/workflow-v1351.md",
     "references/workflow-v1352.md",
+    "references/workflow-v137.md",
     "requirements.txt",
     "schemas/component-contract.schema.json",
     "schemas/frame-plan.json",
@@ -116,6 +118,7 @@
     "schemas/task-completion.schema.json",
     "schemas/workflow-request.schema.json",
     "scripts/artifact_geometry.mjs",
+    "scripts/check_before_finish.py",
     "scripts/compact_delivery.py",
     "scripts/core/__init__.py",
     "scripts/core/action_journal.py",
@@ -223,6 +226,7 @@
     "scripts/core/icon_hd.py",
     "scripts/core/icon_preservation.py",
     "scripts/core/impact_graph.py",
+    "scripts/core/incremental_contract.py",
     "scripts/core/ink_spacing.py",
     "scripts/core/inspect.py",
     "scripts/core/interface_actions.py",
@@ -413,6 +417,8 @@
     "scripts/core/worker_process.py",
     "scripts/core/workflow.py",
     "scripts/core/workflow_control.py",
+    "scripts/core/workflow_delivery.py",
+    "scripts/core/workflow_guard.py",
     "scripts/core/workflow_profile.py",
     "scripts/core/working_audit.py",
     "scripts/core/working_render.py",
@@ -456,7 +462,7 @@
   "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
   "publication_revision": 1,
   "release_status": "CURRENT_HOST_VALIDATION_REQUIRED",
-  "runtime_regressions": "See docs/v1.36.0/Validation-report.md; qualify actual host backends and final distributions; runtime binary bytes unchanged",
+  "runtime_regressions": "Current guarded/incremental workflow, delivery and distribution checks; see docs/v1.37.0/Validation-report.md",
   "schema": "lotra-customer-package-1",
-  "version": "1.36.0"
+  "version": "1.37.0"
 }

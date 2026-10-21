@@ -51,3 +51,12 @@ Windows PowerPoint/WPS and macOS adapters must pass on their actual host before
 claiming that host qualified. Do not infer WPS/macOS PASS from Windows or WSL.
 Keep .sh entries LF/no BOM and generator repeat-safe; preserve independent
 workflow 1.35.2, Math policy 1.35.3, runtime 1.14.0 and protected active local edits.
+
+## 1.37.0 skill protocol gates
+
+The product remains a self-contained skill. Every iteration tests current-packet
+writer guards, complete incremental source/binding seals, retained corrections,
+resume, actual positive final export and exact final-attachment verification.
+Checkpoint/draft/installation/backend readiness are not artwork acceptance.
+No mandatory harness, daemon, model key or false local attestation is introduced.
+Version/resource and final distributed Windows/Linux gates above remain mandatory.

@@ -64,12 +64,15 @@ class Contracts(unittest.TestCase):
         from core.build import build
         from core.inspect import check
         from core.native_core_inspect import check as native_check
-        base=self.root/'scene'
+        base=self.root/'.lotraAI-build/developer-drafts/scene'
+        base.parent.mkdir(parents=True)
         scene=create_probe(base)
         scene['objects']=[node('source-route','connector',[10,10,250,50],
             {'points':[[10,10],[120,30],[180,15],[260,60]],'arrow':'triangle'},stroke='202020',line_width=2)]
         scene['relations']=[];scene['prototypes']=[]
-        file=base/'Generated.pptx';build(scene,base,file)
+        from core.workflow_guard import developer_writer
+        file=base/'Generated.pptx'
+        with developer_writer(self.root):build(scene,base,file)
         for inspector in (check,native_check):
             result=inspector(scene,base,file)
             failures=[row for row in result['checks'] if row['status']=='FAIL']

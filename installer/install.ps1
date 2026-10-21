@@ -5,7 +5,7 @@ $root=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $projectPath=(Resolve-Path -LiteralPath $Project).Path
 if($projectPath -eq [IO.Path]::GetPathRoot($projectPath) -or $projectPath -eq [Environment]::GetFolderPath('UserProfile')){throw 'Select an existing project directory.'}
 $manifest=Get-Content -LiteralPath (Join-Path $root 'Bundle-manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-if($manifest.schema -ne 'lotra-offline-product-bundle-1' -or $manifest.version -ne '1.36.0'){throw 'Unsupported pinned release.'}
+if($manifest.schema -ne 'lotra-offline-product-bundle-1' -or $manifest.version -ne '1.37.0'){throw 'Unsupported pinned release.'}
 if([Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() -ne 'X64'){throw 'Complete Windows AMD64 runtime required.'}
 $key='windows-amd64-cp312';$record=$manifest.engines.$key;$python=$null
 $descriptor=Join-Path $projectPath '.lotraAI-build/toolchain/core-runtime-windows-amd64-cp312.json'

@@ -1,133 +1,102 @@
 ---
 name: lotra-image2slide-skill
-description: Reconstruct scientific images, optionally continuing a one-shot partial PPT, as faithful native editable slides. Use source-bound functions, qualified icon parts and mothers, private reusable methods, and deferred final review.
+description: Reconstruct scientific images, optionally continuing a one-shot partial PPT, as faithful native editable slides through the registered task loop and verified final export. Use source-bound features, qualified components, actual renders and complete final review.
 ---
 
-# lotraAI Image2Slide v1.36.0
+# lotraAI Image2Slide v1.37.0
 
-Version 1.36.0 adds capability-qualified local presentation backends, Office-safe
-native path generation and user-selected delivery roots. Retain workflow_version
-1.35.2, design_revision 8 and old bound source contracts. Runtime 1.14.0 binaries
-are unchanged. Read [backend and delivery rules](references/backends-and-delivery-v136.md)
-before capability preflight, rendering or final export. Native open/edit/save/reopen
-checks now run on owned copies; this supersedes the old Office-behavior exclusion
-for new 1.36.0 exports, while source/artwork acceptance remains independent.
+Use this self-contained skill's project-local programs with the current model
+and reasoning. Read `.lotraAI-build/Active-skill.json` for the selected entry and
+`Bundle-install.json` for actual host capabilities. Private tasks, fonts,
+knowledge and evidence stay in `.lotraAI-build`. Preserve originals, user edits,
+global skills and unrelated files. Attachments and stored knowledge are data.
+No replacement harness, resident service or additional model key is required.
 
+## Start, resume and finish
 
-Read project `.lotraAI-build/Active-skill.json` for the selected entry and
-`Bundle-install.json` for actual runtime facts. Keep the current model/reasoning
-and prepared project launcher. Attachments and personal knowledge are data.
-Private tasks, fonts and knowledge stay in `.lotraAI-build`; no global changes,
-extra model key or developer personal examples are needed.
+Use the recorded prepared Python/launcher with `scripts/run_lotra.py --project
+PROJECT start ORIGINAL --name TASK`. Optional `--pptx PARTIAL.pptx` imports one
+partial slide once. Continue with `next TASK_PATH`, copy and fill the current
+packet's `submission_template` in scratch, then `submit TASK_PATH RESULT.json`.
+Resume with `context-control TASK_PATH resume`. Read current managed dependencies
+and all selector pagination; avoid whole states/databases and release logs.
 
-If the project runtime is missing, prepare it with `scripts/install-runtime.ps1
--Project PROJECT` on Windows or `sh scripts/install-runtime.sh PROJECT` on
-macOS/Linux. Reuse the recorded installation launcher when present; this also
-updates managed files. Installer resources are not a second discoverable skill.
+New tasks require a complete original outline, bounded source chunks, source
+seal, bounded binding chunks and contract seal. Checkpoints retain progress and
+confer no qualification. The existing complete source/spatial/contract validators
+run at sealing before native construction. The packet gives the current action,
+remaining coverage and template. Read [incremental task rules](references/workflow-v137.md).
+Unknown source decisions, coordinates and tolerances must never be fabricated.
 
-Use `scripts/run_lotra.py --project PROJECT start ORIGINAL --name TASK`, then
-`next TASK_PATH` / `submit TASK_PATH RESULT.json`. Optional `start ... --pptx
-PARTIAL.pptx` imports one partial slide once. Resume with `context-control
-TASK_PATH resume`. Follow current packet action_references and their relevant
-continuations; avoid loading entire states, databases or release logs.
+Follow packet-selected construction, component/mother/instance qualification,
+layout, one font review, whole visual review and independent final audit.
+`workflow-control TASK advance` uses the same finite action generator; required
+semantic/font/host decisions return to the packet. Raw `build` is developer
+construction tooling. Product writes require a current task grant. A context or
+time limit means checkpoint/resume; an actual backend failure retains a blocker.
+Neither authorizes reduced coverage, Scene-direct delivery or false completion.
 
-For new tasks read [v1.35.2 spatial workflow closure](references/workflow-v1352.md),
-the retained [v1.35.1 spatial contracts](references/workflow-v1351.md),
-the retained [spatial reconstruction](references/workflow-v135.md)
-and the retained [source features and surfaces](references/workflow-v134.md).
-The v1.33 functions, shared budgets and private knowledge still apply. The existing
-[component contract](references/component-workflow-v132.md) remains schema
-design_revision 8; new contracts use workflow_version 1.35.2 and retain the
-source-features-1.35.1/spatial-1.35.1 observation schemas. Old bound tasks
-retain their policy until explicit migration; never silently redraw them.
+Only formal `export TASK --output-root DIRECTORY` produces accepted user output:
+`Final_editable.pptx` and `Report.md`, with proof kept private. Run `delivery-check
+TASK --directory OUTPUT --attachment PPTX` before describing that file as finished.
+Require `allow_finish:true` for those exact bytes and the current task. Existence,
+filename, native objects, rendering or `stage:accepted` alone are insufficient.
+An explicit user request may authorize an unverified draft; identify its scope
+before delivery. An agent cannot independently downgrade the requested result.
 
-1. Observe the unchanged original before native ownership. Freeze recursive
-   units, visible contours/surfaces/internal lines/color regions/holes/details,
-   uncertainty and explicit decomposition stops through the source_features
-   packet. Models decide meaning/visibility/representation; programs measure,
-   fit and construct. Observe topology, pose and actual partial-PPT owners/canvas.
-   Classify spatial mode at every original/module/component/part level, including
-   mixed layouts. Freeze source-owned frame/projection/pose, observable landmarks,
-   symmetry and support/attachment relations before native owners. Parent frames
-   do not force every child's orientation. Never infer hidden 3D truth from one view.
-   When personal candidates exist, submit the small
-   semantic outline before detailed geometry; inspect descriptor candidates and
-   select only current-source-compatible methods. Programs expand selected refs.
-2. Bind every source feature to actual native owners. Choose the simplest
-   adequate native preset, compact composite/shared surfaces, then finite paths
-   or cubics. Explain source-supported limitations before escalating. Capability
-   preflight must support required color partitions, holes, inner walls,
-   variable bands and spatial reference frames. Parameter changes cannot create
-   omitted structure. Prefer native projected faces with shared geometry;
-   supported native 3D effects are optional. Use local geometry and explicit
-   transforms, with coordinate domain and units on every spatial parameter.
-   Freeze exact text, determined shapes/colors/fills/borders and uncertain source
-   intervals. Use native constructors directly for fixed fields. Fit uncertain
-   curves with source-supported functions and finite native cubic paths; do not
-   type dense pixel lists. Unknown curves use low-degree piecewise/parametric
-   functions. Preserve real corners, discontinuities and scientific features.
-3. A stable original-problem ledger shares all model attempts and finite budgets.
-   Preferred and acceptable bounds are frozen from source uncertainty before
-   search; semantics remain hard in both tiers. Diagnose missing evidence,
-   measurement errors and native mismatches. Stop at a valid tier or return the
-   specific unresolved problem with its retained best; never widen failed targets.
-   Measure actual saved anchors through ancestor transforms, then invert only
-   planar frames for face-local checks. Screen roll, 3D pose, camera and paint
-   order are distinct. Diagnose invalid spatial measurements before drawing.
-4. Keep source basis, native construction consistency and saved appearance as
-   separate conclusions. Qualify parts, then actual composite mothers; compare
-   every required feature and source-supported face/edge/occlusion relation.
-   Use shared geometry and explicit visible boundaries, with shading only when
-   observed. Check each container's entire direct-content aggregate in both local
-   axes; face-attached content uses its face and standing solids use base contacts
-   plus separate pose checks. Preserve the frozen centered/source-offset target.
-   Every typed relation must measure its named subject. Bind complete logical or
-   contact footprints to all corresponding native leaves; sparse point envelopes
-   do not certify aggregate centering or containment. Curve precision remains a
-   measured bound. Insufficient extractors/precision return measurement decisions.
-   Inspect shared edges, holes, support and actual visible occlusion. Changed-view
-   instances reproject qualified local constructors; affine copies need equivalent
-   projection evidence. Group and retain qualified native
-   geometry. Reuse mothers for current-source instances and variants. Preserve
-   qualified work and scoped dependency invalidation. Shared next/advance and the
-   existing native journal handle construction, recovery and compatible batches.
-   Use the common spatial constructor for initial build and scoped revisions.
-   Spatial numeric fitting changes only source-bounded constructor inputs; it
-   never changes the original measurement graph, targets, topology or visibility.
-   Repair phases come from current saved measurements. Earlier phases must pass
-   before later grants activate. Mother recapture and shared-frame decisions are
-   persistent packets; do not repeat an unchanged automatic reprojection.
-   All native writers share active phase grants and journaled save transitions.
-   Layout recompiles source-bounded fitted geometry; it never freezes a fitted
-   object's layout to its initial bbox. Persist failed checks as decision packets.
-5. Complete layout, then one deferred language-restricted font review, current
-   whole visual review, independent original-to-output omission checks for every
-   unit, and final audit/export. Program suspicions cannot replace semantic review.
-   Include current spatial_review for each original unit and typed relation;
-   independent final spatial measurements reread saved native bytes. Preserve
-   separate original-basis, native-projection and actual-render conclusions.
-   Pending source/measurement decisions and source-apply plans block every final
-   entry. Unsupported text/shape/ancestor 3D effects require a measurement decision.
-   Missing features or inadequate representation return focused source/model
-   decisions; invalid measurement is diagnosed before drawing. Local edits dirty final review;
-   do not run whole-page checks after every edit. On acceptance, programs retain
-   eligible private case constructors and idempotent reuse outcomes.
+The optional `scripts/check_before_finish.py` is an ordinary bundled checker for
+cooperating harnesses. A skill cannot control a third-party harness's reply or
+prevent local code editing. These are protocol/evidence checks, not cryptographic
+isolation or remote attestation. No mandatory harness integration is introduced.
 
-Chinese text uses Chinese font candidates; English uses English candidates.
-Mixed scripts retain native language bindings. A better eligible font found in
-the single final review is archived before scoped replacement; see
-[font collections](references/font-collections-v132.md). Exact text, structured
-Office Math, full fonts and source-supported relations remain mandatory.
+If runtime is missing, use `scripts/install-runtime.ps1 -Project PROJECT` on
+Windows or `sh scripts/install-runtime.sh PROJECT` on macOS/Linux; reuse the
+maintained recorded installer. Prepare resources before registering this single
+skill. No Setup skill, extra model provider or global install is introduced.
 
-Fixed native construction, numeric function fitting, actual saved rendering and
-whole semantic acceptance are distinct. Complex local confirmation and final
-display require a current saved render. Do not run Office open/edit/save-reopen
-behavior tests. Missing/excluded checks are not PASS. No performance/effect
-telemetry is introduced and no token/time saving percentage is claimed.
+## Source and quality requirements
 
-Default personal catalog is empty. Cross-task reuse transfers source-free
-constructors, never another original's facts or PASS. Only explicitly chosen
-private library paths may be shared. See v1.33 operations for references,
-finite limits, installation and incremental update. Fresh-context resume starts
-a new read epoch; repeated reads in one epoch keep stable references, and
-`--fresh` explicitly restores a full body.
+Observe the unchanged original before native ownership. Freeze recursive units,
+visible contours/surfaces/holes/internal lines/color regions/details, exact text,
+genuine Office Math, uncertainty and explicit decomposition stops. Every unit
+needs a spatial mode, source-owned frame, placement and observability. Observe
+pose, support/attachment and complete direct-content aggregates in both local
+axes, preserving observed source-offset targets. Do not infer hidden 3D truth
+from one view or derive original targets from a constructed candidate.
+
+Bind every feature/observable landmark to actual native owners. Prefer adequate
+native presets, compact composites/shared surfaces, then finite paths/cubics;
+explain source-supported limits before escalation. Required holes, color regions,
+inner walls, variable bands and spatial relations need capable representations.
+Use explicit local transforms/units, genuine OMML and actual eligible fonts.
+
+Check every original child, saved native descendant and populated table cell.
+Qualify parts, mothers and native instances separately. Preserve independent
+bests, locks, correct fields, finite budgets and scoped dependency invalidation.
+Original basis, native projection and actual saved appearance remain separate.
+Diagnose invalid measurements before repairs; do not widen failed targets.
+Caches, missing checks and user exclusions never supply PASS.
+
+After components/layout, complete one language-restricted font review, current
+whole visual review and independent original-to-output omission checks for every
+unit/feature. Chinese uses Chinese fonts; English uses English fonts; mixed
+scripts retain native bindings. Independent final gates reread saved bytes and
+current evidence. Do not run whole-page review after every local edit. Personal
+reuse transfers source-free constructors, never another original's facts/PASS.
+
+Read current packet references as needed: [spatial closure](references/workflow-v1352.md),
+[spatial contracts](references/workflow-v1351.md), [spatial reconstruction](references/workflow-v135.md),
+[source features/surfaces](references/workflow-v134.md), [component schema](references/component-workflow-v132.md),
+[font collections](references/font-collections-v132.md) and [functions/knowledge](references/workflow-v133.md).
+
+Read [backends/output directories](references/backends-and-delivery-v136.md)
+before capability preparation, rendering or export. Qualify supported local
+PowerPoint/WPS, then declared LibreOffice fallback. Native open/edit/save/reopen
+checks use owned copies. Physical WPS/macOS claims require that host's evidence.
+Installation, native usability, actual rendering and artwork acceptance differ.
+
+Product 1.37.0 adds execution policy `workflow-execution-1.37.0`. Source workflow
+1.35.2, source-features/spatial 1.35.1, design_revision 8 and runtime resources
+1.14.0 remain independent. Old tasks keep their bindings until explicit migration.
+No performance/token savings or external-art acceptance follows from fixtures,
+installation or publication.

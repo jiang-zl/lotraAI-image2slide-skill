@@ -171,6 +171,8 @@ def start(source, project, *, name=None, objectives=None, configuration=None, pp
               'source_semantic_composition': True, 'source_feature_ledger':True, 'source_font_contract':True,
                'portable_editable_fonts':True, 'source_frame_plan':True, 'whole_quality_intent':True, 'all_neighbor_closure':True, 'max_issue_repairs':12,
              'max_branch_failures':2, 'component_first':True, **(objectives or {})}
+    if goals.get('component_first') is not True:
+        raise ValueError('New tasks require the complete component workflow')
     if any(goals[key] is not True for key in ('source_part_quality','source_relative_layout','source_feature_ledger','source_contract_seals','source_catalog_review')):
         raise ValueError('New tasks require independent parts/layout/original features; no agent shortcuts')
     if (type(goals['max_issue_repairs']) is not int or not 1<=goals['max_issue_repairs']<=32
@@ -205,6 +207,7 @@ def start(source, project, *, name=None, objectives=None, configuration=None, pp
     state = {'schema': SCHEMA, 'task_id': name, 'project': str(project), 'created': time.time(),
              'source': _file(task, original), 'source_stem':source.stem, 'source_size': size, 'objectives': goals,
              'capabilities': caps, 'execution_contract':execution_contract.VERSION,
+             'execution_policy':__import__(__package__+'.workflow_guard',fromlist=['POLICY']).POLICY,
              'stage': 'source_observation', 'analysis': None,
              'methods': {}, 'built': {}, 'scene': None, 'selected': None, 'active_candidate': None,
              'reviews': {}, 'issues': [], 'protected': {}, 'packet': None,
@@ -670,6 +673,10 @@ def _packet(task, state, kind, target, objective, roi=None, extra=None):
         if cost:packet['file_cost']=cost
     from .context_control import view_requests
     packet['view_requests']=view_requests(task,state,packet['views'],owner=target,rubric=kind)
+    from .workflow_guard import enabled as controlled
+    if controlled(state):
+        from .incremental_contract import template
+        packet=template(task,state,packet)
     full_packet=packet
     packet=compact(task,packet,min(8000,state['objectives']['context_chars']) if state.get('objectives',{}).get('component_first') else state['objectives']['context_chars'])
     if len(canonical(packet).decode('utf-8')) > state['objectives']['context_chars']:
@@ -1150,6 +1157,10 @@ def next_packet(task, configuration=None):
         return {'status': 'USER_FILE_CHANGED', 'action': 'sync the edited PPTX before continuing'}
     candidate=state.get('active_candidate') or state.get('selected')
     if not candidate and state.get('objectives',{}).get('component_first') and not state.get('font_pending_candidate'):
+        from .workflow_guard import enabled as controlled
+        from .component_workflow import implementation as component_implementation
+        if controlled(state) and state.get('packet') and state['packet'].get('component_implementation')==component_implementation():
+            return {'status':'WORK_PACKET','task':str(task),'packet':state['packet']}
         from .component_workflow import next_action as component_next
         return component_next(task,state)
     if not candidate and state.get('analysis') and not state.get('global_aesthetic_plan'):
@@ -1191,8 +1202,10 @@ def next_packet(task, configuration=None):
             packet=_packet(task,state,'font_binding','source_fonts',
                 'Bind original/user font intent to real resources before drawing; do not replace an exact family with an available style peer.',extra=reading)
             return {'status':'WORK_PACKET','task':str(task),'packet':packet}
-        _candidate(task,state,scene,baseline=pending['baseline'],allowed=pending['allowed'],reason=pending['reason'],
-                   transaction=read_json(_path(task,pending['transaction_path'])) if pending.get('transaction_path') else None)
+        from .workflow_guard import finite_writer
+        with finite_writer(task):
+            _candidate(task,state,scene,baseline=pending['baseline'],allowed=pending['allowed'],reason=pending['reason'],
+                       transaction=read_json(_path(task,pending['transaction_path'])) if pending.get('transaction_path') else None)
         if not state.get('objectives',{}).get('component_first'):_save(task,state)
         # Component constructor owns its repository CAS; reload on the recursive next call.
         return next_packet(task)
@@ -2148,9 +2161,15 @@ def submit(task, result):
     if state.get('objectives',{}).get('component_first'):
         from .component_workflow import implementation
         if packet.get('component_implementation')!=implementation():raise ValueError('Component implementation changed; request a current next packet')
+    from .workflow_guard import packet_writer
+    with packet_writer(task,state,packet):return _submit_current(task,state,packet,result)
+
+
+def _submit_current(task,state,packet,result):
     if packet['kind'] in ('component_contract_source','component_build_work','component_local_work','component_layout_work','component_final_visual','component_recovery_work','component_repair_work','component_user_mapping','component_font_review','component_final_audit'):
         from .component_workflow import submit_result
-        return submit_result(task,result,packet)
+        from .workflow_guard import packet_writer
+        with packet_writer(task,state,packet):return submit_result(task,result,packet)
     if packet['kind']=='tool_render' and result.get('render_failure') and state.get('objectives',{}).get('component_first'):
         from .component_constructor import retain_render_failure
         return retain_render_failure(task,result)

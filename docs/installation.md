@@ -24,7 +24,7 @@ If a prior attempt installed only the skill files, rerun the maintained installa
 
 GitHub release downloads have a bounded official asset-API fallback, retaining the exact byte count, SHA-256, range checks and cache ownership. macOS Math DMGs still use their pinned upstream URL. macOS Apple Silicon and Intel physical-host checks remain pending; Windows tests do not qualify either Mac architecture.
 
-## 1.36.0 installer entries
+## 1.37.0 installer entries
 
 Shell entries are UTF-8 without BOM and use LF. Maintainers generate them from
 `installer/templates` with `tools/prepare_install_entries.py`, then run
@@ -32,4 +32,4 @@ Shell entries are UTF-8 without BOM and use LF. Maintainers generate them from
 Windows entries are checked with Windows PowerShell as well as actual installation.
 Runtime binaries and resource packages remain unchanged.
 
-For 1.36.0 the core stage runs first. A qualified local presentation application replaces the mandatory LO installation; otherwise LO startup, actual fixture PDF and save/reopen are checked. `math_import_ready=null` in local-application mode means UNO was not imported. Auto retains one actual native PDF failure before a declared LO fallback; native save/reopen and PDF scopes stay separate. See docs/v1.36.0/Validation-report.md.
+For 1.37.0 the core stage runs first. A qualified local presentation application replaces the mandatory LO installation; otherwise LO startup, actual fixture PDF and save/reopen are checked. `math_import_ready=null` in local-application mode means UNO was not imported. Auto retains one actual native PDF failure before a declared LO fallback; native save/reopen and PDF scopes stay separate. See docs/v1.37.0/Validation-report.md.

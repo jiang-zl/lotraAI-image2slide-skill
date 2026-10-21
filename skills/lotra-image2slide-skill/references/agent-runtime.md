@@ -1,3 +1,10 @@
+<!-- workflow-v137 -->
+For new execution-policy 1.37.0 tasks, use the prepared project launcher and
+references/workflow-v137.md. Start/next/submit, finite guarded advance, formal
+export and delivery-check are the current product route. The legacy commands and
+non-component state descriptions below apply only to their explicitly bound old
+tasks; they do not authorize a new-task bypass or a global Python installation.
+
 # Program-owned reconstruction
 
 Font prebuild recovery retains the exact pending Scene until native PPTX bytes

@@ -1,7 +1,7 @@
 """Keep evidence on disk when an action exceeds its model context budget."""
 from .common import canonical,identity,write_json,digest,read_json,safe_path
 
-CONTROL=('packet_id','kind','target','revision','objective','baseline','source','original_view','return','views','file_cost','component_implementation')
+CONTROL=('packet_id','kind','target','revision','objective','baseline','source','original_view','return','views','file_cost','component_implementation','submission_template','incremental','completion_policy')
 
 def _store(file,value):
     file.parent.mkdir(exist_ok=True)

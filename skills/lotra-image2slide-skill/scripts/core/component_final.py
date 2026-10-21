@@ -198,7 +198,12 @@ def export(task,output=None,*,output_root=None,new_export=False):
     from .export_destination import reserve,publish
     task,state=a._state(task);candidate=c._candidate(state)
     plan=reserve(state['project'],candidate['pptx'],output_root=output_root,exact=output,new=new_export)
-    if plan['status']=='PUBLISHED':return publish(plan,None)
+    if plan['status']=='PUBLISHED':
+        from .workflow_guard import enabled
+        if enabled(state):
+            from .workflow_delivery import verify as verify_workflow_delivery
+            verify_workflow_delivery(task,directory=plan['final'])
+        return publish(plan,None)
     delivered=publish(plan,_export_into(task,plan['stage']))
     # Publishing changes the receipt's destination/hash after the inner audit.
     current=a._read_state(task/'state.json')
@@ -228,6 +233,8 @@ def _export_into(task,output):
         'files':{p.name:digest(p) for p in output.iterdir() if p.is_file()},'input_pptx':str(original),
         'pptx':compact,'pdf_validation':rendered,'acceptance':acceptance,'native_validation':native,
         'storage_attempts':[{'profile':'storage','status':'ACTUALLY_VERIFIED','after_bytes':compact['after_bytes']}]}
+    from .workflow_delivery import binding as workflow_binding
+    receipt['task_binding']=workflow_binding(task,state,candidate,acceptance)
     file=audit_dir/'Receipt.json';write_json(file,receipt);verify(output,file)
     index=task.parents[1]/'delivery-receipts'/(identity(str(output))+'.json')
     write_json(index,{'receipt':str(file),'sha256':digest(file)})

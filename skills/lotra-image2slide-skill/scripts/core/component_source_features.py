@@ -89,6 +89,8 @@ def validate_observation(value, source_hash, size):
 
 
 def observe(task, request):
+    from .workflow_guard import require
+    require(task,'original observation')
     from . import agent_runtime as a
     from .component_workflow import _ref, _load, _resource
     task, state = a._state(task)
@@ -136,6 +138,8 @@ def observe(task, request):
     with writer(task):
         if prior: state.setdefault('source_observation_history', []).append(prior)
         state['source_feature_observation'] = _ref(task, file)
+        from .incremental_contract import seal_state
+        seal_state(task,state,'source')
         state.pop('spatial_source_decision',None)
         if contract and enabled(contract):
             state['source_observation_rebind_required'] = True

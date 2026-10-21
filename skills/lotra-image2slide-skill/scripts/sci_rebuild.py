@@ -17,7 +17,7 @@ from core.task_transaction import guard,TaskBusy
 
 def parser():
     p = argparse.ArgumentParser(description="lotraAI Image2Slide semantic reconstruction tools")
-    sub = p.add_subparsers(dest="command", required=True)
+    sub = p.add_subparsers(dest="command", required=True,metavar='{start,next,submit,export,delivery-check,harness-check,workflow-control,presentation-backend,render,inspect,build}')
     for command,operations in (('containment-check',('discover','bind','report','repair','capture')),('office-math',('discover','bind','report','repair','edit-probe','roundtrip-probe')),('icon-clarity',('discover','bind','report','enhance','review','observe','probe-review','rebind-probes')),('task-completion',('begin','status','amend','branch','resume','stop')),('context-usage',('status','record')),('context-control',('status','resume','history','attempt')),('workflow-control',('plan','preflight','profile','advance'))):
         parser=sub.add_parser(command);parser.add_argument('task',type=Path);parser.add_argument('operation',choices=operations)
         parser.add_argument('--request',type=Path);parser.add_argument('--out',type=Path,required=True)
@@ -90,6 +90,8 @@ def parser():
     text_quality.add_argument("--request",type=Path);text_quality.add_argument("--out",type=Path,required=True)
     doctor=sub.add_parser("doctor");doctor.add_argument('--office',action='store_true')
     probe = sub.add_parser("probe")
+    probe.add_argument('--developer-draft',action='store_true')
+    probe.add_argument('--project',type=Path)
     probe.add_argument("--out", type=Path, required=True)
     probe.add_argument("--variant", type=int, default=0)
     val = sub.add_parser("validate-scene")
@@ -99,6 +101,8 @@ def parser():
     build.add_argument("scene", type=Path)
     build.add_argument("--out", type=Path, required=True)
     build.add_argument('--resources',type=Path)
+    build.add_argument('--developer-draft',action='store_true')
+    build.add_argument('--project',type=Path)
     render = sub.add_parser("render")
     render.add_argument("pptx", type=Path)
     render.add_argument("--out", type=Path, required=True)
@@ -287,15 +291,21 @@ def parser():
     formula_render.add_argument('--project',type=Path,required=True)
     formula_render.add_argument('--out',type=Path,required=True)
     formula_render.add_argument('--width',type=int,default=1440)
+    for name in ('delivery-check','harness-check'):
+        command=sub.add_parser(name);command.add_argument('task',type=Path)
+        command.add_argument('--directory',type=Path);command.add_argument('--attachment',type=Path)
+        command.add_argument('--out',type=Path)
     return p
 
 
 def main(argv=None):
     p = parser()
     args = p.parse_args(argv)
-    if getattr(args,'task',None) is not None:
-        with guard(args.task):return _dispatch(args,p)
-    return _dispatch(args,p)
+    from core.workflow_guard import command_scope
+    with command_scope(args):
+        if getattr(args,'task',None) is not None:
+            with guard(args.task):return _dispatch(args,p)
+        return _dispatch(args,p)
 
 
 def _dispatch(args,p):
@@ -315,6 +325,11 @@ def _dispatch(args,p):
                 event(task,'command',args.command,seconds=time.monotonic()-started,detail={'inclusive':True})
 
 def _dispatch_impl(args,p):
+    if args.command in ('delivery-check','harness-check'):
+        from core.workflow_delivery import check
+        result=check(args.task,directory=args.directory,attachment=args.attachment)
+        if args.out:write_json(args.out,result)
+        print(json.dumps(result,ensure_ascii=False));return 0 if result['allow_finish'] else 6
     if args.command=='presentation-backend':
         from core.presentation_backend import preferences
         from core.tool_router import capabilities
@@ -348,7 +363,7 @@ def _dispatch_impl(args,p):
             if args.out is None:raise ValueError('--out is required for non-export operations')
             result=dispatch(args.task,args.operation,read_json(args.request) if args.request else None)
             write_json(args.out,result)
-        print(json.dumps({k:result[k] for k in ('status','components','component','count','ready') if k in result},ensure_ascii=False));return 0
+        print(json.dumps({k:result[k] for k in ('status','components','component','count','ready','phase','coverage','execution_policy','next_action','acceptance') if k in result},ensure_ascii=False));return 0
     if args.command=='native-core':
         from core.native_core import command
         write_json(args.out,command(args.task,args.operation,read_json(args.request) if args.request else None))
@@ -1117,7 +1132,8 @@ def _dispatch_impl(args,p):
         result=import_review(read_json(args.review_dir/'review-manifest.json'),read_json(args.observations),current_binding=binding,review_directory=args.review_dir)
         write_json(args.out,result)
     if args.command in ("probe","build"):
-        result={"pptx_hash":result["pptx_hash"],"scene_revision":result["scene_revision"],"object_count":len(result["objects"])}
+        result={"pptx_hash":result["pptx_hash"],"scene_revision":result["scene_revision"],"object_count":len(result["objects"]),
+            'status':'DEVELOPER_DRAFT','accepted':False,'scope':'Native construction only; no component or artwork acceptance'}
     if args.command == "render":
         result={k:v for k,v in result.items() if k not in ("fonts","environment")}
     if getattr(args,'task',None) is not None:

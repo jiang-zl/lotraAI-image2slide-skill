@@ -31,9 +31,10 @@ def implementation():
              'agent_runtime','quality_loop','workflow_control','execution_contract','build',
              'curve_functions','problem_control','knowledge_flow','component_source_features','native_surfaces','surface_metrics',
              'spatial_frames','spatial_checks','spatial_constructors','spatial_observation',
-             'spatial_footprints','spatial_fit','spatial_repair','presentation_backend','office_compatibility','export_destination','libreoffice_backend')
+             'spatial_footprints','spatial_fit','spatial_repair','presentation_backend','office_compatibility','export_destination','libreoffice_backend',
+             'workflow_guard','incremental_contract','workflow_delivery')
     files={name:digest(ROOT/'scripts/core'/(name+'.py')) for name in names}
-    for name in ('config/component-workflow.json','config/font-collections.json','schemas/component-contract.schema.json'):
+    for name in ('config/component-workflow.json','config/font-collections.json','schemas/component-contract.schema.json','scripts/sci_rebuild.py','scripts/check_before_finish.py'):
         files[name]=digest(ROOT/name)
     return identity(files)
 
@@ -134,6 +135,8 @@ def failure_decision(task, state, contract, ledger, candidate, checks, row=None,
 
 
 def bind(task, request, *, prepare_only=False, native_apply=None):
+    from .workflow_guard import require
+    require(task,'bind')
     from . import agent_runtime as a
     task, state = a._state(task)
     from .tables import normalize_scene
@@ -336,6 +339,8 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
         if existing: state.setdefault('component_workflow_history', []).append(copy.deepcopy(existing))
         state['component_workflow'] = {'schema': VERSION, 'contract': ref,
                                        'ledger_path': ledger_path, 'revision_reason': request.get('revision_reason')}
+        from .incremental_contract import seal_state
+        seal_state(task,state,'binding')
         state['objectives']['component_first'] = True
         state.pop('source_observation_rebind_required', None)
         from .state_repository import Repository
@@ -408,9 +413,25 @@ def _measurement_signature(row,signatures,contract):
                             for owner in row.get('spatial_context',{}).get('native_ancestors',[])}}
 
 
+def invalidate_stale_final(task,state,contract,ledger,candidate):
+    ref=ledger.get('final_result')
+    if not ref:return False
+    final=read_json(_resource(task,ref))
+    current=(final.get('implementation')==implementation() and final.get('source_hash')==state['source']['sha256'] and
+        final.get('contract')==state['component_workflow']['contract'] and final.get('pptx_hash')==candidate['pptx']['sha256'] and
+        final.get('preview_hash')==candidate.get('preview',{}).get('sha256') and
+        final.get('render_environment')==state['capabilities']['fingerprint'])
+    if current:return False
+    retained=ledger.setdefault('retained_final_results',[])
+    if ref not in retained:retained.append(copy.deepcopy(ref))
+    ledger.update(final_dirty=True,final_result=None)
+    return True
+
+
 def refresh(task, state, contract, ledger, candidate):
     """Only affected facets invalidate qualification; page changes mark final dirty."""
     if not candidate: return None, None
+    invalidate_stale_final(task,state,contract,ledger,candidate)
     scene, signatures = _signatures(task, state, candidate)
     from .component_dependencies import consumer
     for row in contract['components']:
@@ -556,6 +577,8 @@ def qualify_constructed_fixed(task,owners):
 
 
 def evaluate(task, request=None):
+    from .workflow_guard import require
+    require(task,'evaluate')
     from . import agent_runtime as a
     from .component_metrics import measure
     from .native_core_checks import batch_check
@@ -648,6 +671,8 @@ def evaluate(task, request=None):
 
 
 def qualify(task, request):
+    from .workflow_guard import require
+    require(task,'qualify')
     """Assembly/instance/specialist evidence is bound to actual current output."""
     from . import agent_runtime as a
     task, state = a._state(task); contract, ledger = _load(task, state); candidate = _candidate(state)
@@ -704,6 +729,8 @@ def qualify(task, request):
 
 
 def layout(task, request):
+    from .workflow_guard import require
+    require(task,'layout')
     from . import agent_runtime as a
     task, state = a._state(task); contract, ledger = _load(task, state); candidate = _candidate(state)
     if not contract or not candidate: raise ValueError('Current component drawing required')
@@ -757,7 +784,15 @@ def layout(task, request):
 def status(task):
     from . import agent_runtime as a
     task, state = a._state(task); contract, ledger = _load(task, state)
-    if not contract: return {'status': 'COMPONENT_CONTRACT_REQUIRED', 'enabled': enabled(state)}
+    if not contract:
+        result={'status':'COMPONENT_CONTRACT_REQUIRED','enabled':enabled(state)}
+        from .workflow_guard import enabled as controlled
+        if controlled(state):
+            from .incremental_contract import source_phase,load,visible_counts
+            phase=source_phase(task,state)[0] if not state.get('source_feature_observation') else 'bind_chunk'
+            result.update(execution_policy=state['execution_policy'],phase=phase,coverage=visible_counts(load(task,state)),
+                next_action='next '+str(task),acceptance=False)
+        return result
     refresh(task, state, contract, ledger, _candidate(state))
     write_json(safe_path(task,state['component_workflow']['ledger_path']),ledger)
     return {'schema': VERSION, 'status': 'COMPONENT_WORKFLOW', 'source_hash': state['source']['sha256'],
@@ -882,7 +917,8 @@ def next_action(task, state, candidate=None):
         return {'status':'WORK_PACKET','packet':packet}
     final=ledger.get('final_result')
     if not ledger['final_dirty'] and final and read_json(_resource(task,final)).get('status')=='ACCEPTED':
-        return {'status':'ACCEPTED','action':'quality-loop export','report':final}
+        from .workflow_guard import enabled as controlled
+        return {'status':'ACCEPTED','action':'export' if controlled(state) else 'quality-loop export','report':final}
     from .component_actions import available
     ranked=rank_actions(available(contract,ledger,candidate))
     if ranked:
@@ -976,6 +1012,8 @@ def program_checks(task,state,candidate,contract,row):
 
 
 def review(task,request):
+    from .workflow_guard import require
+    require(task,'review')
     from .component_final import observe
     return observe(task,request)
 
@@ -1018,6 +1056,8 @@ def export(task,output=None,**options):
 
 
 def fit(task,request):
+    from .workflow_guard import require
+    require(task,'fit')
     from .component_fit import fit as fit_local
     if not request.get('components'):return fit_local(task,request)
     from .component_batch import fit_batch
@@ -1025,6 +1065,11 @@ def fit(task,request):
 
 
 def advance(task,request=None):
+    from .workflow_guard import finite_writer
+    with finite_writer(task):return _advance(task,request)
+
+
+def _advance(task,request=None):
     from . import agent_runtime as a
     from .component_actions import available
     request=request or {};limit=request.get('max_actions',policy()['default_actions_per_advance'])
@@ -1078,6 +1123,14 @@ def submit_result(task,result,packet):
     kind=packet['kind'];request=result.get('component_request',result.get('request'))
     if not isinstance(request,dict): raise ValueError('Submit an explicit component_request with the packet')
     if kind=='component_contract_source':
+        from .workflow_guard import enabled as controlled
+        from . import agent_runtime as a
+        task,state=a._state(task)
+        if controlled(state) and packet.get('incremental'):
+            if request.get('operation') not in packet['incremental']['allowed_operations']:
+                raise ValueError('Submit the current incremental operation; retain all prior chunks')
+            from .incremental_contract import submit as staged_submit
+            return staged_submit(task,request)
         if packet['target']=='source_features':
             from .component_source_features import observe
             return observe(task,request)
@@ -1158,6 +1211,9 @@ def guard_changes(task,state,scene,allowed,revision_components=()):
 
 
 def dispatch(task, operation, request=None):
+    if operation not in ('status','export','advance'):
+        from .workflow_guard import require
+        require(task,operation)
     if request and any(str(key).startswith('_') for key in request):
         raise ValueError('Private transaction fields are not public workflow inputs')
     if operation=='observe_source':
