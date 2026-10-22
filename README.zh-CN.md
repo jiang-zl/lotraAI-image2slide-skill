@@ -2,10 +2,11 @@
 
 
 <!-- workflow-v137:start -->
-1.37.2 仍是可移植的 skill：通过项目内 `start → next → submit` 工作包、分批原图观察/绑定、
+1.37.3 仍是可移植的 skill：通过项目内 `start → next → submit` 工作包、分批原图观察/绑定、
 完整质量验收和正式导出重建 PPT。分批检查点不代表通过；原生构建稿不代表成品。
 交付前运行 `delivery-check` 验证当前任务和最终 PPTX 字节。无需更换 harness、
 常驻服务或额外模型密钥。可选检查脚本仅供接入方调用，skill 不控制第三方回复。
+1.37.3 修复字体改绑授权、Windows 字体提交恢复和逐 run／单元格字体校验；保留原有原图、质量与交付验收。
 <!-- workflow-v137:end -->
 
 优先使用通过实际能力检查的本地 PowerPoint／WPS，LibreOffice 作为可选回退。最终文件执行真实导出与保存检查；保存目录可自选，默认项目目录。复用 runtime 1.14.0 二进制；WPS／macOS 必须由对应实机资格检查确认。
@@ -13,9 +14,9 @@
 
 
 
-**当前发布版本：1.37.2** · 开发／默认分支：`dev` · 版本分支：`1.37.2` · 正式标签：`v1.37.2`
+**当前发布版本：1.37.3** · 开发／默认分支：`dev` · 版本分支：`1.37.3` · 正式标签：`v1.37.3`
 
-当前 `dev` 与 `1.37.2` 均对应已发布的 1.37.2。分支统一使用 `dev` 或 `X.Y.Z`；正式标签使用 `vX.Y.Z`，不增加其他后缀。
+当前 `dev` 与 `1.37.3` 均对应已发布的 1.37.3。分支统一使用 `dev` 或 `X.Y.Z`；正式标签使用 `vX.Y.Z`，不增加其他后缀。
 
 
 **将科研参考图重建为分层、可编辑的 PowerPoint。**
@@ -41,7 +42,7 @@ Codex 调用维护好的安装程序，按平台准备 Python、依赖和 OCR，
 如果已有完整 ZIP，提供文件或本地绝对路径，再发送：
 
 ~~~text
-请用提供的 lotraAI-image2slide-v1.37.2-bundle.zip 在当前项目安装或更新 Image2Slide。
+请用提供的 lotraAI-image2slide-v1.37.3-bundle.zip 在当前项目安装或更新 Image2Slide。
 ~~~
 
 运行资源和私有任务状态保存在项目 `.lotraAI-build`。手动命令与平台要求见[安装说明](docs/installation.zh-CN.md)，完整包获取方式见[下载说明](docs/download.zh-CN.md)。
@@ -144,7 +145,7 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 
 任务中断后，在同一个工作项目中要求继续原来的任务。保留原图和 `.lotraAI-build`，具体操作见[使用指南](docs/usage.zh-CN.md)。
 
-## v1.37.2
+## v1.37.3
 
 本版增加原图线类契约，独立检查保存后的路线、转折、起终点、标记、线型、接触关系和拓扑。每条线都有当前实渲染证据和定位视觉复核，所有疑点需要放大证据并明确闭合。清晰对象在常规检查充分后结束，证据不足时只深入相关对象；不按模型类型选择检查，也不降低质量要求。详见[证据驱动工作流](skills/lotra-image2slide-skill/references/workflow-v1372.md)。空间重建继续沿用 workflow 1.35.2。
 
@@ -162,8 +163,8 @@ skill 包内也提供 `scripts/install-runtime.ps1` 和 `scripts/install-runtime
 | [安装](docs/installation.zh-CN.md) | 自动安装、差分更新、完整包与平台要求 |
 | [使用](docs/usage.zh-CN.md) | 图片重建、半成品导入与恢复任务 |
 | [案例](docs/examples/README.md) | 原图、重建截图与部件细节 |
-| [工作流](skills/lotra-image2slide-skill/references/workflow-v1352.md) | 1.37.2 的重建流程与复用规则 |
-| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.37.2 的完整主载荷 |
+| [工作流](skills/lotra-image2slide-skill/references/workflow-v1352.md) | 1.37.3 的重建流程与复用规则 |
+| [skill 源码](skills/lotra-image2slide-skill/SKILL.md) | 当前 v1.37.3 的完整主载荷 |
 | [来源与许可](NOTICE.md) | 项目源码、第三方组件和案例素材 |
 
 需要反馈时，请描述系统、产品版本、具体操作和相关诊断；按需提供经过检查的原图或片段。项目内的私有任务数据由你管理。

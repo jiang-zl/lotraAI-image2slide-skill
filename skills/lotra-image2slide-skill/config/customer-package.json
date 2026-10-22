@@ -467,8 +467,8 @@
   "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
   "publication_revision": 1,
   "release_status": "CURRENT_HOST_VALIDATION_REQUIRED",
-  "runtime_regressions": "Current source-line contracts, independent native/render evidence, located review and adaptive producer checks, plus retained task/delivery/installation gates; see docs/v1.37.2/Validation-report.md",
+  "runtime_regressions": "Current font revision/locking/run binding, retained source-line, task, delivery and installation checks; see docs/v1.37.3/Validation-report.md",
   "schema": "lotra-customer-package-1",
   "verification_policy": "evidence-checks-1.37.2",
-  "version": "1.37.2"
+  "version": "1.37.3"
 }

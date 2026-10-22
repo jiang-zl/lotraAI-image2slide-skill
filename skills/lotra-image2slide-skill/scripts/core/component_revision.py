@@ -316,6 +316,7 @@ def edit_native(task,request):
            'repair_phase_saved':sorted(selected) if contract.get('workflow_version') in ('1.35.1','1.35.2') else [],
           'consume_structural_grant':bool(structural and selected<=set(structural['components'])),
           'repair_batch_status':'RECHECK_REQUIRED' if ledger.get('repair_batch') else None}
-    saved=construct(task,state,scene,candidate,allowed,{'kind':'component_scoped_repair','components':sorted(selected),'post_save':post})
+    saved=construct(task,state,scene,candidate,allowed,{'kind':'component_scoped_repair','components':sorted(selected),
+        'font_revision_grants':copy.deepcopy(grants),'post_save':post})
     # The saved journal owns status/grant transitions, including a font/provider pause.
     return {'status':'LOCAL_REPAIR_SAVED' if saved else 'FONT_BINDING_REQUIRED','candidate':saved,'whole_audit_executed':False}

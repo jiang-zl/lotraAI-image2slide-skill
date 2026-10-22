@@ -133,6 +133,17 @@ def deliver_read(task, ref, request, result, *, fresh=False):
     data = canonical(result)
     with index(task) as db:
         epoch = _epoch(db)
+        # A bounded selector's exact returned dependencies inherit this already
+        # authorized frozen parent's task/source scope. Do not scan unselected
+        # siblings, follow arbitrary paths, or grant stale/missing byte claims.
+        # Do this before a cache-hit abbreviation: an earlier read may predate
+        # delivery of a child's lease, while the frozen result remains exact.
+        for child in references(result):
+            try:child_file=safe_path(task,child['path'])
+            except ValueError:continue
+            if child_file.is_file() and digest(child_file)==child['sha256']:
+                db.execute('INSERT OR REPLACE INTO leases VALUES(?,?,?,?)',
+                    (child['path'],child['sha256'],state['task_id'],state['source']['sha256']))
         old = db.execute('SELECT * FROM reads WHERE key=? AND epoch=?', (key, epoch)).fetchone()
         if old and old['content_hash'] != identity(result):
             raise ValueError('Same frozen selector produced inconsistent data')

@@ -1197,16 +1197,22 @@ def next_packet(task, configuration=None):
         pending=state['font_pending_candidate'];ref=pending['scene']
         if digest(_path(task,ref['path']))!=ref['sha256']:raise ValueError('Pending source font scene changed')
         scene=read_json(_path(task,ref['path']))
-        font_contract.auto_bind(task,state,scene)
+        working={**font_contract.pending_state(state),'font_contract':copy.deepcopy(font_contract.pending_state(state).get('font_contract',{}))}
+        font_contract.auto_bind(task,working,scene,persist=False)
+        if working.get('font_contract'):pending['staged_font_contract']=copy.deepcopy(working['font_contract'])
         _save(task,state)
-        reading=font_contract.packet(task,state,scene)
+        reading=font_contract.packet(task,working,scene)
         if reading:
             packet=_packet(task,state,'font_binding','source_fonts',
                 'Bind original/user font intent to real resources before drawing; do not replace an exact family with an available style peer.',extra=reading)
             return {'status':'WORK_PACKET','task':str(task),'packet':packet}
         from .workflow_guard import finite_writer
+        reason=copy.deepcopy(pending['reason'] or {})
+        if pending.get('staged_font_contract'):
+            scene=font_contract.bind_scene(task,working,scene)
+            reason.setdefault('post_save',{}).setdefault('state_updates',{})['font_contract']=copy.deepcopy(working['font_contract'])
         with finite_writer(task):
-            _candidate(task,state,scene,baseline=pending['baseline'],allowed=pending['allowed'],reason=pending['reason'],
+            _candidate(task,state,scene,baseline=pending['baseline'],allowed=pending['allowed'],reason=reason,
                        transaction=read_json(_path(task,pending['transaction_path'])) if pending.get('transaction_path') else None)
         if not state.get('objectives',{}).get('component_first'):_save(task,state)
         # Component constructor owns its repository CAS; reload on the recursive next call.
@@ -2214,6 +2220,10 @@ def _submit_current(task,state,packet,result):
             if digest(_path(task,ref['path']))!=ref['sha256']:raise ValueError('Pending source font scene changed')
             scene=read_json(_path(task,ref['path']))
             requested={r['id'] for r in packet['requests']}
+            if result.get('font_revision_decision'):
+                if not state.get('objectives',{}).get('component_first'):raise ValueError('Located font redecision requires the component workflow')
+                if any(result.get(k) for k in ('font_bindings','font_samples','font_constraints')):raise ValueError('Submit a font redecision separately from binding changes')
+                return font_contract.retain_revision_decision(task,state,scene,packet,result['font_revision_decision'])
             if any(v.get('request_id') not in requested for v in result.get('font_bindings',[])):
                 raise ValueError('Font response expands beyond this bounded work packet')
             if result.get('font_samples'):
@@ -2223,7 +2233,12 @@ def _submit_current(task,state,packet,result):
                 from .font_collection import store_constraints
                 if set(result['font_constraints'])-requested:raise ValueError('Font narrowing escaped the current request batch')
                 store_constraints(task,state,scene,result['font_constraints'])
-            if result.get('font_bindings'):font_contract.bind(task,state,scene,result['font_bindings'])
+            if result.get('font_bindings'):
+                if state.get('objectives',{}).get('component_first'):
+                    working={**font_contract.pending_state(state),'font_contract':copy.deepcopy(font_contract.pending_state(state).get('font_contract',{}))}
+                    font_contract.bind(task,working,scene,result['font_bindings'],persist=False)
+                    pending['staged_font_contract']=copy.deepcopy(working['font_contract'])
+                else:font_contract.bind(task,state,scene,result['font_bindings'])
             elif not (result.get('font_samples') or result.get('font_constraints')):
                 raise ValueError('Submit original glyph samples, source-supported narrowing or explicit font bindings')
         elif kind == 'rule_coverage_source':

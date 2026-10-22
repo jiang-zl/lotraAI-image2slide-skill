@@ -20,6 +20,53 @@ CT = 'http://schemas.openxmlformats.org/package/2006/content-types'
 FONT_REL = R+'/font'
 
 
+class FontCommitPending(PermissionError):
+    """A verified owned font stage can be committed after its Windows lock clears."""
+    def __init__(self,record,cause):
+        self.record=Path(record)
+        super().__init__('FONT_COMMIT_PENDING: release the existing file handle, then resume the owned font stage: '+str(record)+'; '+str(cause))
+
+
+def _commit_identity(bindings):
+    return identity([{'request':b.get('request'),'family':b['family'],
+        'resource':{k:b['resource'][k] for k in ('id','file_sha256','face_index')}} for b in bindings])
+
+
+def _commit_record(pptx,temporary,bindings,operation):
+    marker=temporary.with_suffix('.font-commit.json')
+    expected={'schema':'lotra-font-commit-1','operation':operation,'target':pptx.name,
+              'temporary':temporary.name,'bindings_hash':_commit_identity(bindings)}
+    if temporary.is_symlink() or marker.is_symlink():raise ValueError('FONT_COMMIT_CONFLICT: redirected font stage')
+    if marker.exists():
+        record=read_json(marker)
+        if any(record.get(k)!=v for k,v in expected.items()):raise ValueError('FONT_COMMIT_CONFLICT: different font stage owner or intent')
+        return marker,record
+    if temporary.exists():raise FileExistsError('Unregistered font stage retained for inspection: '+str(temporary))
+    record={**expected,'phase':'WRITING','input_sha256':digest(pptx)}
+    with marker.open('x',encoding='utf-8',newline='\n') as file:
+        __import__('json').dump(record,file,sort_keys=True)
+    return marker,record
+
+
+def _finish_commit(pptx,temporary,marker,record,bindings,max_font_bytes):
+    if record.get('phase') not in ('READY','COMMITTED'):
+        raise ValueError('FONT_COMMIT_RECOVERY_REQUIRED: incomplete owned font stage retained: '+str(marker))
+    current=digest(pptx)
+    if not temporary.exists() and current==record.get('staged_sha256'):
+        return dict(record['result'],pptx_sha256=current)
+    if current!=record['input_sha256'] or not temporary.is_file() or digest(temporary)!=record.get('staged_sha256'):
+        raise ValueError('FONT_COMMIT_CONFLICT: source or staged bytes changed; preserve both files')
+    if record['result']['font_bytes']>max_font_bytes:raise ValueError('FONT_BUDGET_PENDING: retained stage exceeds the current font budget')
+    from .font_retention import verify_package
+    checked=[b for b in bindings if b['resource'].get('outline')=='truetype' and not b['resource'].get('variable')] if record['operation']=='direct' else bindings
+    with ZipFile(temporary) as completed:verify_package(completed,checked)
+    # No source, output or validation ZIP remains open at the replacement boundary.
+    try:temporary.replace(pptx)
+    except PermissionError as error:raise FontCommitPending(marker,error) from error
+    record['phase']='COMMITTED';write_json(marker,record)
+    return dict(record['result'],pptx_sha256=digest(pptx))
+
+
 def eot(face):
     from fontTools.ttLib import TTFont
     if digest(face['path']) != face['file_sha256']:
@@ -63,6 +110,12 @@ def embed(pptx, bindings, max_font_bytes=64*1024*1024):
     faces = {b['resource']['id']: b['resource'] for b in bindings}
     if not faces:
         return {'status': 'NO_TEXT_FONTS', 'font_count': 0}
+    pptx=Path(pptx);temporary=pptx.with_name(pptx.stem+'.fonts-pending.pptx')
+    marker=temporary.with_suffix('.font-commit.json')
+    if marker.exists() or temporary.exists():
+        marker,record=_commit_record(pptx,temporary,bindings,'direct')
+        return _finish_commit(pptx,temporary,marker,record,bindings,max_font_bytes)
+    input_hash=digest(pptx)
     payloads={};pending=[]
     for key,face in faces.items():
         if face.get('outline')!='truetype' or face.get('variable'):
@@ -131,28 +184,36 @@ def embed(pptx, bindings, max_font_bytes=64*1024*1024):
                         'face_index': face['face_index'], 'part': part, 'fontdata_bytes': len(data)})
     for name, tree in (('ppt/presentation.xml', presentation), (relname, rels), ('[Content_Types].xml', types)):
         content[name] = E.tostring(tree, xml_declaration=True, encoding='UTF-8', standalone=True)
-    temporary = pptx.with_name(pptx.stem+'.fonts-pending.pptx')
-    if temporary.exists():
-        raise FileExistsError(temporary)
+    if digest(pptx)!=input_hash:raise ValueError('FONT_COMMIT_CONFLICT: source changed before font staging')
+    marker,commit=_commit_record(pptx,temporary,bindings,'direct')
     import shutil
-    with ZipFile(pptx) as source,ZipFile(temporary, 'w', compression=ZIP_DEFLATED) as output:
+    with ZipFile(pptx) as source,ZipFile(temporary, 'x', compression=ZIP_DEFLATED) as output:
         for info in source.infolist():
             if info.filename in content:output.writestr(info,content.pop(info.filename))
             else:
                 with source.open(info) as reader,output.open(info,'w') as file:
                     shutil.copyfileobj(reader,file,1024*1024)
         for name,data in content.items():output.writestr(name,data)
-    temporary.replace(pptx)
-    return {'status': 'FONT_EMBEDDING_PROVIDER_REQUIRED' if pending else 'EMBEDDED_FULL_EDITABLE_FONTS',
+    result={'status': 'FONT_EMBEDDING_PROVIDER_REQUIRED' if pending else 'EMBEDDED_FULL_EDITABLE_FONTS',
             'pending':pending,'font_count':len(payloads),'fonts':records,
             'font_bytes': sum(map(len, payloads.values())), 'pptx_sha256': digest(pptx),
             'scope': 'Serialized font resources; receiver application behavior and visual appearance are separate evidence'}
+    if digest(pptx)!=commit['input_sha256']:raise ValueError('FONT_COMMIT_CONFLICT: source changed while embedding')
+    commit.update(phase='READY',staged_sha256=digest(temporary),result=result);write_json(marker,commit)
+    return _finish_commit(pptx,temporary,marker,commit,bindings,max_font_bytes)
 
 
 def transfer_provider(original,provider,bindings,max_font_bytes=64*1024*1024):
     """Copy only requested embedded font resources from a staged Office save."""
     import shutil
     original,provider=map(Path,(original,provider))
+    temporary=original.with_name(original.stem+'.provider-pending.pptx')
+    marker=temporary.with_suffix('.font-commit.json')
+    if marker.exists() or temporary.exists():
+        marker,record=_commit_record(original,temporary,bindings,'provider')
+        if record.get('result',{}).get('provider_sha256')!=digest(provider):raise ValueError('FONT_COMMIT_CONFLICT: provider changed')
+        return _finish_commit(original,temporary,marker,record,bindings,max_font_bytes)
+    input_hash=digest(original)
     expected={b['family'] for b in bindings}
     def slot(face):return 'boldItalic' if face['italic'] and face['weight']>=600 else 'italic' if face['italic'] else 'bold' if face['weight']>=600 else 'regular'
     expected_slots={(b['family'],slot(b['resource'])) for b in bindings}
@@ -250,9 +311,8 @@ def transfer_provider(original,provider,bindings,max_font_bytes=64*1024*1024):
         main.set('embedTrueTypeFonts','1');main.set('saveSubsetFonts','0')
         for name,tree in (('ppt/presentation.xml',main),('ppt/_rels/presentation.xml.rels',rels),('[Content_Types].xml',types)):
             changed[name]=E.tostring(tree,xml_declaration=True,encoding='UTF-8',standalone=True)
-        temporary=original.with_name(original.stem+'.provider-pending.pptx')
-        if temporary.exists():raise FileExistsError(temporary)
-        with ZipFile(temporary,'w',compression=ZIP_DEFLATED) as output:
+        marker,commit=_commit_record(original,temporary,bindings,'provider')
+        with ZipFile(temporary,'x',compression=ZIP_DEFLATED) as output:
             for info in source.infolist():
                 if info.filename in changed:output.writestr(info,changed.pop(info.filename))
                 else:
@@ -260,11 +320,13 @@ def transfer_provider(original,provider,bindings,max_font_bytes=64*1024*1024):
             for name,data in changed.items():output.writestr(name,data)
     from .font_retention import verify_package
     with ZipFile(temporary) as completed:verify_package(completed,bindings)
-    temporary.replace(original)
-    return {'status':'EMBEDDED_FULL_EDITABLE_FONTS','font_count':len(expected),'fonts':records,
+    result={'status':'EMBEDDED_FULL_EDITABLE_FONTS','font_count':len(expected),'fonts':records,
             'font_bytes':sum(r['bytes'] for r in records),
             'provider_sha256':digest(provider),'pptx_sha256':digest(original),
             'scope':'Only embedded font parts transferred; native slide content, geometry and text retained byte-for-byte'}
+    if digest(original)!=input_hash:raise ValueError('FONT_COMMIT_CONFLICT: source changed during provider transfer')
+    commit.update(phase='READY',staged_sha256=digest(temporary),result=result);write_json(marker,commit)
+    return _finish_commit(original,temporary,marker,commit,bindings,max_font_bytes)
 
 
 def windows_provider(pptx,output,caps,bindings):

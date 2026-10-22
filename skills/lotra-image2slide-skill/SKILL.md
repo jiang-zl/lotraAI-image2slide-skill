@@ -3,7 +3,7 @@ name: lotra-image2slide-skill
 description: Reconstruct scientific images, optionally continuing a one-shot partial PPT, as faithful native editable slides through the registered task loop and verified final export. Use source-bound features, qualified components, actual renders and complete final review.
 ---
 
-# lotraAI Image2Slide v1.37.2
+# lotraAI Image2Slide v1.37.3
 
 Use this self-contained skill's project-local programs with the current model
 and reasoning. Read `.lotraAI-build/Active-skill.json` for the selected entry and
@@ -97,6 +97,13 @@ scripts retain native bindings. Independent final gates reread saved bytes and
 current evidence. Do not run whole-page review after every local edit. Personal
 reuse transfers source-free constructors, never another original's facts/PASS.
 
+Existing font revisions use the current packet's owner/location/script, prior
+binding hash and authorized source fields. Keep decisions staged until native
+save. A revision blocker returns an evidenced source-decision packet. A verified
+font stage blocked by a Windows file handle resumes through the existing recovery
+packet after the handle closes; preserve its owned files and hashes. Saved font
+checks cover each actual run and populated cell, including mixed Office Math.
+
 Read current packet references as needed: [spatial closure](references/workflow-v1352.md),
 [spatial contracts](references/workflow-v1351.md), [spatial reconstruction](references/workflow-v135.md),
 [source features/surfaces](references/workflow-v134.md), [component schema](references/component-workflow-v132.md),
@@ -108,7 +115,7 @@ PowerPoint/WPS, then declared LibreOffice fallback. Native open/edit/save/reopen
 checks use owned copies. Physical WPS/macOS claims require that host's evidence.
 Installation, native usability, actual rendering and artwork acceptance differ.
 
-Product 1.37.2 adds verification policy `evidence-checks-1.37.2` and retains execution policy `workflow-execution-1.37.0`. Source workflow
+Product 1.37.3 repairs font revision, staged embedding recovery and run binding; it retains verification policy `evidence-checks-1.37.2` and retains execution policy `workflow-execution-1.37.0`. Source workflow
 1.35.2, source-features/spatial 1.35.1, design_revision 8 and runtime resources
 1.14.0 remain independent. Old tasks keep their bindings until explicit migration.
 No performance/token savings or external-art acceptance follows from fixtures,

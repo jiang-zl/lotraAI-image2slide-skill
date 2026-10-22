@@ -30,11 +30,40 @@ All native Scene text/math/cells compile Latin, East Asian and complex-script ty
 
 ## Existing-host resources and cache
 
+For a bound family the current request includes `binding_revision`: its exact
+owner/location/script, prior hash, native fields, source font field and authority
+or blocker. A whole-owner grant covers its own run fonts. A `text_body` write
+requires the retained semantic source grant to cover the specific font field;
+text-only authority never widens to fonts. Keep user locks. Submit the prior
+hash and a located revision reason with the existing original glyph comparison.
+Bindings remain staged until the native journal saves; an unsuccessful batch
+does not replace earlier active bindings. An actual revision blocker accepts
+`font_revision_decision{request_ids,reason,evidence:{path,sha256}}` in its current
+packet, retains the pending plan and returns the affected owners to source work.
+
+Saved font checks resolve each owner/location/script to the actual run or cell,
+verify its literal and family, and reject unbound extra runs. Family membership
+anywhere in an owner cannot qualify another run.
+
+Current bounded managed reads also deliver exact child dependencies returned by
+the selected frozen parent. Follow those current Scene, glyph or measurement
+references with their recorded hashes and all pagination. Unselected siblings,
+changed bytes, another original and paths outside this task do not gain access.
+
 `core.font_resources` reads actual font name/face metadata, file hash, weight/slant, glyph coverage and embedding permission. Common resources are archived before construction in `toolchain/font-collections`; additional eligible selected resources extend that archive. Bound resources also get private immutable snapshots in `.lotraAI-build/toolchain/font-snapshots`; this is not an OS installation or a public font bundle. Resource and EOT caches track input/output identities. Source evidence and current availability remain distinct.
 
 `core.tool_router` stores `.lotraAI-build/toolchain/environment.json` and `font-resources.json`. Windows/WSL, Linux and macOS use their existing directories/configured `font_roots`/`font_dirs`; font and executable changes refresh relevant environment context. An installed Mac PowerPoint discovery is separate from a connected controllable host. Moving a project rebases relative snapshot references; it never aliases one family to another. No recurring GUI probe is required for unchanged resources.
 
 ## Complete fonts in the PPTX
+
+Font package writes retain a private hash-bound commit record. All source/output
+ZIP handles and staged validation handles close before replacement. A Windows
+sharing lock retains the verified stage and unchanged input. The existing native
+recovery packet retries its commit without a new geometry build or another native
+attempt. Source/stage/intent changes, unknown residue and exhausted finite commit
+retries require inspection; no unowned file is deleted or overwritten. The same
+checks cover direct EOT and font-provider transfer, and resume after a completed
+replacement interrupted before its caller saved the next journal transition.
 
 `core.font_embedding` writes complete static TrueType faces (including extracted TTC faces) as PresentationML EOT font parts with full-editable settings. Required faces are deduplicated by actual resource identity, not copied once per textbox. No intentional character subsetting; recipients need complete glyph coverage to edit new text. Ordinary native text/math remains editable, with shape/layout data retained. Private fonts never enter the public skill ZIP.
 

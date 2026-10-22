@@ -201,7 +201,7 @@ def recover(task,request=None):
     if tx['phase'] in ('PLANNED','STAGED'):
         if current_hash!=baseline_hash:
             return {'status':'TRANSACTION_NATIVE_CONFLICT','transaction':tx['id']}
-        if len(tx.get('native_attempts',[]))>=contract['policy'].get('recovery_attempt_limit',3):
+        if not tx.get('font_commit_pending') and len(tx.get('native_attempts',[]))>=contract['policy'].get('recovery_attempt_limit',3):
             return {'status':'RECOVERY_INSPECTION_REQUIRED','transaction':tx['id'],
                     'return':'action=retain_and_redecide, reason, evidence; preserve baseline and incomplete artifacts'}
         if (tx.get('reason') or {}).get('kind')=='component_batch':
@@ -214,7 +214,7 @@ def recover(task,request=None):
         from .component_constructor import construct
         scene=read_json(c._resource(task,tx['planned_scene']))
         candidate=construct(task,state,scene,baseline=tx['baseline'],allowed=tx['allowed'],reason=tx['reason'],transaction=tx)
-        return {'status':'TRANSACTION_NATIVE_RESUMED','candidate':candidate}
+        return {'status':'FONT_COMMIT_PENDING' if not candidate and tx.get('font_commit_pending') else 'TRANSACTION_NATIVE_RESUMED','candidate':candidate}
     if tx['phase'] in ('ADOPTED','CLOSED'):
         phase(task,tx,'CLOSED');ledger['pending_transaction']=None
         with writer(task):c._save_ledger(task,state,ledger,'transaction_closed',{'id':tx['id']})
@@ -269,6 +269,18 @@ def attempt_folder(task,tx):
     from .component_protocol import policy
     attempts=tx.setdefault('native_attempts',[])
     limit=policy().get('recovery_attempt_limit',3)
+    pending=tx.get('font_commit_pending')
+    if pending:
+        if pending['attempt'] not in attempts:raise ValueError('FONT_COMMIT_CONFLICT: unregistered native attempt')
+        if tx.get('font_commit_retries',0)>=limit:raise ValueError('RECOVERY_INSPECTION_REQUIRED: font commit retry budget exhausted; preserve the verified stage')
+        marker=safe_path(task,pending['record']['path'])
+        if digest(marker)!=pending['record']['sha256']:
+            current=read_json(marker)
+            if (current.get('schema')!='lotra-font-commit-1' or current.get('phase')!='COMMITTED' or
+                    identity({k:v for k,v in current.items() if k!='phase'})!=pending.get('commit_identity')):
+                raise ValueError('FONT_COMMIT_CONFLICT: owned commit record changed')
+        phase(task,tx,'STAGED',font_commit_retries=tx.get('font_commit_retries',0)+1)
+        return safe_path(task,pending['attempt'])
     if len(attempts)>=limit:
         raise ValueError('RECOVERY_INSPECTION_REQUIRED: native attempt budget exhausted; partial artifacts retained')
     folder=safe_path(task,tx['path']).parent/('native-attempt-'+str(len(attempts)+1).zfill(3))
@@ -310,6 +322,7 @@ def apply_post_save(task,state,ledger,tx,candidate):
     for key,value in post.get('state_updates',{}).items():
         if key not in ('font_contract','font_collection'):raise ValueError('Unsupported reconstruction post-save state field')
         state[key]=copy.deepcopy(value)
+        if key=='font_contract':write_json(task/'source/font-bindings.json',value)
     token=tx['id']+':'+candidate['pptx']['sha256']
     applied=ledger.setdefault('applied_post_save',[])
     if token in applied:return

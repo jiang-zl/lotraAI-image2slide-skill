@@ -78,3 +78,14 @@ visibility and located visual doubt covered. Missing, invalid, stale or excluded
 checks are never PASS. Preserve existing task policies and independent resource
 versions. Recompute final gates from current bytes and keep all review artifacts
 private. Apply the mandatory per-iteration publication/version/install checks.
+
+## 1.37.3 font revision and Windows commit recovery
+
+Font revisions carry exact owner/location/script authority and prior binding
+hashes. Retain user locks, staged binding adoption and evidenced source redecision.
+Verified owned font stages resume after Windows handles close; retain changed or
+unknown files and finite retries. Saved checks cover every actual text run/cell.
+Product 1.37.3 retains execution 1.37.0, evidence policy 1.37.2, source workflow
+1.35.2, design revision 8, Math 1.35.3 and runtime 1.14.0. Continue the mandatory
+per-iteration version/distribution and Windows/Linux installation checks. Preserve
+old task bindings, customized active installation, originals and private resources.

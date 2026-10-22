@@ -219,7 +219,40 @@ def shape_style(shape,style,kind):
 from .presets import PRESETS
 
 
-def build(scene, base, output):
+def _finish_font_build(scene,output,record):
+    """Resume only a hash-bound saved build; native construction is not repeated."""
+    from .common import read_json
+    from .session import implementation_identity
+    from .font_contract import finalize,guard_saved
+    from .font_embedding import FontCommitPending
+    from .office_compatibility import validate as compatible
+    if record['scene_hash']!=identity(scene) or record['implementation']!=implementation_identity():
+        raise ValueError('FONT_BUILD_CONFLICT: retained build intent or implementation changed')
+    temporary=output.with_suffix('.pending.pptx');proof=output.with_suffix('.font-build.json')
+    marker=temporary.with_name(temporary.stem+'.fonts-pending.font-commit.json')
+    stage=read_json(marker) if marker.is_file() else {}
+    if output.exists():
+        mapping=output.with_suffix('.mapping.json')
+        if mapping.is_file():
+            completed=read_json(mapping)
+            if completed['scene_hash']!=identity(scene) or completed['pptx_hash']!=digest(output):raise ValueError('FONT_BUILD_CONFLICT: completed build changed')
+            return completed
+        if temporary.exists() or digest(output)!=stage.get('staged_sha256'):raise ValueError('FONT_BUILD_CONFLICT: unregistered output')
+        fonts={'binding':guard_saved(scene,output),'embedding':dict(stage['result'],pptx_sha256=digest(output))}
+    else:
+        if not temporary.is_file() or digest(temporary) not in (record['raw_pptx_sha256'],stage.get('staged_sha256')):
+            raise ValueError('FONT_BUILD_CONFLICT: retained native bytes changed')
+        fonts=finalize(scene,temporary);compatible(temporary)
+        try:os.replace(temporary,output)
+        except PermissionError as error:raise FontCommitPending(proof,error) from error
+    compatible(output)
+    completed={k:v for k,v in record.items() if k!='raw_pptx_sha256'}
+    completed.update(pptx_hash=digest(output),font_delivery=fonts)
+    write_json(output.with_suffix('.mapping.json'),completed)
+    return completed
+
+
+def build(scene, base, output,*,resume=False):
     from .workflow_guard import require_build
     require_build(base,output)
     from .semantic_curves import compile_scene as compile_curves
@@ -228,6 +261,11 @@ def build(scene, base, output):
     scene=compile_scene(scene)
     from .frame_plan import compile_scene as compile_frames
     scene=compile_frames(scene,base,scene.get('curve_write_scope'))
+    output=Path(output)
+    proof=output.with_suffix('.font-build.json')
+    if resume and proof.is_file():
+        from .common import read_json
+        with writer(output.parent):return _finish_font_build(scene,output,read_json(proof))
     import time,faulthandler
     output=Path(output)
     begin=time.monotonic()
@@ -514,13 +552,12 @@ def build(scene, base, output):
         prs.save(tmp)
         from .candidate_cost import compact_construction
         storage=compact_construction(tmp)
-        from .font_contract import finalize as finalize_fonts
-        fonts=finalize_fonts(scene,tmp)
-        from .office_compatibility import validate as office_compatibility
-        office_compatibility(tmp)
-        os.replace(tmp, output)
-        record = {"implementation_version":VERSION,"implementation":implementation,"scene_hash": identity(scene), "scene_revision": scene["revision"], "pptx_hash": digest(output), "objects": mapping,"font_delivery":fonts,"construction_storage":storage}
-        write_json(output.with_suffix(".mapping.json"), record)
+        retained={"implementation_version":VERSION,"implementation":implementation,"scene_hash":identity(scene),
+            "scene_revision":scene['revision'],"objects":mapping,"construction_storage":storage,"raw_pptx_sha256":digest(tmp)}
+        if proof.exists():raise FileExistsError(proof)
+        write_json(proof,retained)
+        try:record=_finish_font_build(scene,output,retained)
+        finally:faulthandler.cancel_dump_traceback_later();stack.close()
     progress('saved')
     faulthandler.cancel_dump_traceback_later();stack.close()
     return record

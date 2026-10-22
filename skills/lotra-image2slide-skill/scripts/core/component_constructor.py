@@ -47,12 +47,31 @@ def construct(task,state,scene,baseline=None,allowed=None,reason=None,transactio
     affected=set(allowed or (owner for row in contract['components'] for owner in row['owners']))
     display_required=any(row['route']!='fixed_parameters' and affected.intersection(row['owners']) for row in contract['components'])
     phase(task,tx,'STAGED',display_required=display_required)
-    if baseline:
-        from .native_commit import donor_scene,merge_native
-        donor=folder/'donor.pptx';construction=build(donor_scene(scene,allowed),task,donor)
-        merge_native(c._resource(task,baseline['pptx']),donor,allowed,staged)
-    else:construction=build(scene,task,staged)
-    font_delivery=fonts.finalize(scene,staged) if baseline else construction['font_delivery']
+    from .font_embedding import FontCommitPending
+    resume=bool(tx.get('font_commit_pending'))
+    try:
+        if baseline:
+            from .native_commit import donor_scene,merge_native
+            donor=folder/'donor.pptx'
+            construction=build(donor_scene(scene,allowed),task,donor,**({'resume':True} if resume else {}))
+            if resume and staged.exists():
+                from .common import digest
+                proof=read_json(staged.with_suffix('.commit.json'))
+                marker=staged.with_name(staged.stem+'.fonts-pending.font-commit.json')
+                record=read_json(marker) if marker.is_file() else {}
+                if (proof['baseline']!=baseline['pptx']['sha256'] or proof['donor']!=digest(donor) or
+                        digest(staged) not in (proof['output'],record.get('staged_sha256'))):
+                    raise ValueError('FONT_COMMIT_CONFLICT: retained native merge changed')
+            else:merge_native(c._resource(task,baseline['pptx']),donor,allowed,staged)
+        else:construction=build(scene,task,staged,**({'resume':True} if resume else {}))
+        font_delivery=fonts.finalize(scene,staged) if baseline else construction['font_delivery']
+    except FontCommitPending as error:
+        commit_record=read_json(error.record)
+        phase(task,tx,'STAGED',font_commit_pending={'attempt':folder.relative_to(task).as_posix(),'record':c._ref(task,error.record),
+            'commit_identity':identity({k:v for k,v in commit_record.items() if k!='phase'}),'reason':str(error)})
+        state.update(stage='review',packet=None);state.pop('font_pending_candidate',None);a._save(task,state)
+        return None
+    tx['font_commit_pending']=None
     os.replace(staged,file)
     scene_file=folder/'scene.json';write_json(scene_file,scene)
     candidate={'revision':number,'scene':a._file(task,scene_file),'pptx':a._file(task,file),
