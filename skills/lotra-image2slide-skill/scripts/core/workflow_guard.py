@@ -56,7 +56,13 @@ def require(task,operation):
     if grant.get('mode')=='packet':
         kind,target=grant.get('kind'),grant.get('target')
         if operation=='original observation' and (kind!='component_contract_source' or target!='source_features'):
-            blocked('original observation requires the current source-feature packet')
+            from .incremental_contract import source_correction_active
+            from .component_source_features import correction_active
+            if not (kind=='component_contract_source' and target=='component_contract' and source_correction_active(task) or
+                    kind=='component_local_work' and grant.get('operation')=='source_or_measurement_decision' and correction_active(task)):
+                blocked('original observation requires the current source-feature packet or its validated pre-bind correction')
+        if operation=='source observation correction' and not (kind=='component_local_work' and grant.get('operation')=='source_or_measurement_decision'):
+            blocked('original feature correction requires the current focused source decision')
         if operation=='bind' and not (kind=='component_contract_source' and target in ('component_contract','component_migration') or
                 kind in ('component_user_mapping','component_repair_work') or kind=='component_local_work' and grant.get('operation')=='source_or_measurement_decision'):
             blocked('binding requires the current source-contract packet')

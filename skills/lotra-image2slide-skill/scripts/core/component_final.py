@@ -97,6 +97,7 @@ def audit(task,state=None,candidate=None,persist=True):
     package=package_gate(scene,pptx,task)
     from . import font_contract as fonts
     try:
+        if fonts.missing(scene,state):raise ValueError('FONT_PREPARATION_REQUIRED: current original style/identity obligations are incomplete')
         fonts.compile_scene(scene)
         font_binding=fonts.guard_saved(scene,pptx)
         font_binding=dict(font_binding,passed=True)

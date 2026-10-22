@@ -32,7 +32,8 @@ def implementation():
              'curve_functions','problem_control','knowledge_flow','component_source_features','native_surfaces','surface_metrics',
              'spatial_frames','spatial_checks','spatial_constructors','spatial_observation',
              'spatial_footprints','spatial_fit','spatial_repair','presentation_backend','office_compatibility','export_destination','libreoffice_backend',
-              'workflow_guard','incremental_contract','workflow_delivery','retry_context','appearance_metrics','line_contracts','line_geometry','line_verification','line_review')
+              'workflow_guard','incremental_contract','workflow_delivery','retry_context','appearance_metrics','line_contracts','line_geometry','line_verification','line_review',
+              'font_resolution','font_selection','font_migration','line_preflight')
     files={name:digest(ROOT/'scripts/core'/(name+'.py')) for name in names}
     for name in ('config/component-workflow.json','config/font-collections.json','schemas/component-contract.schema.json','scripts/sci_rebuild.py','scripts/check_before_finish.py'):
         files[name]=digest(ROOT/name)
@@ -639,13 +640,17 @@ def evaluate(task, request=None):
                       'route': row['route']}
         else:
             result = {'passed': False, 'status': 'SPECIALIST_OR_INSTANCE_EVIDENCE_REQUIRED', 'route': row['route']}
+        blockers=[]
+        if not result['passed']:blockers.append({'status':result.get('status','LOCAL_TARGETS_UNMET'),'channel':'component_native'})
         if line_batch is not None and any(f.get('line') for f in row.get('source_features',[])):
             ids={f['id'] for f in row['source_features'] if f.get('line')}
             local={name:value for name,value in line_batch['lines'].items() if name in ids}
             result['source_lines_native']={**line_batch,'lines':local,
                 'passed':line_batch['census']['passed'] and all(v['passed'] for v in local.values())}
             result['passed']=result['passed'] and result['source_lines_native']['passed']
-            if not result['source_lines_native']['passed']:result['status']='SOURCE_LINE_CONSTRAINT_REQUIRED'
+            if not result['source_lines_native']['passed']:
+                blockers.append({'status':'SOURCE_LINE_CONSTRAINT_REQUIRED','channel':'source_lines_native'})
+                result.setdefault('status','SOURCE_LINE_CONSTRAINT_REQUIRED')
         if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2'):
             from .component_source_features import source_check
             source_basis = source_check(row)
@@ -654,16 +659,21 @@ def evaluate(task, request=None):
                 'native_consistency':result.get('native_checks',{}).get('status')=='PASS' if row['route']=='local_fit' else result.get('passed',False),
                 'appearance':'DEFERRED_TO_ASSEMBLY_AND_FINAL' if row['route']=='fixed_parameters' else result.get('passed',False)}
             result['passed'] = result['passed'] and source_basis['passed']
-            if not source_basis['passed']: result['status'] = source_basis['status']
+            if not source_basis['passed']:
+                blockers.append({'status':source_basis['status'],'channel':'source_basis'})
+                result.setdefault('status',source_basis['status'])
         if contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2'):
             from .spatial_checks import evaluate as spatial_evaluate
             spatial = spatial_evaluate(task, state, candidate, contract, row)
             result['spatial_native'] = spatial
             result['passed'] = result['passed'] and spatial['passed']
             if not spatial['passed']:
+                blockers.append({'status':'MEASUREMENT_REQUIRED' if not spatial['valid'] else 'SPATIAL_RELATIONS_UNMET','channel':'spatial_native'})
                 if not spatial['valid']:result['status']='MEASUREMENT_REQUIRED'
                 elif result.get('status') not in ('HARD_CONSTRAINT_FAILED','SOURCE_AMBIGUITY_REQUIRED','SPATIAL_SOURCE_DECISION_REQUIRED'):
                     result['status']='SPATIAL_RELATIONS_UNMET'
+        result['blockers']=blockers
+        record['blockers']=copy.deepcopy(blockers)
         record['current'] = {'signature': sig, 'result': result, 'candidate_hash': candidate['pptx']['sha256']}
         record['history'].append(copy.deepcopy(record['current']))
         if result['passed']:
@@ -937,11 +947,22 @@ def next_action(task, state, candidate=None):
         from .workflow_guard import enabled as controlled
         return {'status':'ACCEPTED','action':'export' if controlled(state) else 'quality-loop export','report':final}
     from .component_actions import available
-    ranked=rank_actions(available(contract,ledger,candidate))
+    actions=available(contract,ledger,candidate)
+    unknown=[row for row in actions if row['operation']=='diagnostic_stop']
+    if unknown:
+        return {'status':'COMPONENT_STATE_DIAGNOSIS_REQUIRED','components':[
+            {'id':row['id'],'status':row['status'],'blockers':row.get('blockers',[])} for row in unknown],
+            'automatic':False,'acceptance':False,'reason':'Unknown producer state has no defined action; retain current bytes and diagnose the state transition.'}
+    ranked=rank_actions(actions)
     if ranked:
         ranked[0]['component']=component_row(task,state,contract,ranked[0]['id'])
     if ranked:
         chosen = ranked[0]; component = chosen['component']
+        if chosen['operation']=='diagnostic_stop':
+            return {'status':'COMPONENT_STATE_DIAGNOSIS_REQUIRED','component':chosen['id'],
+                'observed_status':chosen['status'],'blockers':chosen.get('blockers',[]),
+                'reason':'Unknown producer state has no defined action; retain current bytes and diagnose the state transition.',
+                'automatic':False,'acceptance':False}
         from .component_batch import compatible
         batch=compatible(ranked,chosen,contract['policy']['max_actions_per_advance']) if chosen['operation'] in ('fit','commit','instantiate') else [chosen]
         batch_ids=chosen.get('repair_components') or [item['id'] for item in batch] or [chosen['id']]
@@ -1119,7 +1140,9 @@ def _advance(task,request=None):
         if state.get('component_import_pending'):break
         refresh(task,state,contract,ledger,candidate)
         if state.get('stage') in ('host_render','font_delivery','font_binding') or state.get('font_pending_candidate'):break
-        ranked=rank_actions(available(contract,ledger,candidate))
+        actions=available(contract,ledger,candidate)
+        if any(row['operation']=='diagnostic_stop' for row in actions):break
+        ranked=rank_actions(actions)
         if ranked:
             ranked[0]['component']=component_row(task,state,contract,ranked[0]['id'])
         executable=[row for row in ranked if row['executable']]
@@ -1208,6 +1231,17 @@ def submit_result(task,result,packet):
             request=dict(request)
             request.setdefault('scene',decided)
             request.setdefault('rebuild_owners',packet['component_action'].get('rebuild_owners',[]))
+        if operation=='source_or_measurement_decision' and expected_operation!=operation:
+            # This alternative is already allowed above and remains within the
+            # exact selected component. Carry that actual semantic operation to
+            # the existing source grant instead of retaining an evaluate/edit
+            # grant which makes the advertised correction unreachable.
+            from . import agent_runtime as a
+            from .workflow_guard import packet_writer
+            _,state=a._state(task)
+            selected_packet={**packet,'submit_operation':operation}
+            a._event(task,'focused_source_decision_selected',{'packet':packet['packet_id'],'from':expected_operation,'components':selected})
+            with packet_writer(task,state,selected_packet):return dispatch(task,operation,request)
         return dispatch(task,operation,request)
     raise ValueError('Unsupported component packet')
 

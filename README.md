@@ -2,13 +2,13 @@
 
 
 <!-- workflow-v137:start -->
-1.37.3 remains a portable skill: project-local `start → next → submit` packets,
+1.37.4 remains a portable skill: project-local `start → next → submit` packets,
 incremental original observation/binding, complete quality gates and formal export.
 A checkpoint or native build is not an accepted result. Use `delivery-check` for
 the current task and exact final PPTX bytes. No replacement harness, resident
 service or extra model key is required; an optional checker does not control a
 third-party harness's reply.
-1.37.3 fixes font revision authority, Windows font commit recovery and per-run/cell binding checks while retaining complete source, quality and delivery gates.
+1.37.4 preserves text emphasis, resolves complete native font slots, coordinates source-supported font groups, and makes font preparation and line failures finite and recoverable. Existing Windows commit and source-authority protections remain.
 <!-- workflow-v137:end -->
 
 Prefer a qualified local PowerPoint/WPS backend, with optional LibreOffice fallback. Every final file gets actual export/save checks; user-selected output roots default to the project directory. Runtime 1.14.0 binaries are reused. Physical WPS/macOS qualification requires the corresponding host.
@@ -16,9 +16,9 @@ Prefer a qualified local PowerPoint/WPS backend, with optional LibreOffice fallb
 
 
 
-**Current release: 1.37.3** · Development/default branch: `dev` · Version branch: `1.37.3` · Release tag: `v1.37.3`
+**Current release: 1.37.4** · Development/default branch: `dev` · Version branch: `1.37.4` · Release tag: `v1.37.4`
 
-`dev` and `1.37.3` currently contain the released 1.37.3. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
+`dev` and `1.37.4` currently contain the released 1.37.4. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
 
 
 **Reconstruct scientific figures as layered, editable PowerPoint slides.**
@@ -44,7 +44,7 @@ Codex runs the maintained installer, prepares Python, dependencies, OCR and Math
 Already have the complete ZIP? Supply the file or its absolute local path, then send:
 
 ~~~text
-Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.37.3-bundle.zip.
+Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.37.4-bundle.zip.
 ~~~
 
 Runtime resources and private task state stay in the project's `.lotraAI-build` directory. See the [installation guide](docs/installation.md) for manual commands and platform requirements, or the [download guide](docs/download.md) for complete bundles.
@@ -148,7 +148,7 @@ Use $lotra-image2slide-skill to continue rebuilding from this partial PPT, follo
 
 After an interruption, ask the agent to resume the existing task in the same working project. Keep the original and `.lotraAI-build` available. See the [usage guide](docs/usage.md).
 
-## v1.37.3
+## v1.37.4
 
 This release adds source-owned line contracts and independent checks of saved routes, bends, endpoints, markers, stroke patterns, contacts and topology. Every line receives current render evidence and a located visual review; open doubts need enlarged evidence and explicit resolution. Clear cases stop after sufficient normal checks; uncertain cases refine only the affected objects, without selecting by model type or lowering quality requirements. See the [evidence-driven workflow](skills/lotra-image2slide-skill/references/workflow-v1372.md).
 
@@ -168,7 +168,7 @@ Installer generation, final distribution parsing and the Windows/Linux README in
 | [Usage](docs/usage.md) | Image reconstruction, partial-slide import and resuming work |
 | [Examples](docs/examples/README.md) | Originals, reconstruction screenshots and component details |
 | [Workflow](skills/lotra-image2slide-skill/references/workflow-v1352.md) | Retained workflow 1.35.2 reconstruction and reuse rules |
-| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.37.3 main-skill payload |
+| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.37.4 main-skill payload |
 | [Provenance and licensing](NOTICE.md) | Project source, third-party components, and example assets |
 
 For feedback, include the operating system, product version, attempted operation, and relevant diagnostic. Share a reviewed reference image or excerpt when needed. Private task data remains under your control in the working project.

@@ -54,10 +54,22 @@ def _snapshot(task,value):
 
 
 @contextmanager
-def sealing(task,value,kind):
-    token=_SEAL.set({'task':Path(task).resolve(),'value':copy.deepcopy(value),'kind':kind})
+def sealing(task,value,kind,*,correction=False):
+    token=_SEAL.set({'task':Path(task).resolve(),'value':copy.deepcopy(value),'kind':kind,'correction':correction})
     try:yield
     finally:_SEAL.reset(token)
+
+
+def source_correction_active(task):
+    active=_SEAL.get() or {}
+    return active.get('task')==Path(task).resolve() and active.get('kind')=='source' and active.get('correction') is True
+
+
+def _observation(value,state):
+    return {'schema':'source-features-1.35.1','source_hash':state['source']['sha256'],'canvas':list(state['source_size']),
+        'basis':'unchanged_original','observer':value['outline']['observer'],
+        'observations':'\n'.join([value['outline']['observations']]+[s for s in value.get('observations',[]) if s]),
+        'units':value['units'],'features':value['features'],'spatial':value['spatial'],'source_views':value.get('source_views',[])}
 
 
 def seal_state(task,state,kind):
@@ -147,6 +159,14 @@ def submit(task,request):
     finite(request)
     if len(canonical(request))>2_000_000:raise ValueError('Use smaller incremental chunks')
     value=load(task,state);operation=request.get('operation')
+    correction=operation=='source_correction'
+    if correction:
+        if (not value['source_sealed'] or value['binding_sealed'] or state.get('component_workflow') or
+                request.get('prior_checkpoint')!=state.get('incremental_contract') or
+                request.get('prior_observation')!=state.get('source_feature_observation') or
+                not request.get('revision_reason') or not request.get('corrections')):
+            raise ValueError('Source correction requires open binding, exact current checkpoint/observation, row corrections and revision_reason')
+        operation='source_chunk'
     if operation=='source_outline':
         if value['outline']:raise ValueError('Original outline is already frozen')
         value['outline']=_outline(request['outline'],state)
@@ -166,7 +186,7 @@ def submit(task,request):
         if not isinstance(corrections,dict) or corrections and request.get('prior_checkpoint')!=state['incremental_contract']:
             raise ValueError('Corrections require the exact current checkpoint and explicit row addresses')
         if operation=='source_chunk':
-            if value['source_sealed']:raise ValueError('Original observation is sealed; use the explicit correction flow')
+            if value['source_sealed'] and not correction:raise ValueError('Original observation is sealed; use the explicit correction flow')
             patch=request['observation']
             if set(patch)-{'units','features','spatial','observations','source_views'}:raise ValueError('Source chunks contain original data only')
             if not any(patch.get(k) for k in ('units','features','spatial')):raise ValueError('Empty source chunk')
@@ -223,15 +243,20 @@ def submit(task,request):
             value['scene']=_merge(value['scene'],scene,corrections=corrections,section='scene')
             value['contract']=_merge(value['contract'],contract,corrections=corrections,section='contract')
         collection[chunk]=identity(request)
+        if correction:
+            from .component_source_features import observe
+            revised={key:copy.deepcopy(request[key]) for key in ('revision_reason','source_corrections','spatial_corrections') if key in request}
+            revised['observation']=_observation(value,state)
+            with sealing(task,value,'source',correction=True):outcome=observe(task,revised)
+            current=a._state(task)[1]
+            return {'status':'SOURCE_CORRECTION_SEALED','checkpoint':current['incremental_contract'],
+                'observation':outcome['observation'],'coverage':visible_counts(load(task,current)),'acceptance':False}
         return _commit(task,value,operation+'_saved')
     if operation=='source_seal':
         if value['source_sealed']:raise ValueError('Original is already sealed')
         progress=counts(value)
         if progress['pending_units'] or not value['features']:raise ValueError('Every outlined original unit needs its full observation before sealing')
-        observed={'schema':'source-features-1.35.1','source_hash':state['source']['sha256'],'canvas':list(state['source_size']),
-            'basis':'unchanged_original','observer':value['outline']['observer'],
-            'observations':'\n'.join([value['outline']['observations']]+[s for s in value.get('observations',[]) if s]),
-            'units':value['units'],'features':value['features'],'spatial':value['spatial'],'source_views':value.get('source_views',[])}
+        observed=_observation(value,state)
         from .component_source_features import observe
         with sealing(task,value,'source'):observe(task,{'observation':observed})
         state=a._state(task)[1]
@@ -289,8 +314,11 @@ def template(task,state,packet):
         phase='bind_chunk' if pending else 'bind_seal';request={'operation':phase}
         if phase=='bind_chunk':request.update(chunk_id='binding-'+str(value['generation']+1),binding={
             'scene':{'objects':[]},'contract':{'components':[],'feature_bindings':[],'spatial_bindings':[],'spatial_footprint_bindings':[]}})
-        packet['incremental']={'operation':phase,'allowed_operations':[phase,'bind_chunk'] if phase=='bind_seal' else [phase],
-            'coverage':visible_counts(value),'checkpoint':state.get('incremental_contract')}
+        packet['incremental']={'operation':phase,'allowed_operations':([phase,'bind_chunk'] if phase=='bind_seal' else [phase])+['source_correction'],
+            'coverage':visible_counts(value),'checkpoint':state.get('incremental_contract'),
+            'source_correction':{'prior_observation':state.get('source_feature_observation'),
+                'required':['operation:source_correction','chunk_id','prior_checkpoint','prior_observation','revision_reason','corrections','observation'],
+                'rule':'Use bounded source_chunk observation rows and exact prior-hash row corrections. Retain all units/features, history and binding chunks. Existing source_corrections/spatial_corrections and quality guards still apply.'}}
     else:
         if kind in ('component_layout_work','component_final_visual','component_font_review'):
             request={'evidence':{'path':'','sha256':''}}
@@ -306,7 +334,14 @@ def template(task,state,packet):
             request.setdefault('source_hash',state['source']['sha256'])
             candidate=state.get('active_candidate') or state.get('selected')
             if candidate:request.setdefault('pptx_hash',candidate['pptx']['sha256'])
+            if packet.get('submit_operation')=='source_or_measurement_decision':
+                packet['source_feature_correction']={'prior_observation':state.get('source_feature_observation'),
+                    'return':'component_request.source_correction{prior_observation,features:[complete corrected rows],corrections:{features/ID:{prior_hash,reason,source_evidence}}}; include revision_reason, source_corrections for weakened/line facts and any prior_line_hash. Only this component subtree is authorized. Full original validation, history, bounds and explicit rebind remain mandatory.'}
     result={'packet_id':packet['packet_id']}
+    if kind=='font_binding' and packet.get('required_step'):
+        field={'source_style':'font_constraints','resource_decision':'font_constraints',
+               'glyph_samples':'font_samples','family_choice':'font_constraints','bind':'font_bindings'}[packet['required_step']]
+        result[field]=[] if field=='font_bindings' else {}
     if kind.startswith('component_'):result['component_request']=request
     if kind=='component_local_work':
         result['operation']=packet.get('submit_operation') or packet.get('component_action',{}).get('operation')

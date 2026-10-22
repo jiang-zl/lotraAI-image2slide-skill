@@ -83,6 +83,9 @@ def decide(task,request):
     from .problem_control import reserve
     reserve(task,state,c.component_row(task,state,contract,request['component']),'source_reads',token=identity(request))
     selected={request['component']};scope=descendants(contract,selected)
+    if request.get('source_correction'):
+        from .component_source_features import correct_features
+        return correct_features(task,state,contract,request,scope)
     if request.get('decision_kind')=='constructor_recapture':
         # Only this explicit source decision expands to the current mother
         # family; unrelated source/native resources remain outside the grant.

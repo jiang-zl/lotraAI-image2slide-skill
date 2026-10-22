@@ -89,3 +89,23 @@ Product 1.37.3 retains execution 1.37.0, evidence policy 1.37.2, source workflow
 1.35.2, design revision 8, Math 1.35.3 and runtime 1.14.0. Continue the mandatory
 per-iteration version/distribution and Windows/Linux installation checks. Preserve
 old task bindings, customized active installation, originals and private resources.
+
+
+<!-- lotraAI-v1374-font-policy:start -->
+## 1.37.4 font preparation and finite source decisions
+
+Selected release is 1.37.4, based on published 1.37.3. New tasks bind
+font-workflow-1.37.4; old tasks retain their bound policy until explicit evidenced
+migration. Follow current SKILL.md and references/font-workflow-v1374.md. Preserve
+original text and logical emphasis intervals, complete per-run/cell slot plans,
+source-supported family groups, exact requirements, user locks and prior hashes.
+Use visible current batch IDs/steps and applied receipts. Keep native bindings
+staged until saved. Source-line failures use current decision packets; unknown
+states stop diagnostically. Actual-writer preflight never replaces saved/render/
+final original gates. Preserve all mandatory version/install/publication checks,
+runtime resources, global skills, private data and active local edits. No Setup
+skill, new model/provider or general transaction framework is introduced.
+Workflow 1.35.2, design 8, execution 1.37.0, evidence 1.37.2, Math 1.35.3 and runtime
+1.14.0 retain their separate identities. Both repositories use dev and 1.37.4;
+the source tag is v1.37.4. Publication is not external-artwork acceptance.
+<!-- lotraAI-v1374-font-policy:end -->

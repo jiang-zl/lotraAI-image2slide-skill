@@ -11,6 +11,7 @@ from zipfile import ZipFile
 from lxml import etree as E
 from .common import digest, identity, read_json, safe_path, write_json
 from . import font_resources as resources
+from . import font_resolution as resolution
 
 VERSION = 'font-contract-1'
 A = 'http://schemas.openxmlformats.org/drawingml/2006/main'
@@ -59,10 +60,12 @@ def payloads(scene):
                     yield obj, 'cell.'+str(ri)+'.'+str(ci), formats[ri][ci], literal, False
 
 
-def requests(scene):
+def requests(scene, state=None):
+    if state is not None and state.get('task_id') and not resolution.enabled(state) and resolution.enabled(scene=scene):
+        raise ValueError('FONT_POLICY_MIGRATION_REQUIRED: a Scene flag cannot migrate an existing task')
     result = []
     for obj, location, leaf, literal, math in payloads(scene):
-        style = {**obj['style'], **leaf}
+        style = resolution.merge_style(obj['style'], leaf)
         groups = {'math': literal} if math else {}
         if math:
             from .font_collection import language
@@ -97,14 +100,31 @@ def requests(scene):
                 'bold': False if role.startswith('math_aux:') else bool(style.get('bold', False)),
                 'italic': role=='math_style:italic' if role.startswith('math_style:') else False if role.startswith('math_aux:') else bool(style.get('italic', False)),
                 'roi': obj['bbox'], 'semantic_type': obj['semantic_type']})
+            if resolution.enabled(state, scene):
+                intent = style.get('font_intent', {})
+                if not isinstance(intent, dict) or set(intent)-{'required_families','revision'}:
+                    raise ValueError('Font intent accepts required_families and an explicit revision only')
+                if 'revision' in intent and (not isinstance(intent['revision'],str) or not intent['revision'].strip() or len(intent['revision'])>240):
+                    raise ValueError('Font intent revision needs a bounded nonempty source decision identity')
+                required = intent.get('required_families', {})
+                if not isinstance(required, dict) or set(required)-{'latin','ea','cs','math'} or any(not isinstance(v,str) or not v for v in required.values()):
+                    raise ValueError('Exact font intent needs nonempty script-specific families')
+                explicit = (state or {}).get('objectives', {}).get('font_requests', scene.get('font_plan', {}).get('user_font_requests', {}))
+                owner = explicit.get(obj['id'], {})
+                demanded = (owner.get(role) if isinstance(owner, dict) else None) or explicit.get(role) or required.get(role)
+                overrides=(state or {}).get('font_intent_overrides',scene.get('font_plan',{}).get('intent_overrides',{}))
+                demanded=overrides.get(result[-1]['id'],demanded)
+                if role.startswith('math_aux:'):demanded=proposed
+                result[-1].update(identity_policy=resolution.POLICY, required_family=demanded,
+                    intent_revision=intent.get('revision'), proposed_faces=copy.deepcopy(style.get('font_faces',{})))
     return result
 
 
 def _request_match(binding, request):
-    value={k:request[k] for k in ('owner','location','role','characters','literal_hash','bold','italic','proposed_family')}
+    value=resolution.request_value(request)
     # A native mirror may replace the author's hint by its already bound
     # canonical spelling. This is not a different family or a new font intent.
-    if resources.matches(binding['resource'],value['proposed_family']):
+    if request.get('identity_policy')!=resolution.POLICY and resources.matches(binding['resource'],value['proposed_family']):
         value['proposed_family']=binding['request']['proposed_family']
     return binding.get('request_hash') == identity(value)
 
@@ -117,19 +137,28 @@ def missing(scene, state):
     bindings = state.get('font_contract', {}).get('bindings', {})
     from .font_collection import assert_language
     result=[]
-    for r in requests(scene):
+    for r in requests(scene,state):
         bound=bindings.get(r['id'])
         if not bound or not _request_match(bound,r):result.append(r);continue
         try:assert_language(bound['resource'],r['role'])
         except ValueError:result.append(r)
+        else:
+            if resolution.enabled(state):
+                from .font_selection import require_binding
+                try:require_binding(state,r,bound['resource'],bound.get('origin'),bound.get('synthetic_style',False))
+                except ValueError:result.append(r)
     return result
 
 
 def user_family(state,request):
-    explicit=state['objectives'].get('font_requests',{})
+    explicit=state.get('objectives',{}).get('font_requests',{})
     owner=explicit.get(request['owner'],{})
     role='math' if request['role'].startswith('math_style:') else request['role']
     return (owner.get(role) if isinstance(owner,dict) else None) or explicit.get(role)
+
+
+def requested_family(state,request):
+    return user_family(state,request) or request.get('required_family')
 
 
 def pending_state(state):
@@ -152,8 +181,13 @@ def revision_details(task,state,scene,request):
     elif location.startswith('cell.'):
         row,column=map(int,location.split('.')[1:]);path=['content','cell_styles',row,column,'font']
     else:path=['style','math_font' if location=='equation' else 'font']
+    candidates=[path,path[:-1]+['font_intent','required_families',request['role']],
+                ['style','font_intent','required_families',request['role']],
+                path[:-1]+['font_intent','revision'],['style','font_intent','revision']]
+    if request.get('required_family') and not user_family(state,request):path=candidates[1]
+    elif request.get('intent_revision'):path=candidates[3]
     grants=(pending.get('reason') or {}).get('font_revision_grants',[])
-    semantic=any(g['owner']==request['owner'] and path[:len(g['field'])]==g['field'] for g in grants)
+    semantic=any(g['owner']==request['owner'] and any(field[:len(g['field'])]==g['field'] for field in candidates) for g in grants)
     authorized='style.font' in fields or 'replace_component' in fields or 'add' in fields or semantic
     locked=False
     if state.get('component_workflow'):
@@ -176,7 +210,11 @@ def packet(task, state, scene):
         return None
     from . import font_collection as collection
     collection.prepare(state)
-    selected = rows[:8]
+    from . import font_selection as selection
+    modern=resolution.enabled(state,scene)
+    steps={row['id']:selection.required_step(state,row) for row in rows} if modern else {}
+    step=min(steps.values(),key=selection.STEPS.index) if modern else None
+    selected = ([row for row in rows if steps[row['id']]==step] if modern else rows)[:4 if modern else 8]
     per_request={r['id']:collection.eligible(state,r) for r in selected}
     faces=list({f['id']:f for values in per_request.values() for f in values}.values())
     catalogue = Path(task)/'source/font-options.json'
@@ -184,7 +222,7 @@ def packet(task, state, scene):
                 'italic': f['italic'], 'hosts': f['hosts'], 'editable_embedding': f['editable_embedding'],
                 'outline': f['outline'], 'variable': f['variable'],'style_class':f.get('style_class','unknown')} for f in faces]
     write_json(catalogue, {'environment_key': state['capabilities']['fonts']['environment_key'], 'faces': options})
-    return {'reference': 'references/font-collections-v132.md', 'source_hash': state['source']['sha256'],
+    result={'reference': 'references/font-collections-v132.md', 'source_hash': state['source']['sha256'],
             'requests': [dict(r,binding_revision=revision_details(task,state,scene,r)) for r in selected], 'remaining': len(rows),
             'revision_recovery_return':'For a revision blocker: font_revision_decision{request_ids,reason,evidence:{path,sha256}} retains this plan and returns its owners to the source-decision packet; never remove locks or edit grants by hand.',
             'language_candidates':{key:[f['id'] for f in values] for key,values in per_request.items()},
@@ -201,6 +239,23 @@ def packet(task, state, scene):
             'source_reading': 'Use only language_candidates for this request. Submit independently isolated original font_samples first. The program returns a registered source-bound ranking of eligible real resources; inferred binding selects its closest face. Availability and proposed recipe families are not original identity evidence.',
             'return': 'font_bindings[{request_id,family,resource_id,origin:user|source_metadata|raster_inference,status:exact|approximate,evidence:{source_hash,roi,description},alternatives?,comparison_ref?,synthetic_style?,prior_binding_hash?,revision_reason?}]',
             'rule': 'Available fonts are resources, not source evidence. User-specified exact identity dominates scores. Raster inference needs original glyph evidence and alternatives; uncertain inference stays approximate. Never alias different typefaces or silently replace a missing family.'}
+    if modern:
+        result.update(selection.batch(selected,step,state))
+        result['reference']='references/font-workflow-v1374.md'
+        result['last_submission']=state.get('font_submission_receipt')
+        result['source_style_groups']={key:copy.deepcopy(value) for key,value in state.get('font_groups',{}).items()
+            if any(row['id'] in value.get('members',{}) for row in selected)}
+        result['step_return']={
+            'source_style':'font_constraints{request_id:{style_classes|resource_ids,style_group?,reason,evidence}}; observe the original style before selecting fonts. Colour changes alone do not split a group.',
+            'resource_decision':'font_constraints with current eligible resource_ids or explicit synthetic_style:true and style_description plus original evidence. Preserve unavailable exact user fonts; never substitute another family.',
+            'glyph_samples':'font_samples{request_id:[{character,roi}]}; samples belong to each current original text owner.',
+            'family_choice':'font_constraints{request_id:{family,comparison_ref,reason,evidence}}; choose a source-supported family from the current comparison. The choice applies to its declared source style group; uncertainty remains approximate.',
+            'bind':'font_bindings for the visible request_ids using the current prepared comparison and any prior_binding_hash. Adoption waits for the native save.'}[step]
+        result['source_reading']=result['step_return']
+    else:
+        from .font_migration import offer
+        result['font_policy_migration']=offer(task,state,scene)
+    return result
 
 
 def retain_revision_decision(task,state,scene,packet,request):
@@ -238,7 +293,8 @@ def retain_revision_decision(task,state,scene,packet,request):
 
 
 def bind(task, state, scene, values, *, persist=True):
-    rows = {r['id']: r for r in requests(scene)}
+    resolution.verify_source_spans(task,state,scene)
+    rows = {r['id']: r for r in requests(scene,state)}
     from . import font_collection as collection
     collection.prepare(state)
     faces = {f['id']: f for f in resources.available(state['capabilities'])}
@@ -260,10 +316,10 @@ def bind(task, state, scene, values, *, persist=True):
         evidence = value.get('evidence', {})
         if evidence.get('source_hash') != state['source']['sha256'] or not evidence.get('description') or not evidence.get('roi'):
             raise ValueError('Font choice needs original-bound evidence')
-        demanded = user_family(state,request)
+        demanded = requested_family(state,request)
         if demanded and (not resources.matches(face, demanded) or status != 'exact'):
             raise ValueError('A requested exact font cannot be replaced by a better-scoring style peer')
-        if origin == 'user' and not demanded:
+        if origin == 'user' and not user_family(state,request):
             raise ValueError('User-font provenance must match the frozen task font_requests')
         if origin=='compiler' and (not request['role'].startswith('math_aux:') or not resources.matches(face,request['proposed_family'])):
             raise ValueError('Compiler font provenance is restricted to a real existing OMML auxiliary run')
@@ -291,12 +347,16 @@ def bind(task, state, scene, values, *, persist=True):
         if missing_glyphs:
             raise ValueError('Bound font is missing glyphs: '+repr(missing_glyphs))
         synthetic = bool(value.get('synthetic_style'))
+        from .font_selection import require_binding
+        require_binding(state,request,face,origin,synthetic)
         if (not request['bold'] and face['weight']>=600) or (not request['italic'] and face['italic']):
             raise ValueError('A bold/italic-only resource cannot pretend to be the regular upright face')
         if synthetic and not evidence.get('style_description') and origin not in ('user','compiler'):
             raise ValueError('Synthetic weight/slant needs separate original style evidence')
         if ((request['bold'] and face['weight'] < 600) or request['italic'] != face['italic']) and not synthetic:
             raise ValueError('Weight/italic needs the real face, or explicitly source-supported synthetic_style')
+        if not resolution.style_feasible(face,request,synthetic):
+            raise ValueError('Font resource does not satisfy the current native style plan')
         if request['role'].startswith('math_style:'):
             primary_id=identity({'owner':request['owner'],'location':request['location'],'role':'math'})
             primary=accepted.get(primary_id) or ledger['bindings'].get(primary_id)
@@ -311,22 +371,28 @@ def bind(task, state, scene, values, *, persist=True):
             raise ValueError('Private font snapshot identity differs')
         face = {**face, 'snapshot': {'path': snapshot.relative_to(state['project']).as_posix(), 'sha256': face['file_sha256']},
                 'path': str(snapshot)}
-        record = {'request': request, 'request_hash': identity({k: request[k] for k in ('owner', 'location', 'role', 'characters', 'literal_hash', 'bold', 'italic', 'proposed_family')}),
+        record = {'request': request, 'request_hash': resolution.request_key(request),
                   'family': face['family'], 'resource': face, 'origin': origin, 'status': status,
                   'evidence': copy.deepcopy(evidence), 'alternatives': value.get('alternatives', []),
                   'synthetic_style': synthetic,'comparison_ref':copy.deepcopy(value.get('comparison_ref')),
                   'source_metadata_ref':copy.deepcopy(value.get('source_metadata_ref')),
                   'environment_key': state['capabilities']['fonts']['environment_key']}
         prior = ledger['bindings'].get(request['id'])
-        if prior and prior['family'] != record['family']:
+        changed=prior and (prior['family'] != record['family'] or request.get('identity_policy')==resolution.POLICY and
+            (prior['request_hash']!=record['request_hash'] or prior['resource']['id']!=record['resource']['id'] or
+             prior.get('synthetic_style',False)!=record['synthetic_style']))
+        if changed:
             revision=revision_details(task,state,scene,request)
             if not revision['authorized']:raise ValueError(revision['blocker']+': '+request['owner']+'/'+request['location'])
             if value.get('prior_binding_hash')!=identity(prior):raise ValueError('FONT_REVISION_STALE_BINDING: use this packet\'s prior_binding_hash')
-            if not value.get('revision_reason') or origin!='raster_inference':
-                raise ValueError('FONT_REVISION_EVIDENCE_REQUIRED: explicit original-bound reason and raster inference required')
+            allowed_origins=('raster_inference','user','source_metadata','compiler') if request.get('identity_policy')==resolution.POLICY else ('raster_inference',)
+            if not value.get('revision_reason') or origin not in allowed_origins:
+                raise ValueError('FONT_REVISION_EVIDENCE_REQUIRED: explicit original-bound reason and valid source provenance required')
             ledger['history'].append({'prior':prior,'request':request['id'],'reason':value['revision_reason']})
         accepted[request['id']] = record
         if language in ('zh','en'):archive_faces.append(face)
+    from .font_selection import check_group_bindings
+    check_group_bindings(state,{**ledger['bindings'],**accepted})
     collection.archive(state['project'],archive_faces,'Bind source-qualified eligible language fonts')
     ledger['bindings'].update(accepted)
     ledger['history'].append({'source_hash': state['source']['sha256'], 'accepted': sorted(accepted)})
@@ -344,7 +410,7 @@ def compile_scene(scene, state=None):
         if plan.get('version') != VERSION and requests(scene):
             raise ValueError('FONT_BINDING_REQUIRED: native text/math/table must have a source/user font plan before build')
         bindings = plan.get('bindings', {})
-    request_rows = {r['id']: r for r in requests(scene)}
+    request_rows = {r['id']: r for r in requests(scene,state)}
     verified={}
     for key, request in request_rows.items():
         bound = bindings.get(key)
@@ -365,22 +431,73 @@ def compile_scene(scene, state=None):
             verified[key]=resources.describe(resource['path'],resource['face_index'],file_hash)
         if not resources.matches(verified[key], bound['family']):
             raise ValueError('Bound font identity changed; refresh resources without changing the source intent')
-    owner_faces={}
+    owner_faces={};resolved_runs={}
+    for request in request_rows.values():
+        owner_faces.setdefault(request['owner'],{}).setdefault(request['role'],set()).add(bindings[request['id']]['family'])
+    owner_defaults={owner:{role:next(iter(names)) for role,names in roles.items() if len(names)==1}
+                    for owner,roles in owner_faces.items()}
+    previous=scene.get('font_plan',{})
+    declared_faces=copy.deepcopy(previous.get('declared_faces',{}))
     for obj, location, style, literal, math in payloads(scene):
+        location_id=identity({'owner':obj['id'],'location':location})
+        declared_faces.setdefault(location_id,copy.deepcopy(resolution.merge_style(obj['style'],style).get('font_faces',{})))
         style.pop('font_faces', None)
         choices = {r['role']: bindings[r['id']]['family'] for r in request_rows.values() if r['owner'] == obj['id'] and r['location'] == location}
         if choices:
-            style['font_faces'] = choices
-            for role,family in choices.items():owner_faces.setdefault(obj['id'],{}).setdefault(role,set()).add(family)
+            style['font_faces'] = choices if math else resolution.resolve_faces(
+                {'font':style.get('font',obj['style'].get('font','DejaVu Sans')),'font_faces':owner_defaults.get(obj['id'],{})},
+                {'font_faces':choices})
+            resolved_runs[location_id]={'owner':obj['id'],'location':location,'faces':copy.deepcopy(style['font_faces']),
+                'bound_roles':sorted(choices),'bindings':sorted(r['id'] for r in request_rows.values() if r['owner']==obj['id'] and r['location']==location),
+                'fallback':'latin, then ea, then cs; unused slots use the selected primary'}
     for obj in scene['objects']:
         choices={role:next(iter(names)) for role,names in owner_faces.get(obj['id'],{}).items() if len(names)==1}
-        if choices:obj['style']['font_faces']=choices
+        if choices:
+            obj['style']['font_faces']=choices if obj['render_type']=='equation' or not set(choices)&set(resolution.SLOTS) else resolution.resolve_faces({'font':obj['style'].get('font','DejaVu Sans'),'font_faces':choices})
     scene['font_plan'] = {'version': VERSION, 'bindings': {k: copy.deepcopy(bindings[k]) for k in request_rows},
-                          'embedding': 'full_editable', 'source_hash': scene['source']['sha256']}
+                          'embedding': 'full_editable', 'source_hash': scene['source']['sha256'],
+                          'resolved_runs':resolved_runs,'declared_faces':declared_faces,
+                          'source_spans':resolution.source_spans(scene)}
+    if resolution.enabled(state,scene) or resolution.enabled(scene={'font_plan':previous}):
+        scene['font_plan']['policy']=resolution.POLICY
+        scene['font_plan']['user_font_requests']=copy.deepcopy((state or {}).get('objectives',{}).get('font_requests',previous.get('user_font_requests',{})))
+        scene['font_plan']['intent_overrides']=copy.deepcopy((state or {}).get('font_intent_overrides',previous.get('intent_overrides',{})))
+    return scene
+
+
+def preserve_unwritten_nodes(scene, before, allowed):
+    """Keep compiler-only map expansion outside a native grant out of its journal.
+
+    Effective slots and resource identities must already agree. A real change
+    still needs a focused native font revision; it cannot hide as compilation.
+    """
+    from .component_fields import canonical_node
+    scene=copy.deepcopy(scene);old={node['id']:node for node in before['objects']}
+    untouched=set(old)-set(allowed or {})
+    def slots(value):
+        return {(obj['id'],location):resolution.resolve_faces(obj['style'],style)
+                for obj,location,style,_,_ in payloads(value) if obj['id'] in untouched}
+    if slots(before)!=slots(scene):
+        raise ValueError('FONT_SCOPE_REVISION_REQUIRED: effective font slots changed outside the current native grant')
+    def resources_by_owner(value):
+        return {key:(row['family'],row['resource']['file_sha256'],row['resource']['face_index'],
+                     bool(row.get('synthetic_style')),row['request']['bold'],row['request']['italic'])
+                for key,row in value.get('font_plan',{}).get('bindings',{}).items()
+                if row['request']['owner'] in untouched}
+    if resources_by_owner(before)!=resources_by_owner(scene):
+        raise ValueError('FONT_SCOPE_REVISION_REQUIRED: bound resource changed outside the current native grant')
+    for index,node in enumerate(scene['objects']):
+        if node['id'] not in untouched:continue
+        if canonical_node(node)!=canonical_node(old[node['id']]):
+            raise ValueError('Transaction escaped declared native owner scope: '+node['id'])
+        scene['objects'][index]=copy.deepcopy(old[node['id']])
     return scene
 
 
 def bind_scene(task, state, scene):
+    resolution.verify_source_spans(task,state,scene)
+    if resolution.enabled(state) and missing(scene,state):
+        raise ValueError('FONT_BINDING_REQUIRED: complete the current source-style/group preparation for every pending face before native adoption')
     if not required(state):
         # Legacy artwork is preserved; new builds still need explicit bindings.
         return compile_scene(scene)
@@ -420,10 +537,15 @@ def auto_bind(task,state,scene,*,persist=True):
                     and (not f['italic'] or row['italic']) and (f['weight']<600 or row['bold'])]
         if not candidates:continue
         face=min(candidates,key=lambda f:(f['italic']!=row['italic'],abs(f['weight']-(700 if row['bold'] else 400)),f['id']))
-        values.append({'request_id':row['id'],'family':family,'resource_id':face['id'],'origin':'compiler' if compiler else 'user','status':'exact',
+        value={'request_id':row['id'],'family':family,'resource_id':face['id'],'origin':'compiler' if compiler else 'user','status':'exact',
                        'synthetic_style':(row['bold'] and face['weight']<600) or row['italic']!=face['italic'],
                        'evidence':{'source_hash':state['source']['sha256'],'roi':row['roi'],
-                                   'description':'Explicit task font_requests, not raster font metadata'}})
+                                   'description':'Explicit task font_requests, not raster font metadata'}}
+        prior=state.get('font_contract',{}).get('bindings',{}).get(row['id'])
+        if row.get('identity_policy')==resolution.POLICY and prior:
+            if not revision_details(task,state,scene,row)['authorized']:continue
+            value.update(prior_binding_hash=identity(prior),revision_reason='Frozen exact user or compiler intent revised in the current source scope')
+        values.append(value)
     if values:bind(task,state,scene,values,persist=persist)
 
 
@@ -458,6 +580,11 @@ def guard_saved(scene, pptx):
     if unbound:raise ValueError('FONT_ASSET_BINDING_REQUIRED: expose imported native text/math as independently bound Scene owners before portable build: '+repr(sorted(unbound,key=str)))
     for owner,values in owners.items():
         shape=saved[owner];covered=set()
+        expected_spans=scene.get('font_plan',{}).get('source_spans',{}).get(owner)
+        if expected_spans is not None:
+            kind=next(o['render_type'] for o in scene['objects'] if o['id']==owner)
+            if resolution.saved_spans(shape,kind)!=expected_spans:
+                raise ValueError('FONT_TEXT_STYLE_CHANGE: saved text or colour/emphasis intervals changed: '+owner)
         for binding in values:
             request=binding['request'];location=request['location'];role=request['role'];math=role=='math' or role.startswith(('math_aux:','math_style:'))
             try:
@@ -476,11 +603,17 @@ def guard_saved(scene, pptx):
                     else:actual_literal='\n'.join(literal(p) for p in body.findall('.//{'+A+'}txBody/{'+A+'}p')+body.findall('./{'+P+'}txBody/{'+A+'}p'))
                 runs=[n for region in selected for n in region.iter('{'+(M if math else A)+'}r')]
                 relevant=[]
+                planned=scene.get('font_plan',{}).get('resolved_runs',{}).get(identity({'owner':owner,'location':location}))
                 auxiliary={v['family'] for v in values if v['request']['location']==location and v['request']['role'].startswith('math_aux:')}
                 for run in runs:
                     text=literal(run,math)
                     if not text.strip():continue
                     props=run.find('{'+A+'}rPr')
+                    if not math and planned:
+                        for slot in resolution.SLOTS:
+                            actual_face=props.find('{'+A+'}'+slot) if props is not None else None
+                            if actual_face is None or actual_face.get('typeface')!=planned['faces'][slot]:
+                                raise ValueError('saved slot differs from the complete font plan: '+slot)
                     face=props.find('{'+A+'}'+('latin' if math else role)) if props is not None else None
                     actual=face.get('typeface') if face is not None else None
                     if not math and not any(not c.isspace() and script(c)==role for c in text):continue
@@ -524,7 +657,7 @@ def apply_user_intent(task, state, scene, proof, result):
     changes = [c for c in result.get('changes', []) if c['field'] in ('style.font', 'style.bold', 'style.italic')]
     if not changes:
         return compile_scene(scene, state)
-    rows = requests(scene)
+    rows = requests(scene,state)
     faces = resources.available(state['capabilities'])
     ledger = state.setdefault('font_contract', {'version': VERSION, 'bindings': {}, 'history': []})
     values = []

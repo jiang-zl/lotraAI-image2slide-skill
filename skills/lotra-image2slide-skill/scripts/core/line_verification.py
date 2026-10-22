@@ -4,6 +4,7 @@ All applicable lines are covered. Algorithms, not obligations, are conditional.
 Raw package/image facts are shared inside one evaluation, never prior PASS.
 """
 import math
+from fractions import Fraction
 from pathlib import Path
 from zipfile import ZipFile
 import numpy as np
@@ -91,8 +92,8 @@ def _pattern_check(source_runs,actual_runs,pattern,error):
 def _widths(mask,points,tangents,scale,width_limit):
     """Normal pixel-cell chords, separating stroke bands from the route axis."""
     sx,sy=scale;precision=.5/max(sx,sy);offsets=np.arange(-width_limit,width_limit+precision,precision)
-    values=[];bands=[]
-    for p,tangent in zip(points,tangents):
+    values=[];bands=[];sites=[]
+    for site,(p,tangent) in enumerate(zip(points,tangents)):
         length=np.linalg.norm(tangent)
         if length<1e-9:continue
         normal=np.array([-tangent[1],tangent[0]])/length
@@ -102,10 +103,68 @@ def _widths(mask,points,tangents,scale,width_limit):
         if not len(indexes):continue
         values.append(float(offsets[indexes[-1]]-offsets[indexes[0]]+precision))
         bands.append(int(np.sum(ink&~np.r_[False,ink[:-1]])))
-    return values,bands,precision
+        sites.append(site)
+    return values,bands,precision,sites
 
 
-def paint_cell_bound(first,second,origins,pixel_sizes,tolerance):
+def axis_cell_width_bound(first,second,points,tangents,origins,pixel_sizes,width_limit,tolerance,wanted):
+    """Exact axis-normal chords through the same closed occupied raster cells.
+
+    This finite fallback has no source-pixel sampling floor. It does not infer
+    subpixel outlines or align a candidate. Non-axis tangents, clipped windows,
+    absent sites and unsupported original bands remain explicitly INVALID.
+    """
+    rational=lambda value:value if isinstance(value,Fraction) else Fraction(str(value))
+    domains=[];total=0
+    if len(points)!=len(tangents) or not len(points) or len(points)>256:
+        return invalid('MEASUREMENT_REQUIRED: finite paired chord-site budget or correspondence unavailable')
+    for mask,origin,size in zip((first,second),origins,pixel_sizes):
+        values=[];bands=[]
+        ox,oy=map(rational,origin);pw,ph=map(rational,size)
+        if pw<=0 or ph<=0:return invalid('Non-positive raster-cell dimensions')
+        for site,(p,tangent) in enumerate(zip(points,tangents)):
+            tx,ty=map(float,tangent)
+            if ty==0 and tx!=0:
+                along=(rational(p[0])-ox)/pw;centre=rational(p[1]);start=oy;step=ph;profile_axis=0
+            elif tx==0 and ty!=0:
+                along=(rational(p[1])-oy)/ph;centre=rational(p[0]);start=ox;step=pw;profile_axis=1
+            else:return invalid('Axis-cell chord refinement requires an exactly axis-aligned tangent',site=site)
+            # A chord on a closed-cell boundary intersects both adjacent cells.
+            indexes=[math.floor(along)]
+            if along.denominator==1:indexes.append(indexes[0]-1)
+            along_size=mask.shape[1-profile_axis]
+            if any(i<0 or i>=along_size for i in indexes):
+                return invalid('Paired raster chord falls outside the complete measurement crop',site=site)
+            lower=max(0,math.floor((centre-rational(width_limit)-start)/step))
+            upper=min(mask.shape[profile_axis]-1,math.ceil((centre+rational(width_limit)-start)/step))
+            if lower>upper:return invalid('Paired raster chord lies outside its frozen measurement crop',site=site)
+            total+=len(indexes)*(upper-lower+1)
+            if total>250000:return invalid('MEASUREMENT_REQUIRED: finite paired raster-cell budget exhausted')
+            if profile_axis==0:ink=np.any(mask[lower:upper+1,indexes],axis=1)
+            else:ink=np.any(mask[indexes,lower:upper+1],axis=0)
+            occupied=np.flatnonzero(ink)
+            if not len(occupied):return invalid('Original/render chord has an absent corresponding site',site=site)
+            # The fixed ROI may be narrower than the search window. Empty
+            # guard cells prove all observed chord support is still enclosed;
+            # painted crop/window edges remain INVALID, never assumed absent.
+            if occupied[0]==0 or occupied[-1]==len(ink)-1:
+                return invalid('Paired raster chord support reaches the finite window boundary',site=site)
+            values.append((int(occupied[-1])-int(occupied[0])+1)*step)
+            bands.append(int(np.sum(ink&~np.r_[False,ink[:-1]])))
+        domains.append((values,bands))
+    source,actual=domains
+    details={'method':'paired_axis_raster_cell_chords','unit':'source_px','sites':list(range(len(points))),
+        'source_widths':[float(v) for v in source[0]],'actual_widths':[float(v) for v in actual[0]],
+        'source_bands':source[1],'actual_bands':actual[1],'expected_bands':wanted,
+        'candidate_alignment':False,'target':'unchanged occupied pixel-cell chords at every original site'}
+    if any(v!=wanted for v in source[1]):return invalid('Original raster chords do not support the frozen compound bands',**details)
+    if any(v!=wanted for v in actual[1]):return result(False,reason='Actual raster chord band count differs from the original',**details)
+    delta=max(abs(a-b) for a,b in zip(source[0],actual[0]));value=float(delta)
+    error=0. if Fraction(value)==delta else math.ulp(value)
+    return bounded(value,error,tolerance,exact_difference=[delta.numerator,delta.denominator],numeric_error=error,**details)
+
+
+def paint_cell_bound(first,second,origins,pixel_sizes,tolerance,*,bidirectional=True):
     """Same frozen raster paint sets, with tighter finite cell-union bounds.
 
     Normal centre/radius bounds and this producer measure the same occupied
@@ -128,7 +187,8 @@ def paint_cell_bound(first,second,origins,pixel_sizes,tolerance):
         rectangles.append(runs);domains.append(unary_union([box(*r) for r in runs]))
     for refinement in range(4):
         step=min(.25,tolerance/8)/(2**refinement);maximum=0.;error=0.;count=0
-        for runs,target in zip(rectangles,reversed(domains)):
+        pairs=zip(rectangles,reversed(domains)) if bidirectional else ((rectangles[0],domains[1]),)
+        for runs,target in pairs:
             for x,y,r,b in runs:
                 nx=max(1,math.ceil((r-x)/step));ny=max(1,math.ceil((b-y)/step))
                 count+=(nx+1)*(ny+1)
@@ -138,7 +198,8 @@ def paint_cell_bound(first,second,origins,pixel_sizes,tolerance):
                 maximum=max(maximum,float(np.max(distances)))
                 error=max(error,math.hypot((r-x)/nx,(b-y)/ny)/2)
         check=bounded(maximum,error,tolerance,method='refined_fixed_raster_cell_bound',unit='source_px',
-            samples=count,refinements=refinement,target='unchanged foreground pixel-cell unions, including interiors',candidate_alignment=False)
+            samples=count,refinements=refinement,target='unchanged foreground pixel-cell unions, including interiors',
+            directions='both' if bidirectional else 'original_to_render',candidate_alignment=False)
         if check['valid']:return check
     return check
 
@@ -154,6 +215,12 @@ def marker_pixels(row,original,actual,geometry,*,deep=False):
         # the original extent. An enlarged/wrong marker must not be crop-clipped.
         q=geometry['oriented'][0 if index==0 else -1]
         native_extent=q['native']['style']['width_source_bounds'][1]*30
+        crop_basis={'method':'conservative_native_ending_envelope','shaft_width_multiplier':30}
+        custom=[part['owner'] for part in row.get('parts',[]) if part['role']==('start_marker' if index==0 else 'end_marker')]
+        extent=geometry.get('marker_paint_extents',{}).get(str(index))
+        if len(custom)==1 and extent is not None and extent['owner']==custom[0]:
+            native_extent=extent['radius_from_source_anchor']
+            crop_basis={'method':'separate_saved_native_marker_paint','native_marker':extent}
         radius=max(marker['width'][1],marker['length'][1],native_extent)+limits['marker']+2
         x,y,r,b=_region(np.asarray([marker['anchor']]),radius,original.shape[1::-1])
         paint=marker.get('paint_colour',source['stroke'].get('paint_colour',source['stroke']['colour']))
@@ -176,6 +243,8 @@ def marker_pixels(row,original,actual,geometry,*,deep=False):
             refined.update(end=index,roi=[x,y,r-x,b-y],prior_inconclusive=check)
             check=refined
         check['scope']='fixed original/render terminal crop, including contact context; never plan-derived text'
+        check['crop_basis']={**crop_basis,'source_marker_width':marker['width'],'source_marker_length':marker['length'],
+                             'source_tolerance':limits['marker'],'contact_guard_source_px':2}
         checks.append(check)
     return _summary(checks)
 
@@ -257,7 +326,14 @@ def render_check(row,geometry,original,actual,*,deep=False):
             locations=original_pixels[owned]
             distances=map_coordinates(actual_distance,[locations[:,1]*sy-ay-.5,locations[:,0]*sx-ax-.5],order=1,mode='constant',cval=np.inf)
             pixel_error=math.sqrt(2)/2+math.sqrt((1/sx)**2+(1/sy)**2)/2
-            segments.append(bounded(float(distances.max()),pixel_error,limits['route'],method='every_original_shaft_pixel_coverage',samples=int(owned.sum()),unit='source_px'))
+            coverage=bounded(float(distances.max()),pixel_error,limits['route'],method='every_original_shaft_pixel_coverage',samples=int(owned.sum()),unit='source_px')
+            if not coverage['valid']:
+                fixed_owned=np.zeros_like(source_ink);fixed_owned[yy[owned],xx[owned]]=True
+                refined=paint_cell_bound(fixed_owned,actual_ink,((x,y),(ax/sx,ay/sy)),
+                    ((1.,1.),(1/sx,1/sy)),limits['route'],bidirectional=False)
+                refined.update(prior_inconclusive=coverage,owned_source_cells=int(owned.sum()))
+                coverage=refined
+            segments.append(coverage)
     # Width/band checks sample each source segment interior. No long-segment
     # weighting can hide a missing short arm because segment support is separate.
     chosen=[];tangents=[]
@@ -278,7 +354,8 @@ def render_check(row,geometry,original,actual,*,deep=False):
             if hi>lo:chosen.append(points[j]);tangents.append(points[hi]-points[lo])
     if chosen:
         local=np.asarray(chosen)-np.array([ax/sx,ay/sy])
-        widths,bands,pixel_error=_widths(actual_ink,local,np.asarray(tangents),scale,width[1]+2*limits['width']+2)
+        chord_limit=width[1]+2*limits['width']+2
+        widths,bands,pixel_error,actual_sites=_widths(actual_ink,local,np.asarray(tangents),scale,chord_limit)
         if not widths:width_result=invalid('No isolated native/render stroke-width chords')
         else:
             lo,hi=width;good=all(lo-limits['width']-pixel_error<=v<=hi+limits['width']+pixel_error for v in widths)
@@ -287,8 +364,8 @@ def render_check(row,geometry,original,actual,*,deep=False):
             wanted={'single':1,'double':2,'thickThin':2,'thinThick':2,'triple':3}[source['stroke']['compound']]
             band_good=all(v==wanted for v in bands)
             width_result=result(good and band_good,widths=widths,bands=bands,expected_bands=wanted,pixel_error=pixel_error,unit='source_px')
-            source_widths,source_bands,source_error=_widths(source_ink,np.asarray(chosen)-np.array([x,y]),np.asarray(tangents),(1.,1.),width[1]+2*limits['width']+2)
-            if len(source_widths)!=len(widths) or any(v!=wanted for v in source_bands):
+            source_widths,source_bands,source_error,source_sites=_widths(source_ink,np.asarray(chosen)-np.array([x,y]),np.asarray(tangents),(1.,1.),chord_limit)
+            if source_sites!=actual_sites or any(v!=wanted for v in source_bands):
                 paired=invalid('Original/render width chords lack one-to-one visible band support',source_chords=len(source_widths),actual_chords=len(widths))
             else:
                 # Exact same source sites, tangent and pixel-cell estimator.
@@ -297,6 +374,11 @@ def render_check(row,geometry,original,actual,*,deep=False):
                 distances=[abs(a-b) for a,b in zip(source_widths,widths)]
                 paired=bounded(max(distances,default=0.),source_error+pixel_error,limits['width'],
                     source_widths=source_widths,actual_widths=widths,method='paired_original_render_normal_chords',unit='source_px')
+            if not paired['valid']:
+                pw=Fraction(original.shape[1],actual.shape[1]);ph=Fraction(original.shape[0],actual.shape[0])
+                refined=axis_cell_width_bound(source_ink,actual_ink,chosen,tangents,((x,y),(ax*pw,ay*ph)),
+                    ((1,1),(pw,ph)),chord_limit,limits['width'],wanted)
+                refined['prior_inconclusive']=paired;paired=refined
             width_result={**_summary([width_result,paired]),'declared_interval':width_result,'paired_original':paired}
     else:width_result=invalid('No visible source shaft away from markers; requires a qualified local producer')
     marker_result=marker_pixels(row,original,actual,geometry,deep=deep)
@@ -421,6 +503,7 @@ def evaluate(task,state,candidate,contract,*,render=True,feature_ids=None):
                     {'line_decode':digest(__file__),'geometry':digest(Path(__file__).with_name('line_geometry.py')),'canvas':state['source_size'],'owner':name,'sites':sites},
                     lambda:decode(actual_nodes[name],parts,sites))
             except (ValueError,KeyError,TypeError,IndexError) as error:decode_errors[name]=str(error)
+    for row in spec['lines']:
         errors=[decode_errors[p['owner']] for p in row['parts'] if p['owner'] in decode_errors]
         if errors:
             checks[row['id']]={key:invalid('; '.join(errors)) for key in CRITERIA};continue

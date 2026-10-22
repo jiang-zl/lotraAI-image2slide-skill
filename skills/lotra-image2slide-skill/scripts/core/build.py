@@ -6,12 +6,13 @@ from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE, MSO_CONNECTOR
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_AUTO_SIZE
-from pptx.util import Inches, Pt
+from pptx.util import Inches, Pt, Centipoints
 from .common import digest, identity, safe_path, write_json, writer
 from .mathml import child, el, insert_math, math_zone, NS
 from .scene import validate
 from .geometry import custom_geometry,ported_shape,connector_points,bounds,set_native_route
 from . import VERSION
+from .font_resolution import merge_style, resolve_faces
 
 
 def inline_text_runs(ast, font='Cambria Math'):
@@ -83,7 +84,7 @@ def text_body(shape,content,style):
         if any('ast' in item for item in runs):
             # Office uses paragraph defaults for mixed native mathematical rows.
             faces=style.get('font_faces',{})
-            p.font.name=faces.get('latin',faces.get('ea',style.get('font','Times New Roman')));p.font.size=Pt(style.get('font_size',16))
+            p.font.name=faces.get('latin',faces.get('ea',style.get('font','Times New Roman')));p.font.size=Centipoints(round(style.get('font_size',16)*100))
         if content.get('paragraph_layout'):
             layouts=content['paragraph_layout']
             if len(layouts)!=len(paragraphs):raise ValueError('Native paragraph layout count must preserve exact text rows')
@@ -96,14 +97,14 @@ def text_body(shape,content,style):
             props.set('marL',str(round(left*12700)));props.set('marR',str(round(right*12700)))
         expanded=[]
         for item in runs:
-            faces={**style.get('font_faces',{}),**item.get('font_faces',{})}
+            faces=resolve_faces(style,item)
             math_face=faces.get('math',item.get('font',style.get('math_font',style.get('font','Cambria Math'))))
             simple=inline_text_runs(item['ast'],math_face) if 'ast' in item and native_math else None
             expanded.extend([{**{k:v for k,v in item.items() if k!='ast'},**r,'_lotra_math_run':True,'_lotra_math_span':span_index} for r in simple] if simple is not None else [item])
             if 'ast' in item:span_index+=1
         for item in expanded:
             size=item.get('font_size',style.get('font_size',16))*item.get('font_scale',1)
-            faces={**style.get('font_faces',{}),**item.get('font_faces',{})}
+            faces=resolve_faces(style,item)
             if 'ast' in item:
                 from .math_typography import apply
                 typography={k:style[k] for k in ('bold','italic') if k in style}
@@ -114,7 +115,10 @@ def text_body(shape,content,style):
                 r=p.add_run();r.text=item.get('text','')
                 primary=(faces.get('math',item.get('font','Cambria Math')) if item.get('_lotra_math_run') else
                          faces.get('latin',faces.get('ea',faces.get('cs',item.get('font',style.get('font','DejaVu Sans'))))))
-                r.font.size=Pt(size);r.font.name=primary
+                # DrawingML stores hundredths of a point. Passing Pt(18.15)
+                # through an EMU floor loses one centipoint; quantize once to
+                # that native unit before python-pptx serializes the integer.
+                r.font.size=Centipoints(round(size*100));r.font.name=primary
                 # Latin typeface alone leaves Chinese text on the theme font.
                 # Set script-specific faces on each actual native text run.
                 rpr=r._r.get_or_add_rPr()
@@ -252,35 +256,33 @@ def _finish_font_build(scene,output,record):
     return completed
 
 
-def build(scene, base, output,*,resume=False):
+def build(scene, base, output,*,resume=False,plan_only=False):
     from .workflow_guard import require_build
-    require_build(base,output)
+    if not plan_only:require_build(base,output)
     from .semantic_curves import compile_scene as compile_curves
     scene=compile_curves(scene,scene.get('curve_write_scope'))
     from .font_contract import compile_scene
-    scene=compile_scene(scene)
+    if not plan_only:scene=compile_scene(scene)
     from .frame_plan import compile_scene as compile_frames
     scene=compile_frames(scene,base,scene.get('curve_write_scope'))
-    output=Path(output)
-    proof=output.with_suffix('.font-build.json')
-    if resume and proof.is_file():
+    output=Path(output) if not plan_only else None
+    proof=output.with_suffix('.font-build.json') if output else None
+    if not plan_only and resume and proof.is_file():
         from .common import read_json
         with writer(output.parent):return _finish_font_build(scene,output,read_json(proof))
     import time,faulthandler
-    output=Path(output)
     begin=time.monotonic()
-    stack=output.with_suffix('.build-stack.log').open('a')
-    faulthandler.dump_traceback_later(60,repeat=True,file=stack)
+    stack=output.with_suffix('.build-stack.log').open('a') if output else None
+    if stack:faulthandler.dump_traceback_later(60,repeat=True,file=stack)
     def progress(stage,owner=None):
-        write_json(output.with_suffix('.build-progress.json'),
-                   {'stage':stage,'owner':owner,'seconds':time.monotonic()-begin})
+        if output:write_json(output.with_suffix('.build-progress.json'),
+                            {'stage':stage,'owner':owner,'seconds':time.monotonic()-begin})
     progress('scene_contract')
     objects = validate(scene, base)
     from .semantic_composition import compile_order
     semantic_order = compile_order(scene)
     progress('native_geometry')
-    output = Path(output)
-    if output.exists():
+    if output and output.exists():
         raise FileExistsError(output)
     prs = Presentation()
     from .session import implementation_identity
@@ -463,7 +465,7 @@ def build(scene, base, output,*,resume=False):
             for i, row in enumerate(rows):
                 for j, text in enumerate(row):
                     cell=s.table.cell(i,j)
-                    cs={**st,**c.get("cell_styles",[[{} for _ in row] for row in rows])[i][j]}
+                    cs=merge_style(st,c.get("cell_styles",[[{} for _ in row] for row in rows])[i][j])
                     cell.text=text
                     padding=cs.get('padding',0)
                     cell.margin_left=cell.margin_right=cell.margin_top=cell.margin_bottom=Pt(padding)
@@ -471,7 +473,7 @@ def build(scene, base, output,*,resume=False):
                     cell.fill.solid()
                     cell.fill.fore_color.rgb=RGBColor.from_string(cs.get("fill","FFFFFF"))
                     for paragraph in cell.text_frame.paragraphs:
-                        faces=cs.get('font_faces',{})
+                        faces=resolve_faces(cs)
                         primary=faces.get('latin',faces.get('ea',faces.get('cs',cs.get('font','DejaVu Sans'))))
                         paragraph.font.name=primary
                         for run in paragraph.runs:
@@ -480,7 +482,7 @@ def build(scene, base, output,*,resume=False):
                                 face=props.find('a:'+script,NS)
                                 if face is None:face=child(props,'a:'+script)
                                 face.set('typeface',faces.get(script,primary))
-                        paragraph.font.size=Pt(cs.get("font_size",14))
+                        paragraph.font.size=Centipoints(round(cs.get("font_size",14)*100))
                         paragraph.font.color.rgb=RGBColor.from_string(cs.get("color","17324D"))
                         paragraph.font.bold=cs.get('bold',False)
                         paragraph.font.italic=cs.get('italic',False)
@@ -542,6 +544,9 @@ def build(scene, base, output,*,resume=False):
             # whole geometry for namespace reconciliation. Move only mismatches.
             anchor=current[index];tree.remove(element);tree.insert(tree.index(anchor),element)
             current.remove(element);current.insert(index,element)
+    if plan_only:
+        return {'presentation':prs,'mapping':mapping,'scene':scene,
+                'scope':'Unsaved native emission plan only; no acceptance, embedding, render or delivery'}
     with writer(output.parent):
         if output.exists() or output.with_suffix(".mapping.json").exists():
             raise FileExistsError(output)

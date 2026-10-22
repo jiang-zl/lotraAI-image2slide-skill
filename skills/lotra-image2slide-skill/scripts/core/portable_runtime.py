@@ -102,8 +102,8 @@ def font_plan(scene, selections):
             raise ValueError('CAPABILITY_BLOCKED: selected font lacks required characters')
         if selection.get('class') not in ('song', 'serif', 'sans', 'hei', 'kai', 'fangsong', 'mono', 'math', 'other'):
             raise ValueError('Explicit font class required')
-        request_value = {k: request[k] for k in ('owner','location','role','characters','literal_hash','bold','italic','proposed_family')}
-        bindings[request['id']] = {'request': request, 'request_hash': identity(request_value),
+        from .font_resolution import request_key
+        bindings[request['id']] = {'request': request, 'request_hash': request_key(request),
             'family': face['family'], 'resource': face, 'origin': 'source_contract',
             'status': selection.get('source_identity', 'approximate'),
             'font_class': selection['class'],

@@ -53,7 +53,7 @@ def native_fields(before, after, patches, whole=False):
         elif path[0] == 'parent':result.add('reparent')
         elif path[0] == 'z_order':result.add('paint_order')
         elif path[0] == 'style' and len(path) >= 2:
-            result.add('style.font' if path[1] == 'font_faces' else 'style.'+path[1])
+            result.add('style.font' if path[1] in ('font_faces','font_intent') else 'style.'+path[1])
         elif path[0] == 'content':
             if path[1:2] == ['native_snapshot']:continue
             if kind == 'text':

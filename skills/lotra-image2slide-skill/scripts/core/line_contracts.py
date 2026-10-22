@@ -5,13 +5,14 @@ their bindings. Line descriptors contain original facts, never native owners.
 """
 import copy
 import math
+from pathlib import Path
 from .common import identity
 
 POLICY = 'evidence-checks-1.37.2'
 SCHEMA = 'source-line-1.37.2'
 ROLES = {'relationship', 'leader', 'dimension', 'axis', 'data_curve', 'boundary', 'decoration', 'internal_edge'}
 MARKERS = {'none', 'arrow', 'triangle', 'stealth', 'diamond', 'oval', 'bar', 'custom'}
-CONTACTS = {'free', 'boundary_touch', 'intentional_gap', 'inside_port', 'marker_center_on_boundary', 'circle_half_embedded'}
+CONTACTS = {'free', 'boundary_touch', 'intentional_gap', 'inside_port', 'marker_center_on_boundary', 'circle_half_embedded', 'line_junction'}
 DASHES = {'solid', 'dot', 'dash', 'lgDash', 'dashDot', 'lgDashDot', 'lgDashDotDot',
           'sysDash', 'sysDot', 'sysDashDot', 'sysDashDotDot', 'custom'}
 COMPOUNDS = {'single', 'double', 'thickThin', 'thinThick', 'triple'}
@@ -183,6 +184,14 @@ def validate_line(line, feature, features):
                 raise ValueError('LINE_SOURCE_REQUIRED: exact source feature incidence')
             if kind == 'crossings' and record.get('kind') not in ('crossing', 'bridge', 'occlusion'):
                 raise ValueError('LINE_SOURCE_REQUIRED: crossing is not automatically a junction')
+    for end in line['ends']:
+        contact=end['attachment']
+        if contact['kind']=='line_junction':
+            target=features[contact['feature']]
+            if (target.get('kind') not in ('internal_line','curve') or not target.get('line') or target['line'].get('path',{}).get('kind')=='closed' or
+                    not any({feature['id'],contact['feature']}<=set(row['features']) and
+                        math.dist(row['point'],end['point'])<=limits['endpoint'] for row in topology['junctions'])):
+                raise ValueError('LINE_SOURCE_REQUIRED: line_junction needs an open source line and explicit incident junction at this terminal')
     if not isinstance(visibility, dict) or set(visibility) != {'hidden'}:
         raise ValueError('LINE_SOURCE_REQUIRED: explicit visible/hidden path coverage')
     for hidden in visibility['hidden']:
@@ -266,6 +275,11 @@ def compile_contract(state, observed, contract, scene):
             'scope':'source feature lines plus all standalone editable native strokes; shape outlines retain contour gates'}
     spec['basis'] = identity(spec)
     contract['line_verification'] = spec
+    from .font_resolution import enabled as font_policy_enabled
+    if font_policy_enabled(state) and state.get('task_id'):
+        from .line_preflight import require as require_plan
+        task=Path(state['project'])/'.lotraAI-build/tasks'/state['task_id']
+        contract['line_preflight']=require_plan(task,state,scene,contract)
 
 
 def require_contract(state, contract):

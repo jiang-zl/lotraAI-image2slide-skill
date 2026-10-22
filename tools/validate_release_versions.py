@@ -56,6 +56,10 @@ def validate_skill_members(archive,gate,label):
     if verification:
         gate.equal(label+'/verification-policy',constant(archive.read('scripts/core/line_contracts.py'),'POLICY'),verification)
         gate.contains(label+'/verification-policy-entry',archive.read('SKILL.md').decode(),verification)
+    font_policy=json.loads(archive.read('config/customer-package.json')).get('font_workflow_policy')
+    if font_policy:
+        gate.equal(label+'/font-workflow-policy',constant(archive.read('scripts/core/font_resolution.py'),'POLICY'),font_policy)
+        gate.contains(label+'/font-workflow-policy-entry',archive.read('SKILL.md').decode(),font_policy)
     gate.product(label+'/packager',constant(archive.read('scripts/package_skill.py')))
     gate.product(label+'/product-core',constant(archive.read('scripts/core/__init__.py')))
     gate.contains(label+'/SKILL',archive.read('SKILL.md').decode(),f'# lotraAI Image2Slide v{gate.version}')
@@ -85,6 +89,11 @@ def validate(source,runtime=None,assets=None,bundle=None,final=False):
         gate.equal('publication/verification-policy',publication.get('verification_policy'),verification)
         gate.contains('source/verification-policy-entry',(skill/'SKILL.md').read_text(encoding='utf-8'),verification)
     gate.equal('publication/release_tag',publication['release_tag'],'v'+version)
+    font_policy=load(skill/'config/customer-package.json').get('font_workflow_policy')
+    if font_policy:
+        gate.equal('source/font-workflow-policy',constant((skill/'scripts/core/font_resolution.py').read_bytes(),'POLICY'),font_policy)
+        gate.equal('publication/font-workflow-policy',publication.get('font_workflow_policy'),font_policy)
+        gate.contains('source/font-workflow-policy-entry',(skill/'SKILL.md').read_text(encoding='utf-8'),font_policy)
     gate.product('publication/version_branch',publication['version_branch'])
     gate.equal('publication/release_branch',publication['release_branch'],'dev')
     gate.equal('publication/release_url',publication['release_url'],SOURCE_REPO+'/releases/tag/v'+version)

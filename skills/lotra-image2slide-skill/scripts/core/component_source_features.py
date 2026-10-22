@@ -4,6 +4,7 @@ Programs validate evidence identity and coverage; semantic truth remains an
 explicit current host/human judgment. Fixed construction is not visual PASS.
 """
 import copy
+from contextvars import ContextVar
 from .common import identity, read_json, write_json, safe_path, digest, writer
 
 VERSION = 'source-features-1.34.0'
@@ -15,6 +16,37 @@ CAPABILITIES = {'editable','closed_contour','smooth_contour','corners','hole',
 TIERS = {'native_text':0,'native_math':0,'native_connector':0,'preset':1,
          'native_composite':2,'native_surface':2,'native_path':3,
          'native_cubic':3,'raster_exception':4}
+_CORRECTION=ContextVar('lotra_focused_original_correction',default=None)
+
+
+def correction_active(task):
+    from pathlib import Path
+    return _CORRECTION.get()==Path(task).resolve()
+
+
+def correct_features(task,state,contract,request,scope):
+    """Correct only selected source features, then require the existing rebind."""
+    from pathlib import Path
+    from .workflow_guard import require
+    from .component_workflow import _resource
+    from .incremental_contract import _rows
+    require(task,'source observation correction')
+    patch=request['source_correction'];prior=state['source_feature_observation']
+    if (not isinstance(patch,dict) or set(patch)-{'prior_observation','features','corrections'} or
+            patch.get('prior_observation')!=prior or not patch.get('features') or not patch.get('corrections')):
+        raise ValueError('Focused source correction needs the current prior observation and bounded prior-hash feature rows')
+    allowed={row['feature'] for row in contract['feature_bindings'] if row['component'] in scope}
+    if any(row.get('id') not in allowed for row in patch['features']):
+        raise ValueError('Source correction escaped the selected component feature scope')
+    observed=copy.deepcopy(read_json(_resource(task,prior)))
+    observed['features']=_rows(observed['features'],patch['features'],limit=128,corrections=patch['corrections'],section='features')
+    observed['observations']+='\nFocused original reinspection: '+request['revision_reason']
+    revised={key:copy.deepcopy(request[key]) for key in ('revision_reason','source_corrections','spatial_corrections') if key in request}
+    revised['observation']=observed
+    token=_CORRECTION.set(Path(task).resolve())
+    try:result=observe(task,revised)
+    finally:_CORRECTION.reset(token)
+    return {**result,'status':'FOCUSED_SOURCE_CORRECTION_REBIND_REQUIRED','native_write':False,'acceptance':False}
 
 
 def enabled(contract):

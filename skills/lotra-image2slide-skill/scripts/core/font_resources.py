@@ -168,7 +168,15 @@ def catalogue(project, caps, configuration=None):
               'discovery': 'Existing private resources only; no installation or font redistribution'}
     if record != prior:
         write_json(cache, record)
-    return {'version': VERSION, 'environment_key': key, 'host': selected_host, 'catalogue': str(cache),
+    # Discovery is shared by task, render and backend commands. A descriptor
+    # must retain its exact catalogue when another command uses a different
+    # renderer configuration in the same project.
+    snapshot=root/'font-resource-catalogues'/(identity(record)+'.json')
+    if snapshot.is_file():
+        if read_json(snapshot)!=record:raise ValueError('Frozen font resource catalogue changed')
+    else:write_json(snapshot,record)
+    return {'version': VERSION, 'environment_key': key, 'host': selected_host, 'catalogue': str(snapshot),
+            'catalogue_sha256':digest(snapshot),
             'face_count': len(faces), 'unavailable_files': sum(not r['faces'] for r in found.values()),
             'font_config': configuration,'discovery_roots':discovered_roots}
 
@@ -178,6 +186,8 @@ def available(caps):
     path = Path(descriptor.get('catalogue', ''))
     if not path.is_file():
         return []
+    if descriptor.get('catalogue_sha256') and digest(path)!=descriptor['catalogue_sha256']:
+        raise ValueError('Frozen font resource catalogue changed')
     record = read_json(path)
     if record.get('environment_key') != descriptor.get('environment_key'):
         raise ValueError('Font resource catalogue belongs to another environment')

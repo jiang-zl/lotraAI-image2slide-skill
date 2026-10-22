@@ -11,13 +11,15 @@ def variant_requests(scene,row):
     from .font_contract import requests
     mapping=row['instance_transform']['owner_map']
     rows=requests(scene);by_id={request['id']:request for request in rows};pairs=[];targets=set()
-    fields=('location','role','characters','literal_hash','bold','italic','proposed_family')
+    from .font_resolution import POLICY,request_key
+    fields=('location','role','characters','literal_hash','bold','italic')
     for request in rows:
         if request['owner'] not in mapping:continue
         target_id=identity({'owner':mapping[request['owner']],
                             'location':request['location'],'role':request['role']})
         target=by_id.get(target_id)
-        if not target or any(request[k]!=target[k] for k in fields):
+        intent_fields=('required_family','intent_revision') if request.get('identity_policy')==POLICY else ('proposed_family',)
+        if not target or any(request.get(k)!=target.get(k) for k in fields+intent_fields):
             raise ValueError('SOURCE_DECISION_REQUIRED: declare matching target literals, run topology and bold/italic before variant construction')
         pairs.append((request,target));targets.add(target_id)
     if targets!={r['id'] for r in rows if r['owner'] in set(mapping.values())}:
@@ -34,8 +36,8 @@ def bind_variant_scene(scene,row):
         if not bound or not _request_match(bound,target):
             raise ValueError('FONT_BINDING_REQUIRED: bind the source target before constructing its text/style variant')
         copied=copy.deepcopy(bound);copied['request']=copy.deepcopy(request)
-        copied['request_hash']=identity({k:request[k] for k in
-            ('owner','location','role','characters','literal_hash','bold','italic','proposed_family')})
+        from .font_resolution import request_key
+        copied['request_hash']=request_key(request)
         copied['variant_target_request']=target['id'];bindings[request['id']]=copied
     return compile_scene(scene)
 

@@ -209,6 +209,7 @@ def start(source, project, *, name=None, objectives=None, configuration=None, pp
              'capabilities': caps, 'execution_contract':execution_contract.VERSION,
              'execution_policy':__import__(__package__+'.workflow_guard',fromlist=['POLICY']).POLICY,
              'verification_policy':__import__(__package__+'.line_contracts',fromlist=['POLICY']).POLICY,
+             'font_workflow_policy':__import__(__package__+'.font_resolution',fromlist=['POLICY']).POLICY,
              'stage': 'source_observation', 'analysis': None,
              'methods': {}, 'built': {}, 'scene': None, 'selected': None, 'active_candidate': None,
              'reviews': {}, 'issues': [], 'protected': {}, 'packet': None,
@@ -265,7 +266,8 @@ def _scene(task, state, override=None):
     return {'schema_version': '0.1', 'revision': state['revision'], 'canvas': canvas,
             'source': state['source'], 'evidence': _file(task, task/'source/evidence.json'),
             'profile': _file(task, task/'source/profile.json'), 'objects': objects,
-            'relations': analysis.get('scene_relations', []), 'prototypes': []}
+            'relations': analysis.get('scene_relations', []), 'prototypes': [],
+            'font_workflow_policy':state.get('font_workflow_policy')}
 
 
 def _component(state, target):
@@ -640,6 +642,11 @@ def _packet(task, state, kind, target, objective, roi=None, extra=None):
               None if kind in ('source_inventory','font_binding') else state['active_candidate'] or state['selected'],
               roi or [0,0,*state['source_size']], packet_id), **(extra or {})}
     candidate=state.get('active_candidate') or state.get('selected')
+    if kind.startswith('component_') and candidate:
+        # A first candidate has no selected baseline. Its identity must still
+        # be available for layout/review evidence through the current packet.
+        packet['current_candidate']={key:copy.deepcopy(candidate[key]) for key in
+            ('revision','pptx','scene','preview','render') if key in candidate}
     if candidate and candidate.get('render') and roi:
         bounds=_path(task,candidate['render']['path']).parent/'text-bounds.json'
         if bounds.is_file():
@@ -1115,6 +1122,36 @@ def _host_render_work(task,state):
 
 
 @transaction
+def _pending_font_work(task,state):
+    """Persist preparation facts while keeping native binding adoption staged."""
+    pending=state['font_pending_candidate'];ref=pending['scene']
+    if digest(_path(task,ref['path']))!=ref['sha256']:raise ValueError('Pending source font scene changed')
+    scene=read_json(_path(task,ref['path']))
+    working={**font_contract.pending_state(state),'font_contract':copy.deepcopy(font_contract.pending_state(state).get('font_contract',{}))}
+    font_contract.auto_bind(task,working,scene,persist=False)
+    if working.get('font_contract'):pending['staged_font_contract']=copy.deepcopy(working['font_contract'])
+    _save(task,state)
+    reading=font_contract.packet(task,working,scene)
+    # These are program preparation receipts, not native font adoption. A
+    # detached working ledger must not lose newly registered comparison refs.
+    for field in ('font_collection','font_rankings'):
+        if field in working:state[field]=copy.deepcopy(working[field])
+    if reading:
+        packet=_packet(task,state,'font_binding','source_fonts',
+            'Bind original/user font intent to real resources before drawing; do not replace an exact family with an available style peer.',extra=reading)
+        return {'status':'WORK_PACKET','task':str(task),'packet':packet}
+    from .workflow_guard import finite_writer
+    reason=copy.deepcopy(pending['reason'] or {})
+    if pending.get('staged_font_contract'):
+        scene=font_contract.bind_scene(task,working,scene)
+        reason.setdefault('post_save',{}).setdefault('state_updates',{})['font_contract']=copy.deepcopy(working['font_contract'])
+    with finite_writer(task):
+        _candidate(task,state,scene,baseline=pending['baseline'],allowed=pending['allowed'],reason=reason,
+                   transaction=read_json(_path(task,pending['transaction_path'])) if pending.get('transaction_path') else None)
+    if not state.get('objectives',{}).get('component_first'):_save(task,state)
+    return next_packet(task)
+
+
 def next_packet(task, configuration=None):
     task, state = _state(task)
     prior_route=state['capabilities'].get('fingerprint')
@@ -1194,29 +1231,7 @@ def next_packet(task, configuration=None):
     if state['packet']:
         return {'status': 'WORK_PACKET', 'task': str(task), 'packet': state['packet']}
     if state.get('font_pending_candidate'):
-        pending=state['font_pending_candidate'];ref=pending['scene']
-        if digest(_path(task,ref['path']))!=ref['sha256']:raise ValueError('Pending source font scene changed')
-        scene=read_json(_path(task,ref['path']))
-        working={**font_contract.pending_state(state),'font_contract':copy.deepcopy(font_contract.pending_state(state).get('font_contract',{}))}
-        font_contract.auto_bind(task,working,scene,persist=False)
-        if working.get('font_contract'):pending['staged_font_contract']=copy.deepcopy(working['font_contract'])
-        _save(task,state)
-        reading=font_contract.packet(task,working,scene)
-        if reading:
-            packet=_packet(task,state,'font_binding','source_fonts',
-                'Bind original/user font intent to real resources before drawing; do not replace an exact family with an available style peer.',extra=reading)
-            return {'status':'WORK_PACKET','task':str(task),'packet':packet}
-        from .workflow_guard import finite_writer
-        reason=copy.deepcopy(pending['reason'] or {})
-        if pending.get('staged_font_contract'):
-            scene=font_contract.bind_scene(task,working,scene)
-            reason.setdefault('post_save',{}).setdefault('state_updates',{})['font_contract']=copy.deepcopy(working['font_contract'])
-        with finite_writer(task):
-            _candidate(task,state,scene,baseline=pending['baseline'],allowed=pending['allowed'],reason=reason,
-                       transaction=read_json(_path(task,pending['transaction_path'])) if pending.get('transaction_path') else None)
-        if not state.get('objectives',{}).get('component_first'):_save(task,state)
-        # Component constructor owns its repository CAS; reload on the recursive next call.
-        return next_packet(task)
+        return _pending_font_work(task,state)
     if state['stage']=='font_delivery':
         candidate=state['active_candidate']
         if state.get('component_workflow') and state.get('objectives',{}).get('component_first'):
@@ -2152,6 +2167,11 @@ def _impact(state, old, new, grants, roi):
 @checked_submit
 def submit(task, result):
     task, state = _state(task)
+    from .font_selection import previous_submission
+    prior_receipt=previous_submission(state,result)
+    if prior_receipt:
+        return {'status':'FONT_SUBMISSION_ALREADY_RECORDED','font_submission':prior_receipt,
+                'stage':state['stage'],'next':'next '+str(task)}
     packet = state['packet']
     if packet:
         from .packet_compaction import restore
@@ -2220,10 +2240,33 @@ def _submit_current(task,state,packet,result):
             if digest(_path(task,ref['path']))!=ref['sha256']:raise ValueError('Pending source font scene changed')
             scene=read_json(_path(task,ref['path']))
             requested={r['id'] for r in packet['requests']}
+            if result.get('font_policy_migration'):
+                if any(result.get(key) for key in ('font_samples','font_constraints','font_bindings','font_revision_decision')):
+                    raise ValueError('Migrate the font policy separately from font decisions')
+                from .font_migration import migrate
+                return migrate(task,state,scene,result['font_policy_migration'])
             if result.get('font_revision_decision'):
                 if not state.get('objectives',{}).get('component_first'):raise ValueError('Located font redecision requires the component workflow')
                 if any(result.get(k) for k in ('font_bindings','font_samples','font_constraints')):raise ValueError('Submit a font redecision separately from binding changes')
                 return font_contract.retain_revision_decision(task,state,scene,packet,result['font_revision_decision'])
+            if packet.get('batch_id'):
+                from .font_selection import receive
+                try:
+                    working,receipt=receive(task,state,scene,packet,result)
+                except (ValueError,KeyError,TypeError) as error:
+                    ids=list(result.get('font_constraints',{}))+list(result.get('font_samples',{}))+[
+                        v.get('request_id') for v in result.get('font_bindings',[]) if isinstance(v,dict)]
+                    receipt={'schema':'font-submission-1','batch_id':packet['batch_id'],'packet_id':packet['packet_id'],
+                        'required_step':packet['required_step'],'source_hash':state['source']['sha256'],
+                        'applied':False,'accepted':[],'rejected':[{'request_id':key,'reason':str(error)} for key in ids],
+                        'error':str(error),'state':'unchanged'}
+                    state['font_submission_receipt']=receipt
+                    _save(task,state)
+                    return {'status':'FONT_SUBMISSION_REJECTED','font_submission':receipt,'next':'next '+str(task)}
+                state.clear();state.update(working)
+                state['actions']+=1;state['packet']=None
+                _save(task,state)
+                return {'status':'RESULT_RECORDED','font_submission':receipt,'stage':state['stage'],'next':'next '+str(task)}
             if any(v.get('request_id') not in requested for v in result.get('font_bindings',[])):
                 raise ValueError('Font response expands beyond this bounded work packet')
             if result.get('font_samples'):

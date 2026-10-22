@@ -139,6 +139,7 @@ def source_checks(expected, actual, phase, tolerance):
 
 def style_checks(obj, node):
     """Font size/face/weight/colour are native attributes, not raster proxies."""
+    from .font_resolution import merge_style, resolve_faces
     rows = []
     def add(name, passed, detail=None):
         rows.append({'object_id': obj['id'], 'check_id': name, 'status': 'PASS' if passed else 'FAIL', 'detail': detail})
@@ -151,11 +152,10 @@ def style_checks(obj, node):
             add(label+'.'+flag, (props.get('b' if flag=='bold' else 'i','0') in ('1','true')) == bool(expected.get(flag,False)))
         colour = props.find('a:solidFill/a:srgbClr', NS)
         add(label+'.color', colour is not None and colour.get('val') == expected.get('color','17324D'))
-        faces = expected.get('font_faces', {})
-        primary = expected.get('font','DejaVu Sans')
+        faces = resolve_faces(expected)
         for script in ('latin','ea','cs'):
             face = props.find('a:'+script, NS)
-            add(label+'.font_'+script, face is not None and face.get('typeface') == faces.get(script,primary))
+            add(label+'.font_'+script, face is not None and face.get('typeface') == faces[script])
     if kind == 'text':
         paragraphs = content.get('paragraphs') or [content.get('runs') or [{'text':content.get('text','')}]]
         actual_paragraphs = node.findall('p:txBody/a:p', NS)
@@ -168,7 +168,7 @@ def style_checks(obj, node):
             ordinary = [r for r in wanted if 'ast' not in r]
             add('run_count.'+str(pi), len(native) == len(ordinary))
             for ri,(want,run) in enumerate(zip(ordinary,native)):
-                run_check(run.find('a:rPr',NS), {**style,**want}, 'p%d.r%d'%(pi,ri))
+                run_check(run.find('a:rPr',NS), merge_style(style,want), 'p%d.r%d'%(pi,ri))
         body = node.find('p:txBody/a:bodyPr', NS)
         add('text_no_autoshrink', body is not None and body.find('a:normAutofit',NS) is None)
     elif kind == 'table':
@@ -184,7 +184,7 @@ def style_checks(obj, node):
             add('table_'+label+'_dimensions',len(nodes)==len(wanted) and all(abs(int(n.get(attribute,'0'))-w)<=2 for n,w in zip(nodes,wanted)))
         for ri,row in enumerate(native_rows):
             for ci,cell in enumerate(row.findall('a:tc',NS)):
-                selected = {**style, **content.get('cell_styles',[[{} for _ in r] for r in content['rows']])[ri][ci]}
+                selected = merge_style(style,content.get('cell_styles',[[{} for _ in r] for r in content['rows']])[ri][ci])
                 props = cell.find('a:txBody/a:p/a:pPr/a:defRPr',NS)
                 # Table font faces are explicitly on each run, paragraph owns style.
                 merged = deepcopy(props) if props is not None else E.Element('{'+NS['a']+'}rPr')

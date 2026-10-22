@@ -198,6 +198,11 @@ def environment_changed(caps, project):
     if not catalogue_file.is_file():
         return True
     record = read_json(catalogue_file)
+    if record.get('environment_key')!=descriptor.get('environment_key'):
+        return True  # Legacy shared catalogue was replaced by another route.
+    if descriptor.get('catalogue_sha256'):
+        from .common import digest
+        if digest(catalogue_file)!=descriptor['catalogue_sha256']:return True
     for path, row in record.get('files', {}).items():
         file = Path(path)
         if not file.is_file():

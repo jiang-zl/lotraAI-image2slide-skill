@@ -6,8 +6,9 @@ from . import font_collection as collection
 
 def basis(scene,state):
     from .font_contract import requests
-    return identity({'source':state['source']['sha256'],'requests':sorted(collection.request_key(r) for r in requests(scene)),
-                     'policy':collection.policy(),'explicit':state['objectives'].get('font_requests',{})})
+    return identity({'source':state['source']['sha256'],'requests':sorted(collection.request_key(r) for r in requests(scene,state)),
+                     'policy':collection.policy(),'explicit':state['objectives'].get('font_requests',{}),
+                     'source_style_groups':state.get('font_groups',{})})
 
 
 def current(scene,state,ledger):
@@ -27,7 +28,7 @@ def packet(task,state,contract,ledger,candidate):
     from . import component_workflow as c
     from .font_contract import requests,user_family
     scene=read_json(c._resource(task,candidate['scene']));key=basis(scene,state)
-    intents=requests(scene)
+    intents=requests(scene,state)
     collection.prepare(state)
     context=identity({'preview':candidate.get('preview'),'renderer':state['capabilities'].get('fingerprint'),
         'selection':{r['id']:collection.selection_context(state,r,True) for r in intents
@@ -51,6 +52,7 @@ def packet(task,state,contract,ledger,candidate):
                      'source_samples_required':not protected and rank is None})
     plan={'basis':key,'source_hash':state['source']['sha256'],'pptx_hash':candidate['pptx']['sha256'],
           'context':context,'preview':candidate.get('preview'),'requests':rows,'collection_revision':collection.load(state['project']).get('revision'),
+          'source_style_groups':copy.deepcopy(state.get('font_groups',{})),
           'return':'phase=prepare with font_samples or font_constraints if needed; then phase=complete, evidence, changes[{request_id,comparison_ref}], source_hash, pptx_hash',
           'rule':'Review once after parts and layout. Only a better eligible same-language font can replace a binding. Exact user requests and user locks are preserved; archive selected new fonts before native mutation.'}
     ledger['font_review_plan']=plan
@@ -131,7 +133,7 @@ def submit(task,request):
     allowed={owner:['style.font'] for owner in owners}
     # Build a detached binding plan; no active task binding changes before the native journal.
     keys=('project','source','objectives','capabilities','font_contract','font_samples','font_rankings',
-          'font_constraints','source_font_metadata')
+          'font_constraints','font_groups','font_workflow_policy','font_intent_overrides','component_workflow','source_font_metadata')
     working={key:copy.deepcopy(state[key]) for key in keys if key in state}
     working['font_pending_candidate']={'allowed':allowed}
     fonts.bind(task,working,scene,values,persist=False)

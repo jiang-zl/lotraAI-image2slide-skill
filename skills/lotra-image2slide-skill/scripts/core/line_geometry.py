@@ -280,6 +280,37 @@ def _reduced(points):
     return result
 
 
+def separate_marker_paint_extent(entry, vertices, anchor):
+    """Exact polygon paint envelope only for independently qualified saved paint.
+
+    A shaft's ending multiplier cannot bound an unrelated marker owner. Unknown
+    inherited/stroked/effect paint keeps the conservative producer instead.
+    """
+    props=entry['node'].find('p:spPr',NS)
+    preset=props.find('a:prstGeom',NS);line=props.find('a:ln',NS)
+    if (preset is None or preset.get('prst') not in ('triangle','diamond','rect') or
+        preset.find('a:avLst',NS) is not None and len(preset.find('a:avLst',NS))):return None
+    if line is None or line.find('a:noFill',NS) is None:return None
+    if any(line.find('a:'+name,NS) is not None for name in ('solidFill','gradFill','pattFill')):return None
+    if any(n.get('type','none')!='none' for n in line if n.tag.rsplit('}',1)[-1] in ('headEnd','tailEnd')):return None
+    effects=props.find('a:effectLst',NS)
+    if props.find('a:effectDag',NS) is not None or effects is not None and len(effects):return None
+    effect_ref=entry['node'].find('p:style/a:effectRef',NS)
+    if effect_ref is not None and effect_ref.get('idx','0')!='0':return None
+    paints=[n for n in props if n.tag.rsplit('}',1)[-1] in ('solidFill','gradFill','pattFill','blipFill','noFill','grpFill')]
+    if len(paints)!=1 or paints[0].tag.rsplit('}',1)[-1]!='solidFill':return None
+    rgb=paints[0].find('a:srgbClr',NS)
+    if rgb is None or len(paints[0])!=1 or any(n.tag.rsplit('}',1)[-1]!='alpha' or n.get('val')!='100000' for n in rgb):return None
+    colour=rgb.get('val','')
+    if len(colour)!=6 or any(c not in '0123456789ABCDEFabcdef' for c in colour):return None
+    vertices=np.asarray(vertices,float);anchor=np.asarray(anchor,float)
+    if vertices.ndim!=2 or vertices.shape[1]!=2 or not len(vertices) or not np.isfinite(vertices).all() or not np.isfinite(anchor).all():return None
+    lo=vertices.min(axis=0);hi=vertices.max(axis=0)
+    return {'method':'independent_saved_polygon_marker_paint','bounds':[float(lo[0]),float(lo[1]),float(hi[0]),float(hi[1])],
+            'radius_from_source_anchor':float(np.abs(vertices-anchor).max()),'stroke_painted':False,
+            'fill':rgb.get('val'),'effects':'none','source_anchor':anchor.tolist()}
+
+
 def native_checks(row, decoded, nodes, bindings, epsilon):
     source=row['source'];limits=source['limits'];closed=source['path']['kind']=='closed'
     expected, _=flatten(source['path']['segments'],epsilon)
@@ -355,7 +386,7 @@ def native_checks(row, decoded, nodes, bindings, epsilon):
         route['geometric_bound']=dict(route)
         route['traversal_order']=invalid('MEASUREMENT_REQUIRED: self-intersecting curved traversal needs ordered measurement or source-declared simple parts')
         route['passed']=False;route['valid']=False
-    terminals=[];markers=[];stroke=[]
+    terminals=[];markers=[];stroke=[];marker_paint_extents={}
     for i,part in enumerate(oriented):
         for native_index,ending in enumerate(part['native']['style']['markers']):
             index=1-native_index if part['reverse'] else native_index
@@ -404,9 +435,12 @@ def native_checks(row, decoded, nodes, bindings, epsilon):
                     length=float(np.ptp(vertices@axis));width=float(np.ptp(vertices@normal))
                     dimension_good=all(lo-limits['marker']<=value<=hi+limits['marker'] for value,(lo,hi) in ((width,end['marker']['width']),(length,end['marker']['length'])))
                     anchor=vertices.mean(axis=0) if end['marker']['anchor_role']=='center' else vertices[np.argmin(np.linalg.norm(vertices-np.asarray(end['marker']['anchor']),axis=1))]
-                    if end['marker']['anchor_role']=='path_endpoint':anchor=np.asarray(p)
                     anchor_good=math.dist(anchor,end['marker']['anchor'])<=limits['marker']
                     marker_check.update(dimensions={'passed':dimension_good,'width':width,'length':length},anchor={'passed':anchor_good,'actual':anchor.tolist()})
+                    extent=separate_marker_paint_extent(entry,vertices,end['marker']['anchor'])
+                    if extent is not None:
+                        extent['owner']=custom[0]['owner'];marker_paint_extents[str(index)]=extent
+                        marker_check['paint_extent']=extent
                     marker_check['passed']=marker_check['passed'] and dimension_good and anchor_good
                     if end['marker'].get('contour'):
                         expected_contour=LineString(end['marker']['contour']);saved_contour=LineString(vertices)
@@ -421,19 +455,29 @@ def native_checks(row, decoded, nodes, bindings, epsilon):
             contact=end['attachment']
             if contact['kind']!='free':
                 target_binding=bindings[contact['feature']];targets=target_binding['owners']
-                from .connection_geometry import _boundary
-                domains=[_boundary(nodes[name]) for name in targets]
-                body=unary_union(domains)
                 actual_contact=anchor if custom and contact['kind'] in ('marker_center_on_boundary','circle_half_embedded') else p
-                pt=Point(actual_contact);distance=float(pt.distance(body.boundary))
+                pt=Point(actual_contact)
+                if contact['kind']=='line_junction':
+                    peers=[decoded[name] for name in targets if name in decoded and not decoded[name]['closed']]
+                    if not peers:raise ValueError('Line junction needs a measured open peer shaft')
+                    domains=[LineString(flatten(peer['segments'],epsilon)[0]) for peer in peers]
+                    distance=float(pt.distance(unary_union(domains)))
+                else:
+                    from .connection_geometry import _boundary
+                    body=unary_union([_boundary(nodes[name]) for name in targets])
+                    distance=float(pt.distance(body.boundary))
                 lo,hi=contact['distance'];kind=contact['kind']
                 good=lo-limits['endpoint']<=distance<=hi+limits['endpoint']
+                if kind=='line_junction':good=max(0,distance-epsilon)>=max(0,lo-limits['endpoint']) and distance+epsilon<=hi+limits['endpoint']
                 if kind=='intentional_gap':good=good and not body.contains(pt)
                 elif kind=='inside_port':good=good and body.contains(pt)
                 check['contact']={'passed':bool(good),'kind':kind,'distance':distance,'targets':targets}
+                if kind=='line_junction':check['contact']['approximation_error']=epsilon
                 check['passed']=check['passed'] and good
                 entry=nodes[q['owner']]
-                if entry['tag']=='cxnSp':
+                if kind=='line_junction':
+                    check['native_binding_scope']='source-declared shaft junction; independent geometry and reciprocal topology required; automatic rerouting is not claimed'
+                elif entry['tag']=='cxnSp':
                     connection=entry['node'].find('p:nvCxnSpPr/p:cNvCxnSpPr/a:'+('stCxn' if native_index==0 else 'endCxn'),NS)
                     ids={nodes[name]['node'].find('.//p:cNvPr',NS).get('id') for name in targets}
                     connected=connection is not None and connection.get('id') in ids
@@ -473,4 +517,4 @@ def native_checks(row, decoded, nodes, bindings, epsilon):
         good=bool(bodies) and piece.difference(unary_union(bodies).buffer(limits['route'])).is_empty
         occlusions.append(result(good,occluder=item['occluder'],segment=item['segment'],scope='opaque actual owner covers original hidden interval and paints after shafts'))
     return {'route':route,'terminals':aggregate(terminals),'markers':aggregate(markers),'stroke':aggregate(stroke),'visibility_native':aggregate(occlusions),
-            'paths':paths,'expected':expected,'oriented':oriented}
+            'paths':paths,'expected':expected,'oriented':oriented,'marker_paint_extents':marker_paint_extents}

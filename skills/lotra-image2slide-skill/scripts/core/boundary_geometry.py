@@ -59,6 +59,11 @@ def saved_nodes(pptx, size):
     from .resource_facts import xml_part
     tree = xml_part(pptx, 'ppt/slides/slide1.xml')
     canvas = xml_part(pptx, 'ppt/presentation.xml').find('p:sldSz', NS)
+    return nodes_from_trees(tree,canvas,size)
+
+
+def nodes_from_trees(tree, canvas, size):
+    """Decode independent XML frames from either saved bytes or an unsaved plan."""
     scale = np.diag([size[0]/int(canvas.get('cx')), size[1]/int(canvas.get('cy')), 1.])
     result = {}
     def visit(parent, mapping, inherited_error=None):

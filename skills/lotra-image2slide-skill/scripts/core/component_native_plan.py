@@ -12,7 +12,7 @@ def prepare(task, state, before, proposed, grants, rebuild_owners=()):
     before=normalize_scene(before);scene=normalize_scene(proposed)
     validate(scene,task)
     if any(before.get(k)!=scene.get(k) for k in set(before)|set(scene)
-           if k not in ('objects','relations','font_plan')):
+           if k not in ('objects','relations','font_plan','font_workflow_policy')):
         raise ValueError('Local native plan cannot change the original canvas or global source facts')
     if scene['source']['sha256']!=state['source']['sha256']:
         raise ValueError('Native plan belongs to another original')

@@ -5,7 +5,18 @@ from .constructor_registry import work_units
 DECISIONS = {'MODEL_OR_SOURCE_DECISION_REQUIRED','SEARCH_BOUND_REACHED','MODEL_RESELECT_REQUIRED',
              'SOURCE_DECISION_REQUIRED','MEASUREMENT_DIAGNOSIS_REQUIRED',
              'SOURCE_AMBIGUITY_REQUIRED','REPRESENTATION_DECISION_REQUIRED','REPRESENTATION_INSUFFICIENT',
-             'SPATIAL_SOURCE_DECISION_REQUIRED', 'SPATIAL_FRAME_DECISION_REQUIRED', 'SPATIAL_RELATIONS_UNMET'}
+             'SPATIAL_SOURCE_DECISION_REQUIRED', 'SPATIAL_FRAME_DECISION_REQUIRED', 'SPATIAL_RELATIONS_UNMET',
+             'SOURCE_LINE_CONSTRAINT_REQUIRED','SPECIALIST_OR_INSTANCE_EVIDENCE_REQUIRED'}
+EVALUATION_STATES={'PENDING','RECHECK_REQUIRED','ACTUAL_NATIVE_CONFIRMATION_REQUIRED'}
+KNOWN_STATUSES=DECISIONS|EVALUATION_STATES|{'QUALIFIED','SPATIAL_REPAIR_WAITING','REPAIR_REQUIRED',
+    'SOURCE_DECISION_APPLY_REQUIRED','USER_INTENT_REQUIRED','MEASUREMENT_INVALID','MEASUREMENT_REQUIRED',
+    'HARD_CONSTRAINT_FAILED','NUMERIC_READY','LOCAL_TARGETS_UNMET','ASSEMBLY_RELATIONS_REQUIRED',
+    'INSTANCE_NATIVE_CONFIRMATION_REQUIRED'}
+COMMON_STATES=DECISIONS|{'QUALIFIED','SPATIAL_REPAIR_WAITING','REPAIR_REQUIRED','SOURCE_DECISION_APPLY_REQUIRED',
+    'USER_INTENT_REQUIRED','MEASUREMENT_INVALID','MEASUREMENT_REQUIRED','HARD_CONSTRAINT_FAILED'}
+ROUTE_STATES={'fixed_parameters':EVALUATION_STATES,'local_fit':EVALUATION_STATES|{'NUMERIC_READY','LOCAL_TARGETS_UNMET'},
+    'assembly':{'PENDING','RECHECK_REQUIRED','ASSEMBLY_RELATIONS_REQUIRED'},
+    'instance':{'PENDING','RECHECK_REQUIRED','INSTANCE_NATIVE_CONFIRMATION_REQUIRED'}}
 
 
 def available(contract,ledger,candidate):
@@ -25,6 +36,7 @@ def available(contract,ledger,candidate):
         repairs=[key for key in repairs if ledger['components'][key].get('repair_phase',5)==phase]
     for row in rows.values():
         record=ledger['components'][row['id']]; status=record['status']; route=row['route']
+        invalid_state=status not in COMMON_STATES|ROUTE_STATES.get(route,set()) or route not in ROUTE_STATES
         if status=='SPATIAL_REPAIR_WAITING':continue
         if status=='QUALIFIED': continue
         children=[r['id'] for r in rows.values() if r.get('parent')==row['id']]
@@ -32,12 +44,14 @@ def available(contract,ledger,candidate):
         # Finish the retained source-apply scope before offering a different repair batch.
         if status in ('REPAIR_REQUIRED','SOURCE_DECISION_APPLY_REQUIRED') and not repairing:continue
         if repairing and row['id']!=repairs[0]:continue
-        if not repairing and status not in DECISIONS and status not in ('USER_INTENT_REQUIRED','MEASUREMENT_INVALID','MEASUREMENT_REQUIRED'):
+        if not invalid_state and not repairing and status not in DECISIONS and status not in ('USER_INTENT_REQUIRED','MEASUREMENT_INVALID','MEASUREMENT_REQUIRED'):
             if route=='assembly' and any(ledger['components'][key]['status']!='QUALIFIED' for key in children): continue
             if row.get('mother') and ledger['components'][row['mother']]['status']!='QUALIFIED': continue
         stage='assembly' if route=='assembly' else 'instance' if route=='instance' else 'fit'
         operation='qualify'; automatic=False; write_set=[]
-        if status in ('REPAIR_REQUIRED','SOURCE_DECISION_APPLY_REQUIRED'):
+        if invalid_state:
+            operation='diagnostic_stop';stage='source'
+        elif status in ('REPAIR_REQUIRED','SOURCE_DECISION_APPLY_REQUIRED'):
             operation='edit';stage='structure'
             write_set=[g for key in repairs for g in ledger['components'][key].get('repair_grant',[])]
         elif status=='USER_INTENT_REQUIRED':
@@ -54,7 +68,7 @@ def available(contract,ledger,candidate):
             stage='structure'; operation='source_or_measurement_decision'
         elif row.get('model',{}).get('source_adapter') and not record.get('source_proposal') and route=='local_fit':
             stage='source'; operation='source_prepare'; automatic=bool(row['model'].get('source_request'))
-        elif route=='fixed_parameters' or route=='local_fit' and status in ('PENDING','RECHECK_REQUIRED','ACTUAL_NATIVE_CONFIRMATION_REQUIRED'):
+        elif route in ('fixed_parameters','local_fit') and status in EVALUATION_STATES:
             operation='evaluate'; automatic=route=='fixed_parameters' or bool(candidate.get('preview'))
         elif route=='local_fit' and status=='NUMERIC_READY':
             operation='commit';automatic=True
@@ -80,7 +94,7 @@ def available(contract,ledger,candidate):
         from .component_revision import overlap
         conflict=any(item['owner']==lock['owner'] and overlap(item['field'],lock['field'])
                      for item in write_set for lock in locked_fields)
-        if dependency_unknown or conflict:
+        if (dependency_unknown or conflict) and not invalid_state:
             operation='source_or_measurement_decision'; automatic=False; stage='source'; write_set=[]
         probe=record.get('immediate_probe')
         # Probe only has authority for this exact component signature.
@@ -89,13 +103,14 @@ def available(contract,ledger,candidate):
                    probe.get('context')==record.get('probe_context') else None)
         actions.append({'id':row['id'],'operator':operation,'operation':operation,
             'stage_index':order[stage],'stage':stage,'critical':int(row.get('critical',False)),
-            'legal':True,'risk_tier':2 if reuse else 1 if row.get('required_relations') or route=='instance' else 0,
+            'legal':operation!='diagnostic_stop','risk_tier':2 if reuse else 1 if row.get('required_relations') or route=='instance' else 0,
             'reuse_count':reuse,'source_distance':0 if row.get('source_facts') else 1,
             'static_work_units':work_units(row,operation),'immediate_violation_reduction':reduction,
             'read_set':row.get('dependency_refs',[]),'write_set':write_set,'executable':automatic,
             'component':row,'status':status,'repair_components':repairs if repairing and operation=='edit' else [],
             'decided_scene':structural.get('scene') if repairing and applying else None,
             'rebuild_owners':structural.get('rebuild_owners',[]) if repairing and applying else [],
-            'decision_reason':'dependency_or_user_lock' if dependency_unknown or conflict else None})
+            'blockers':record.get('blockers',[]),
+            'decision_reason':'unknown_or_incompatible_component_status' if invalid_state else 'dependency_or_user_lock' if dependency_unknown or conflict else None})
     return actions
 

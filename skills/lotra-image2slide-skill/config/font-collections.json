@@ -10,6 +10,12 @@
   "unknown_chinese_probe_minimum": 0.9,
   "max_ranked_faces": 256,
   "max_glyph_samples": 12,
+  "style_profile_policy": "font-workflow-1.37.4",
+  "style_profiles": {
+    "sans": ["SimHei", "黑体", "Microsoft YaHei", "微软雅黑", "Microsoft YaHei UI", "Microsoft JhengHei", "微軟正黑體", "DengXian", "等线", "STHeiti", "华文黑体", "Noto Sans CJK SC", "Noto Sans CJK TC", "Source Han Sans SC", "Source Han Sans TC", "Source Han Sans CN", "思源黑体", "PingFang SC", "PingFang TC", "Heiti SC", "Heiti TC", "WenQuanYi Zen Hei", "WenQuanYi Micro Hei"],
+    "serif": ["SimSun", "宋体", "NSimSun", "新宋体", "FangSong", "仿宋", "PMingLiU", "新細明體", "MingLiU", "細明體", "STSong", "华文宋体", "STFangsong", "华文仿宋", "Noto Serif CJK SC", "Noto Serif CJK TC", "Source Han Serif SC", "Source Han Serif TC", "Source Han Serif CN", "思源宋体", "Songti SC", "Songti TC"],
+    "calligraphic": ["KaiTi", "楷体", "STKaiti", "华文楷体"]
+  },
   "minimum_improvement": 0.002,
   "classification": "Exclusive family membership; otherwise explicit font metadata and glyph coverage. Latin glyph availability alone never makes a Chinese family an English family.",
   "archive": "Project-local content-addressed full files and immutable collection revisions; never OS installation or automatic redistribution of host fonts.",

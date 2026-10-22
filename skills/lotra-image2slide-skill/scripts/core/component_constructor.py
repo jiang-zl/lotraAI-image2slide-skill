@@ -12,6 +12,8 @@ def construct(task,state,scene,baseline=None,allowed=None,reason=None,transactio
     from .scene import validate
     from .tables import normalize_scene
     scene=normalize_scene(scene)
+    if baseline and scene.get('font_plan'):
+        scene=fonts.preserve_unwritten_nodes(scene,read_json(c._resource(task,baseline['scene'])),allowed)
     if baseline:c.guard_changes(task,state,scene,allowed,(reason or {}).get('revision_components',()))
     from .semantic_curves import compile_scene
     scene=compile_scene(scene,allowed)
@@ -24,13 +26,27 @@ def construct(task,state,scene,baseline=None,allowed=None,reason=None,transactio
             if not str(error).startswith(('FONT_BINDING_REQUIRED','FONT_LANGUAGE_CONFLICT')):raise
             scene=copy.deepcopy(scene);scene.pop('font_plan',None)
     if not scene.get('font_plan'):
-        fonts.auto_bind(task,state,scene)
-        if fonts.missing(scene,state):
+        working={**state,'font_contract':copy.deepcopy(state.get('font_contract') or
+            {'version':fonts.VERSION,'bindings':{},'history':[]})}
+        fonts.auto_bind(task,working,scene,persist=False)
+        if fonts.missing(scene,working):
             file=task/'scratch'/('component-font-pending-'+identity(scene)[:16]+'.json');write_json(file,scene)
             state['font_pending_candidate']={'scene':a._file(task,file),'baseline':baseline,'allowed':allowed,'reason':reason,
                 'transaction_path':transaction['path'] if transaction else None}
+            if working['font_contract'].get('bindings'):
+                state['font_pending_candidate']['staged_font_contract']=copy.deepcopy(working['font_contract'])
             state.update(stage='font_binding',packet=None);a._save(task,state);return None
-        scene=fonts.bind_scene(task,state,scene)
+        scene=fonts.bind_scene(task,working,scene)
+        if working['font_contract'].get('bindings'):
+            reason=copy.deepcopy(reason or {'kind':'component_source_constructor'})
+            updates=reason.setdefault('post_save',{}).setdefault('state_updates',{})
+            for key in ('font_contract','font_collection'):
+                if key in working:updates[key]=copy.deepcopy(working[key])
+    if baseline:
+        scene=fonts.preserve_unwritten_nodes(scene,read_json(c._resource(task,baseline['scene'])),allowed)
+    from .line_preflight import require as require_line_plan
+    contract_for_plan,_=c._load(task,state)
+    require_line_plan(task,state,scene,contract_for_plan)
     from .component_transactions import begin,phase,saved,release_local,attempt_folder
     tx=transaction or begin(task,state,scene,baseline,allowed,reason)
     if transaction:
