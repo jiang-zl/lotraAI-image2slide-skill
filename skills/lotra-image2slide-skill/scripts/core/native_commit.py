@@ -103,7 +103,7 @@ def _copy_slot(target, donor, names):
 NATIVE_LEAF_FIELDS=frozenset(('group_translate','style.math_font_policy','style.color',
     'style.text_outline_width_pt','style.text_outline_alpha','style.font_size','style.font','style.bold','style.italic',
     'style.char_spacing_pt','style.line_spacing','style.line_spacing_pt','style.align','style.valign','fill_color','line_color','style.line_width','style.stroke',
-    'style.line_cap','style.dash','style.gradient','style.gradient_angle','geometry','fill','line',
+    'style.line_cap','style.line_join','style.line_compound','style.dash','style.custom_dash','style.gradient','style.gradient_angle','geometry','fill','line',
     'effects','style.fill','rotation','style.rotation','bbox.left','bbox.top','bbox.width',
     'bbox.height','text_content','text_body','equation','connector','replace_native','table_text','style.fill_alpha','style.stroke_alpha','style.gradient_positions'))
 
@@ -310,18 +310,23 @@ def _field(target, donor, field):
                 raise ValueError('Color-only edit must retain a solid RGB fill')
             a.set('val',b.get('val'))
         return
-    if field=='style.line_cap':
+    if field in ('style.line_cap','style.line_compound'):
         a,b=_sp(target).find('a:ln',NS),_sp(donor).find('a:ln',NS)
         if a is None or b is None:raise ValueError('Native line cap needs an existing line')
-        if b.get('cap') is None:a.attrib.pop('cap',None)
-        else:a.set('cap',b.get('cap'))
+        attr='cap' if field=='style.line_cap' else 'cmpd'
+        if b.get(attr) is None:a.attrib.pop(attr,None)
+        else:a.set(attr,b.get(attr))
         return
-    if field=='style.dash':
+    if field in ('style.dash','style.custom_dash','style.line_join'):
         a,b=_sp(target).find('a:ln',NS),_sp(donor).find('a:ln',NS)
         if a is None or b is None:raise ValueError('Native dash requires an existing line')
-        old,new=a.find('a:prstDash',NS),b.find('a:prstDash',NS)
-        if old is not None:a.remove(old)
-        if new is not None:a.insert(1,copy.deepcopy(new))
+        slots=('round','bevel','miter') if field=='style.line_join' else ('prstDash','custDash')
+        for tag in slots:
+            old=a.find('a:'+tag,NS)
+            if old is not None:a.remove(old)
+        new=next((b.find('a:'+tag,NS) for tag in slots if b.find('a:'+tag,NS) is not None),None)
+        before=next((i for i,item in enumerate(a) if item.tag.rsplit('}',1)[-1] in ('headEnd','tailEnd','extLst')),len(a))
+        if new is not None:a.insert(before,copy.deepcopy(new))
         return
     if field in ('style.gradient','style.gradient_angle'):
         _field(target,donor,'fill');return
@@ -388,13 +393,12 @@ def _field(target, donor, field):
         for tag in ('headEnd','tailEnd'):
             arrow=incoming.find('a:'+tag,NS)
             if arrow is not None:line.insert(index,copy.deepcopy(arrow));index+=1
-        # Direction flags belong to the connector route. Keeping the old
-        # flip when a route turns from horizontal to vertical reflects it
-        # inside its box, even when the endpoints/positions are correct.
+        # The complete transform is derived route geometry, including its
+        # endpoints' off/ext. Copying only flags puts a repaired route inside
+        # the previous box. Parent axes were verified before this scoped merge.
         ax,bx=_sp(target).find('a:xfrm',NS),_sp(donor).find('a:xfrm',NS)
-        for attr in ('flipH','flipV','rot'):
-            if bx.get(attr) is None:ax.attrib.pop(attr,None)
-            else:ax.set(attr,bx.get(attr))
+        if ax is None or bx is None:raise ValueError('Native connector route transform is missing')
+        ax.getparent().replace(ax,copy.deepcopy(bx))
         return
     if field == 'replace_native':
         # Explicit whole-part grant, still preserving its identity and position

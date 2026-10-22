@@ -63,26 +63,36 @@ def canvas(file,sha256,size):
     with image_region(file,operations,sha256,mode='RGB_WHITE') as image:
         return np.asarray(image,dtype=np.float32)/255.
 
-def image_values(first,second):
+def image_values(first,second,requested=None):
     from skimage.metrics import structural_similarity
     from scipy.ndimage import gaussian_filter,laplace,binary_erosion,distance_transform_edt
     if first.shape!=second.shape:raise ValueError('Appearance frames must share a fixed canvas')
-    minimum=min(first.shape[:2]);win=min(7,minimum if minimum%2 else minimum-1)
-    ssim=float(structural_similarity(first,second,data_range=1.,channel_axis=2,win_size=win)) if win>=3 else None
+    all_metrics={'ssim','boundary_f1','clarity_first','clarity_second','clarity_ratio','color_histogram_tv','raw_hard_color_histogram_tv','mean_absolute_rgb_error'}
+    wanted=all_metrics if requested is None else set(requested)&all_metrics
+    values={}
+    if 'ssim' in wanted:
+        minimum=min(first.shape[:2]);win=min(7,minimum if minimum%2 else minimum-1)
+        ssim=float(structural_similarity(first,second,data_range=1.,channel_axis=2,win_size=win)) if win>=3 else None
+        values.update(ssim=ssim,ssim_applicability='measured' if ssim is not None else 'too_few_pixels_native_construction_remains_required')
     def gray(data):return data@np.array([.2126,.7152,.0722])
-    ga,gb=map(gray,(first,second))
+    ga,gb=map(gray,(first,second)) if wanted&{'boundary_f1','clarity_first','clarity_second','clarity_ratio'} else (None,None)
     def edges(data):
         # Fixed operator/threshold across source/baseline/candidate.
         dx=gaussian_filter(data,.6,order=(0,1));dy=gaussian_filter(data,.6,order=(1,0))
         return np.hypot(dx,dy)>.06
-    ea,eb=edges(ga),edges(gb)
-    if ea.any() and eb.any():
-        precision=float((distance_transform_edt(~ea)[eb]<=1).mean())
-        recall=float((distance_transform_edt(~eb)[ea]<=1).mean())
-        boundary=2*precision*recall/max(precision+recall,1e-12)
-    else:boundary=float(not ea.any() and not eb.any())
+    if 'boundary_f1' in wanted:
+        ea,eb=edges(ga),edges(gb)
+        if ea.any() and eb.any():
+            precision=float((distance_transform_edt(~ea)[eb]<=1).mean())
+            recall=float((distance_transform_edt(~eb)[ea]<=1).mean())
+            boundary=2*precision*recall/max(precision+recall,1e-12)
+        else:boundary=float(not ea.any() and not eb.any())
+        values['boundary_f1']=boundary
     def clarity(g):return float(np.mean(laplace(gaussian_filter(g,.35))**2))
-    ca,cb=clarity(ga),clarity(gb)
+    if wanted&{'clarity_first','clarity_second','clarity_ratio'}:
+        ca,cb=clarity(ga),clarity(gb)
+        group={'clarity_first':ca,'clarity_second':cb,'clarity_ratio':cb/ca if ca>1e-12 else (1. if cb<=1e-12 else None)}
+        values.update({k:v for k,v in group.items() if k in wanted})
     from .typed_metrics import color_histogram
     def distance(mode):
         hist=[]
@@ -90,13 +100,12 @@ def image_values(first,second):
             h=color_histogram(data.reshape(-1,3),8,mode)
             hist.append(h/max(1,h.sum()))
         return float(np.abs(hist[0]-hist[1]).sum()/2)
-    return {'ssim':ssim,'boundary_f1':boundary,'clarity_first':ca,'clarity_second':cb,
-        'clarity_ratio':cb/ca if ca>1e-12 else (1. if cb<=1e-12 else None),
-        'color_histogram_tv':distance('trilinear'),
-        'raw_hard_color_histogram_tv':distance('hard'),
-        'color_protocol':{'version':'fixed-color-2','bins':8,'membership':'trilinear','domain':'unchanged full fixed frame'},
-        'mean_absolute_rgb_error':float(np.abs(first-second).mean()),
-        'ssim_applicability':'measured' if ssim is not None else 'too_few_pixels_native_construction_remains_required'}
+    for key,mode in (('color_histogram_tv','trilinear'),('raw_hard_color_histogram_tv','hard')):
+        if key in wanted:values[key]=distance(mode)
+    if wanted&{'color_histogram_tv','raw_hard_color_histogram_tv'}:
+        values['color_protocol']={'version':'fixed-color-2','bins':8,'membership':'trilinear','domain':'unchanged full fixed frame'}
+    if 'mean_absolute_rgb_error' in wanted:values['mean_absolute_rgb_error']=float(np.abs(first-second).mean())
+    return values
 
 def rank(values,weights):
     present={k:v for k,v in values.items() if v is not None}

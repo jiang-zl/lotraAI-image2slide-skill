@@ -17,6 +17,8 @@ def select(row,nodes):
     validate_metrics(row)
     row['owner_types']=kinds
     model=row.setdefault('model',{'id':'native_scene','version':1})
+    if not isinstance(model,dict):
+        raise ValueError('COMPONENT_MODEL_REQUIRED: '+row['id']+' model must be an object, for example {id:native_scene,version:1}')
     if model.get('source_adapter') and model['source_adapter'] not in SOURCE_ADAPTERS:
         raise ValueError('Unregistered source constructor')
     if row['route'] not in ('assembly','instance') and row.get('frozen_parameters') and not any(

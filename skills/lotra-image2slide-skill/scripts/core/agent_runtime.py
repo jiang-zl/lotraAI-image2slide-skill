@@ -208,6 +208,7 @@ def start(source, project, *, name=None, objectives=None, configuration=None, pp
              'source': _file(task, original), 'source_stem':source.stem, 'source_size': size, 'objectives': goals,
              'capabilities': caps, 'execution_contract':execution_contract.VERSION,
              'execution_policy':__import__(__package__+'.workflow_guard',fromlist=['POLICY']).POLICY,
+             'verification_policy':__import__(__package__+'.line_contracts',fromlist=['POLICY']).POLICY,
              'stage': 'source_observation', 'analysis': None,
              'methods': {}, 'built': {}, 'scene': None, 'selected': None, 'active_candidate': None,
              'reviews': {}, 'issues': [], 'protected': {}, 'packet': None,
@@ -1107,6 +1108,7 @@ def _host_render_work(task,state):
         'Render the actual saved task PPTX using an available host tool; return staged preview '
         'and render receipt tied to this PPTX. Do not replace a render by a generated illustration.',
         extra={'pptx':state['active_candidate']['pptx'],'render_dispatch':state.get('render_dispatch'),
+               'render_width':state['active_candidate'].get('render_request_width',state['objectives']['render_width']),
                'composition_capture':state['active_candidate'].get('semantic_composition_guard',{}).get('capture_request'),
                'return':'preview and render paths, or render_failure:{path,sha256} plus operation:keep_baseline after a captured actual export failure'})
     return {'status':'WORK_PACKET','task':str(task),'packet':packet}
@@ -2341,6 +2343,8 @@ def _submit_current(task,state,packet,result):
             if actual.get('pptx_hash') != candidate['pptx']['sha256'] or actual.get('preview_hash') != digest(preview):
                 raise ValueError('Host render must bind the actual saved PPTX and preview')
             size = Image.open(preview).size
+            if size[0]<candidate.get('render_request_width',0):
+                raise ValueError('Actual render precision is below the current packet requirement')
             if abs(size[1]-size[0]*state['source_size'][1]/state['source_size'][0]) > 1.01:
                 raise ValueError('Host render does not use the fixed source canvas')
             candidate.update(preview=_file(task, preview), render=_file(task, receipt))

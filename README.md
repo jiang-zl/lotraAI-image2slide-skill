@@ -2,7 +2,7 @@
 
 
 <!-- workflow-v137:start -->
-1.37.1 remains a portable skill: project-local `start → next → submit` packets,
+1.37.2 remains a portable skill: project-local `start → next → submit` packets,
 incremental original observation/binding, complete quality gates and formal export.
 A checkpoint or native build is not an accepted result. Use `delivery-check` for
 the current task and exact final PPTX bytes. No replacement harness, resident
@@ -15,9 +15,9 @@ Prefer a qualified local PowerPoint/WPS backend, with optional LibreOffice fallb
 
 
 
-**Current release: 1.37.1** · Development/default branch: `dev` · Version branch: `1.37.1` · Release tag: `v1.37.1`
+**Current release: 1.37.2** · Development/default branch: `dev` · Version branch: `1.37.2` · Release tag: `v1.37.2`
 
-`dev` and `1.37.1` currently contain the released 1.37.1. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
+`dev` and `1.37.2` currently contain the released 1.37.2. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
 
 
 **Reconstruct scientific figures as layered, editable PowerPoint slides.**
@@ -43,7 +43,7 @@ Codex runs the maintained installer, prepares Python, dependencies, OCR and Math
 Already have the complete ZIP? Supply the file or its absolute local path, then send:
 
 ~~~text
-Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.37.1-bundle.zip.
+Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.37.2-bundle.zip.
 ~~~
 
 Runtime resources and private task state stay in the project's `.lotraAI-build` directory. See the [installation guide](docs/installation.md) for manual commands and platform requirements, or the [download guide](docs/download.md) for complete bundles.
@@ -147,9 +147,9 @@ Use $lotra-image2slide-skill to continue rebuilding from this partial PPT, follo
 
 After an interruption, ask the agent to resume the existing task in the same working project. Keep the original and `.lotraAI-build` available. See the [usage guide](docs/usage.md).
 
-## v1.37.1
+## v1.37.2
 
-This release adds qualified local presentation backends, Office-safe arbitrary routes, private LibreOffice temporary directories and resumable user-selected output roots. The retained spatial workflow continues below.
+This release adds source-owned line contracts and independent checks of saved routes, bends, endpoints, markers, stroke patterns, contacts and topology. Every line receives current render evidence and a located visual review; open doubts need enlarged evidence and explicit resolution. Clear cases stop after sufficient normal checks; uncertain cases refine only the affected objects, without selecting by model type or lowering quality requirements. See the [evidence-driven workflow](skills/lotra-image2slide-skill/references/workflow-v1372.md).
 
 Spatial type is recognized recursively from the original to its parts. Source-owned frames, observable pose and original landmarks connect native construction, face-local aggregate centering, base support, shared edges, occlusion and saved-result checks. Native shapes, fills and outlines take priority. Functional curves, finite convergence, private method reuse and deferred font/whole review remain.
 
@@ -167,7 +167,7 @@ Installer generation, final distribution parsing and the Windows/Linux README in
 | [Usage](docs/usage.md) | Image reconstruction, partial-slide import and resuming work |
 | [Examples](docs/examples/README.md) | Originals, reconstruction screenshots and component details |
 | [Workflow](skills/lotra-image2slide-skill/references/workflow-v1352.md) | Retained workflow 1.35.2 reconstruction and reuse rules |
-| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.37.1 main-skill payload |
+| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.37.2 main-skill payload |
 | [Provenance and licensing](NOTICE.md) | Project source, third-party components, and example assets |
 
 For feedback, include the operating system, product version, attempted operation, and relevant diagnostic. Share a reviewed reference image or excerpt when needed. Private task data remains under your control in the working project.

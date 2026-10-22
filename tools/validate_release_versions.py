@@ -52,6 +52,10 @@ def validate_skill_members(archive,gate,label):
     if execution:
         gate.equal(label+'/execution-policy',constant(archive.read('scripts/core/workflow_guard.py'),'POLICY'),execution)
         gate.contains(label+'/execution-policy-entry',archive.read('SKILL.md').decode(),execution)
+    verification=json.loads(archive.read('config/customer-package.json')).get('verification_policy')
+    if verification:
+        gate.equal(label+'/verification-policy',constant(archive.read('scripts/core/line_contracts.py'),'POLICY'),verification)
+        gate.contains(label+'/verification-policy-entry',archive.read('SKILL.md').decode(),verification)
     gate.product(label+'/packager',constant(archive.read('scripts/package_skill.py')))
     gate.product(label+'/product-core',constant(archive.read('scripts/core/__init__.py')))
     gate.contains(label+'/SKILL',archive.read('SKILL.md').decode(),f'# lotraAI Image2Slide v{gate.version}')
@@ -75,6 +79,11 @@ def validate(source,runtime=None,assets=None,bundle=None,final=False):
         gate.equal('source/execution-policy',constant((skill/'scripts/core/workflow_guard.py').read_bytes(),'POLICY'),execution)
         gate.equal('publication/execution-policy',publication.get('execution_policy'),execution)
         gate.contains('source/execution-policy-entry',(skill/'SKILL.md').read_text(encoding='utf-8'),execution)
+    verification=load(skill/'config/customer-package.json').get('verification_policy')
+    if verification:
+        gate.equal('source/verification-policy',constant((skill/'scripts/core/line_contracts.py').read_bytes(),'POLICY'),verification)
+        gate.equal('publication/verification-policy',publication.get('verification_policy'),verification)
+        gate.contains('source/verification-policy-entry',(skill/'SKILL.md').read_text(encoding='utf-8'),verification)
     gate.equal('publication/release_tag',publication['release_tag'],'v'+version)
     gate.product('publication/version_branch',publication['version_branch'])
     gate.equal('publication/release_branch',publication['release_branch'],'dev')

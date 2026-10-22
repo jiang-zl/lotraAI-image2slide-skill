@@ -33,14 +33,18 @@ def observe(task,request):
     from .spatial_frames import review as spatial_review
     spatial = spatial_review(contract,value)
     if not spatial['passed']: failed.append('spatial_visual_correspondence')
-    if failed:
+    from .line_review import validate as validate_line_review
+    line_review=validate_line_review(task,state,candidate,contract,ledger,value)
+    ledger['line_issues']=line_review.get('issues',ledger.get('line_issues',{}))
+    if not line_review['passed']:failed.append('line_evidence')
+    if failed and (failed!=['line_evidence'] or line_review.get('program_failure') or line_review.get('visual_failure')):
         from .component_revision import queue_final_repair
         queue_final_repair(ledger,failed,evidence)
     with writer(task): c._save_ledger(task,state,ledger,'final_visual_observed',{'evidence':evidence})
-    return {'status':'FINAL_VISUAL_RECORDED','passed':not failed,'feature_review':feature_review,'acceptance':False}
+    return {'status':'FINAL_VISUAL_RECORDED','passed':not failed,'feature_review':feature_review,'line_review':line_review,'acceptance':False}
 
 
-def _visual(task,state,candidate,ledger):
+def _visual(task,state,candidate,ledger,line_report=None):
     from . import component_workflow as c
     evidence=ledger.get('final_visual')
     if not evidence:return {'passed':False,'reason':'FINAL_VISUAL_OBSERVATION_REQUIRED'}
@@ -57,9 +61,19 @@ def _visual(task,state,candidate,ledger):
     from .spatial_frames import review as spatial_review
     spatial = spatial_review(contract,value)
     good = good and spatial['passed']
+    from .line_review import validate as validate_line_review
+    try:line_review=validate_line_review(task,state,candidate,contract,ledger,value,report=line_report)
+    except ValueError as error:
+        # Reading an old accepted review is a readiness question. Preserve its
+        # bytes/issues and return the current review packet; submission itself
+        # still rejects stale or changed evidence instead of accepting it.
+        line_review={'passed':False,'reason':str(error),'review_required':True,
+                     'issues':ledger.get('line_issues',{})}
+    good=good and line_review['passed']
     return {'passed':bool(good),'binding_current':binding,'evidence':evidence,'dimensions':dims,
             'source_feature_review':feature_review,
             'spatial_review':spatial,
+            'line_review':line_review,
             'basis':'Explicit host/human original/current visual judgments; no program semantic-confidence claim'}
 
 
@@ -89,7 +103,9 @@ def audit(task,state=None,candidate=None,persist=True):
     except ValueError as error:font_binding={'passed':False,'reason':str(error)}
     relations=evaluate(task,state,candidate,contract)
     receipt=c.actual_render(task,state,candidate,independent=True)
-    visual=_visual(task,state,candidate,ledger)
+    from .line_verification import evaluate as evaluate_lines
+    line_report=evaluate_lines(task,state,candidate,contract,render=True)
+    visual=_visual(task,state,candidate,ledger,line_report=line_report)
     from .component_source_features import probes, source_check, enabled as features_enabled
     if features_enabled(contract):
         observation=read_json(c._resource(task,contract['source_observation']))
@@ -106,6 +122,8 @@ def audit(task,state=None,candidate=None,persist=True):
            'actual_render':{'passed':True,'backend':receipt['backend'],'receipt':candidate['render']},
            'source_feature_basis':feature_basis,'source_feature_probes':feature_probes,
            'final_visual':visual}
+    from .line_contracts import enabled as evidence_enabled
+    if evidence_enabled(state):gates['source_lines']=line_report
     if contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2'):
         from .spatial_checks import evaluate as spatial_evaluate
         # Independent final gate recomputes from saved bytes, not local hits.

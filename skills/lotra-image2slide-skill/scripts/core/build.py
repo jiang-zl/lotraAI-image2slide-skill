@@ -1,6 +1,6 @@
 """Deterministic native PresentationML builder; XML extensions isolated here."""
 
-import os
+import os,math
 from pathlib import Path
 from pptx import Presentation
 from pptx.dml.color import RGBColor
@@ -188,15 +188,31 @@ def shape_style(shape,style,kind):
     else:
         shape.line.color.rgb=RGBColor.from_string(style.get('stroke','17324D'));shape.line.width=Pt(style.get('line_width',1.5))
     line=shape._element.spPr.get_or_add_ln()
+    if 'stroke_alpha' in style:
+        alpha=style['stroke_alpha']
+        if type(alpha) not in (int,float) or not 0<=alpha<=1:raise ValueError('Stroke opacity must be between zero and one')
+        colour=line.find('a:solidFill/a:srgbClr',NS)
+        if colour is None:raise ValueError('Stroke opacity requires a solid native colour')
+        child(colour,'a:alpha',val=round(alpha*100000))
+    if style.get('line_compound'):
+        line.set('cmpd',{'single':'sng','double':'dbl','thickThin':'thickThin','thinThick':'thinThick','triple':'tri'}[style['line_compound']])
     if style.get('line_cap'):line.set('cap',{'round':'rnd','square':'sq','flat':'flat'}[style['line_cap']])
     if style.get('line_join'):
         for old in list(line):
             if old.tag.rsplit('}',1)[-1] in ('round','bevel','miter'):line.remove(old)
         join=el('a:'+style['line_join']);before=next((i for i,item in enumerate(line) if item.tag.rsplit('}',1)[-1] in ('headEnd','tailEnd','extLst')),len(line));line.insert(before,join)
-    if style.get('dash'):
-        old=line.find('a:prstDash',NS)
-        if old is not None:line.remove(old)
-        dash=el('a:prstDash',val=style['dash'])
+    if style.get('dash') or style.get('custom_dash'):
+        for tag in ('prstDash','custDash'):
+            old=line.find('a:'+tag,NS)
+            if old is not None:line.remove(old)
+        if style.get('custom_dash'):
+            if style.get('dash') not in (None,'custom'):raise ValueError('Custom dash cannot also select a preset')
+            dash=el('a:custDash')
+            for pair in style['custom_dash']:
+                if len(pair)!=2 or any(type(v) not in (int,float) or not math.isfinite(v) or v<=0 for v in pair):
+                    raise ValueError('Positive dash/gap lengths in stroke-width units required')
+                child(dash,'a:ds',d=round(pair[0]*100000),sp=round(pair[1]*100000))
+        else:dash=el('a:prstDash',val=style['dash'])
         before=next((i for i,item in enumerate(line) if item.tag.rsplit('}',1)[-1] in ('round','bevel','miter','headEnd','tailEnd','extLst')),len(line))
         line.insert(before,dash)
 
@@ -336,7 +352,7 @@ def build(scene, base, output):
                 raise ValueError('Unknown native arrow type: '+str(arrow_type))
             child(ln,"a:tailEnd",type=arrow_type,w=c.get('arrow_width','med'),len=c.get('arrow_length','med'))
             if c.get('start_arrow'):
-                head=el('a:headEnd',type=c['start_arrow'],w='med',len='med')
+                head=el('a:headEnd',type={'open':'arrow'}.get(c['start_arrow'],c['start_arrow']),w=c.get('start_arrow_width','med'),len=c.get('start_arrow_length','med'))
                 tail=ln.find('a:tailEnd',NS);ln.insert(ln.index(tail),head)
         elif kind=='path':
             if o['semantic_type']=='native_colour_contour' and o.get('parent'):
@@ -453,7 +469,8 @@ def build(scene, base, output):
             for tag,value in [('tailEnd',c.get('arrow','none')),('headEnd',c.get('start_arrow','none'))]:
                 value={'open':'arrow'}.get(value,value)
                 if value not in ('none','triangle','stealth','diamond','oval','arrow'):raise ValueError('Unknown native line arrow')
-                child(ln,'a:'+tag,type=value,w='med',len='med')
+                prefix='start_arrow' if tag=='headEnd' else 'arrow'
+                child(ln,'a:'+tag,type=value,w=c.get(prefix+'_width','med'),len=c.get(prefix+'_length','med'))
         shapes[o["id"]] = s
         mapping[o["id"]] = {"native_id": s.shape_id, "slide": 1, "versions": o["versions"], "semantic_signature": identity(o)}
 

@@ -217,7 +217,7 @@ def submit(task,request):
             scene=patch.get('scene',{});contract=patch.get('contract',{})
             if any(k in scene for k in ('source','evidence','profile','schema_version','revision')):
                 raise ValueError('Program owns the bound Scene resource identities')
-            if any(k in contract for k in ('schema','source_hash','workflow_version','design_revision','source_inventory','source_observation','policy','authority','source_scene','spatial','spatial_units','spatial_basis')):
+            if any(k in contract for k in ('schema','source_hash','workflow_version','design_revision','source_inventory','source_observation','policy','authority','source_scene','spatial','spatial_units','spatial_basis','verification_policy','line_verification')):
                 raise ValueError('Program owns source policy/inventory; chunks cannot lower them')
             if len(scene.get('objects',[]))>128 or len(contract.get('components',[]))>32:raise ValueError('Use bounded binding chunks')
             value['scene']=_merge(value['scene'],scene,corrections=corrections,section='scene')
@@ -301,7 +301,7 @@ def template(task,state,packet):
         elif packet.get('component_action'):request=copy.deepcopy(packet['component_action'])
         if kind=='component_local_work':
             scope=packet.get('component_batch',[target])
-            request.setdefault('component',target)
+            request['component']=target
             if len(scope)>1:request['components']=scope
             request.setdefault('source_hash',state['source']['sha256'])
             candidate=state.get('active_candidate') or state.get('selected')

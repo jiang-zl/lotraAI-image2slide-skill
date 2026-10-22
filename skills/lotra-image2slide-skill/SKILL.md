@@ -3,7 +3,7 @@ name: lotra-image2slide-skill
 description: Reconstruct scientific images, optionally continuing a one-shot partial PPT, as faithful native editable slides through the registered task loop and verified final export. Use source-bound features, qualified components, actual renders and complete final review.
 ---
 
-# lotraAI Image2Slide v1.37.1
+# lotraAI Image2Slide v1.37.2
 
 Use this self-contained skill's project-local programs with the current model
 and reasoning. Read `.lotraAI-build/Active-skill.json` for the selected entry and
@@ -29,6 +29,17 @@ confer no qualification. The existing complete source/spatial/contract validator
 run at sealing before native construction. The packet gives the current action,
 remaining coverage and template. Read [incremental task rules](references/workflow-v137.md).
 Unknown source decisions, coordinates and tolerances must never be fabricated.
+
+New tasks bind `evidence-checks-1.37.2`. Read [line/evidence rules](references/workflow-v1372.md)
+when observing lines, binding native strokes or completing final review. Freeze
+ordered routes/corners, both endpoints and marker anchors, signed tangents,
+stroke patterns, contacts, topology and source occlusion before construction.
+Programs check current saved geometry and every rendered line; every line needs
+readable original/render evidence. Enlarge and explicitly resolve all doubts.
+Missing, invalid, stale or excluded evidence never supplies PASS. Use the cheapest
+qualified method; refine only insufficient evidence without reducing obligations
+or selecting by model type/confidence. Never let aggregate statistics or
+Scene-generated observation text overturn a located visual doubt or valid failure.
 
 Follow packet-selected construction, component/mother/instance qualification,
 layout, one font review, whole visual review and independent final audit.
@@ -97,7 +108,7 @@ PowerPoint/WPS, then declared LibreOffice fallback. Native open/edit/save/reopen
 checks use owned copies. Physical WPS/macOS claims require that host's evidence.
 Installation, native usability, actual rendering and artwork acceptance differ.
 
-Product 1.37.1 retains execution policy `workflow-execution-1.37.0`. Source workflow
+Product 1.37.2 adds verification policy `evidence-checks-1.37.2` and retains execution policy `workflow-execution-1.37.0`. Source workflow
 1.35.2, source-features/spatial 1.35.1, design_revision 8 and runtime resources
 1.14.0 remain independent. Old tasks keep their bindings until explicit migration.
 No performance/token savings or external-art acceptance follows from fixtures,

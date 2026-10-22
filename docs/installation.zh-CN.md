@@ -24,8 +24,8 @@
 
 GitHub Release 下载增加有限次数的官方资产 API 备用通道，仍校验相同的大小、SHA-256、范围响应和缓存归属。macOS Math DMG 继续使用固定的上游地址。Apple Silicon 与 Intel 的 macOS 实机检查仍待完成，Windows 结果不作为两种 Mac 架构的通过证据。
 
-## 1.37.1 安装入口
+## 1.37.2 安装入口
 
 所有 shell 安装入口使用无 BOM 的 UTF-8 与 LF。维护者从固定模板生成入口，并对最终附件、skill ZIP 和完整包中的实际脚本执行解析检查。Windows 入口同时检查 Windows PowerShell 解析与真实安装。runtime 二进制与资源包保持不变。
 
-1.37.1 先准备核心环境，再资格确认本地演示软件；本地能力齐全时不强制安装 LO，否则检查 LO 启动、实际样例 PDF 和保存重开。local_application 模式的 `math_import_ready=null` 表示没有导入 UNO。auto 模式保留实际原生 PDF 失败后才使用一次已声明的 LO 回退；原生保存与 PDF 仍分别记录。参见 docs/v1.37.1/Validation-report.md。
+1.37.2 先准备核心环境，再资格确认本地演示软件；本地能力齐全时不强制安装 LO，否则检查 LO 启动、实际样例 PDF 和保存重开。local_application 模式的 `math_import_ready=null` 表示没有导入 UNO。auto 模式保留实际原生 PDF 失败后才使用一次已声明的 LO 回退；原生保存与 PDF 仍分别记录。参见 docs/v1.37.2/Validation-report.md。

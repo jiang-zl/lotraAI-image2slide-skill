@@ -50,6 +50,16 @@ def verify(task,directory=None,attachment=None):
     _resource(task,candidate['pptx']);_resource(task,candidate['scene']);_resource(task,candidate['preview'])
     acceptance=read_json(_resource(task,state.get('acceptance')))
     final=read_json(_resource(task,acceptance.get('result')))
+    from .line_contracts import enabled as evidence_enabled,require_contract
+    if evidence_enabled(state):
+        require_contract(state,contract)
+        required={'component_qualification','font_language_and_binding','ownership','native_resources',
+                  'assembly_and_layout','source_placement','actual_render','source_feature_basis',
+                  'source_feature_probes','final_visual','spatial_native','source_lines'}
+        if set(final.get('gates',{}))!=required:
+            raise ValueError('Final evidence-policy gate set is incomplete or changed')
+        from .line_contracts import require_report
+        require_report(state,candidate,contract,final['gates']['source_lines'])
     if (acceptance.get('status')!='ACCEPTED' or final.get('status')!='ACCEPTED' or
             final.get('source_hash')!=state['source']['sha256'] or final.get('contract')!=state['component_workflow']['contract'] or
             acceptance.get('source_hash')!=state['source']['sha256'] or acceptance.get('result')!=ledger.get('final_result') or

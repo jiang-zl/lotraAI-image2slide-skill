@@ -68,3 +68,13 @@ and task-specific scratch result arguments. Keep these controls in compact
 packets. Regression-test observation, binding, recovery and final-audit hints
 against the actual parser/guard/submit route. Retain existing quality rules,
 source workflow, execution policy and runtime resource identities.
+
+## 1.37.2 evidence-driven line verification
+
+New tasks bind evidence-checks-1.37.2. Programs own all line obligations and
+saved-byte gates; algorithms escalate only when current evidence is insufficient.
+Keep every source line, terminal/marker, route/corner/tangent, stroke, topology,
+visibility and located visual doubt covered. Missing, invalid, stale or excluded
+checks are never PASS. Preserve existing task policies and independent resource
+versions. Recompute final gates from current bytes and keep all review artifacts
+private. Apply the mandatory per-iteration publication/version/install checks.

@@ -230,7 +230,17 @@ def style_checks(obj, node):
             add('native_line_width', line is not None and int(line.get('w',0))==round(style.get('line_width',1.5)*12700))
         if line is not None:
             dash=line.find('a:prstDash',NS)
-            add('native_dash',(dash.get('val') if dash is not None else 'solid')==style.get('dash','solid'))
+            custom=line.find('a:custDash',NS)
+            if style.get('custom_dash'):
+                expected=[[round(v*100000) for v in pair] for pair in style['custom_dash']]
+                add('native_dash',custom is not None and [[int(ds.get('d')),int(ds.get('sp'))] for ds in custom]==expected and dash is None)
+            else:add('native_dash',custom is None and (dash.get('val') if dash is not None else 'solid')==style.get('dash','solid'))
+            if style.get('line_cap'):add('native_line_cap',line.get('cap','flat')=={'round':'rnd','square':'sq','flat':'flat'}[style['line_cap']])
+            if style.get('line_compound'):add('native_line_compound',line.get('cmpd','sng')=={'single':'sng','double':'dbl','thickThin':'thickThin','thinThick':'thinThick','triple':'tri'}[style['line_compound']])
+            if style.get('line_join'):add('native_line_join',line.find('a:'+style['line_join'],NS) is not None)
+            if 'stroke_alpha' in style:
+                alpha=line.find('a:solidFill/a:srgbClr/a:alpha',NS)
+                add('native_stroke_opacity',(int(alpha.get('val')) if alpha is not None else 100000)==round(style['stroke_alpha']*100000))
         alpha=sp.find('a:solidFill/a:srgbClr/a:alpha',NS)
         if style.get('fill') not in (None,'none'):
             add('native_fill_opacity',(int(alpha.get('val')) if alpha is not None else 100000)==round(style.get('fill_alpha',1)*100000))

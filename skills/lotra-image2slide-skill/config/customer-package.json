@@ -107,6 +107,7 @@
     "references/workflow-v1351.md",
     "references/workflow-v1352.md",
     "references/workflow-v137.md",
+    "references/workflow-v1372.md",
     "requirements.txt",
     "schemas/component-contract.schema.json",
     "schemas/frame-plan.json",
@@ -237,6 +238,10 @@
     "scripts/core/layout_tracks.py",
     "scripts/core/library_store.py",
     "scripts/core/libreoffice_backend.py",
+    "scripts/core/line_contracts.py",
+    "scripts/core/line_geometry.py",
+    "scripts/core/line_review.py",
+    "scripts/core/line_verification.py",
     "scripts/core/local_edit.py",
     "scripts/core/local_raster.py",
     "scripts/core/local_selection.py",
@@ -462,7 +467,8 @@
   "product_scope": "Image reconstruction and one-shot partial PPT input; no ongoing edit/lock/undo expansion.",
   "publication_revision": 1,
   "release_status": "CURRENT_HOST_VALIDATION_REQUIRED",
-  "runtime_regressions": "Current packet submission hints, phase/entry consistency and retained workflow/install gates; see docs/v1.37.1/Validation-report.md",
+  "runtime_regressions": "Current source-line contracts, independent native/render evidence, located review and adaptive producer checks, plus retained task/delivery/installation gates; see docs/v1.37.2/Validation-report.md",
   "schema": "lotra-customer-package-1",
-  "version": "1.37.1"
+  "verification_policy": "evidence-checks-1.37.2",
+  "version": "1.37.2"
 }

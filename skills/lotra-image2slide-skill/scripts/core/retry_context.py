@@ -17,6 +17,9 @@ def checked_submit(function):
         dependency={'source':state['source']['sha256'],'state':identity(decision),
                     'proposal':proposal,'kind':packet.get('kind'),'owner':packet.get('target'),
                     'code':digest(function.__globals__['__file__']), 'retry_code':digest(__file__)}
+        if state.get('objectives',{}).get('component_first'):
+            from .component_workflow import implementation
+            dependency['component_implementation']=implementation()
         key=identity(dependency)
         with index(task) as db:
             previous=db.execute("SELECT * FROM attempts WHERE key=? AND status='invalid'",(key,)).fetchone()

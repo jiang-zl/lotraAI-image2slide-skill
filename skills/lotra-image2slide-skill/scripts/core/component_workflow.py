@@ -32,7 +32,7 @@ def implementation():
              'curve_functions','problem_control','knowledge_flow','component_source_features','native_surfaces','surface_metrics',
              'spatial_frames','spatial_checks','spatial_constructors','spatial_observation',
              'spatial_footprints','spatial_fit','spatial_repair','presentation_backend','office_compatibility','export_destination','libreoffice_backend',
-             'workflow_guard','incremental_contract','workflow_delivery')
+              'workflow_guard','incremental_contract','workflow_delivery','retry_context','appearance_metrics','line_contracts','line_geometry','line_verification','line_review')
     files={name:digest(ROOT/'scripts/core'/(name+'.py')) for name in names}
     for name in ('config/component-workflow.json','config/font-collections.json','schemas/component-contract.schema.json','scripts/sci_rebuild.py','scripts/check_before_finish.py'):
         files[name]=digest(ROOT/name)
@@ -292,6 +292,10 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
     ledger['orphan_user_locks']=[copy.deepcopy(v) for v in all_locks if v['owner'] not in owned]
     for key,record in components.items():record['user_locks']=[copy.deepcopy(v) for v in all_locks if owned.get(v['owner'])==key]
     if previous_ledger:
+        # Rebinding a construction plan changes neither an issued doubt nor a
+        # consumed precision budget. Keep them as obligations, never as PASS.
+        for key in ('line_issues','line_render_refinements'):
+            if key in previous_ledger:ledger[key]=copy.deepcopy(previous_ledger[key])
         ledger['repair_batch']=copy.deepcopy(previous_ledger.get('repair_batch'))
         if previous_ledger.get('pending_decision'):
             ledger['repair_batch']=None
@@ -598,6 +602,12 @@ def evaluate(task, request=None):
     fixed_owners=[owner for name in selected for owner in by_id[name]['owners']
                   if by_id[name]['route']=='fixed_parameters' and ledger['components'][name]['status']!='QUALIFIED']
     fixed_checks=batch_check(scene,frozen,task,_resource(task,candidate['pptx']),fixed_owners,'body') if fixed_owners else {}
+    from .line_contracts import enabled as line_policy_enabled
+    selected_lines={f['id'] for row in by_id.values() for f in row.get('source_features',[]) if f.get('line')}
+    line_batch=None
+    if line_policy_enabled(state) and selected_lines:
+        from .line_verification import evaluate as line_evaluate
+        line_batch=line_evaluate(task,state,candidate,contract,render=False,feature_ids=selected_lines)
     for name in sorted(selected):
         row = by_id[name]; record = ledger['components'][name]
         sig = _component_signature(row, signatures, body=row['route'] not in ('assembly', 'instance'),contract=contract)
@@ -629,6 +639,13 @@ def evaluate(task, request=None):
                       'route': row['route']}
         else:
             result = {'passed': False, 'status': 'SPECIALIST_OR_INSTANCE_EVIDENCE_REQUIRED', 'route': row['route']}
+        if line_batch is not None and any(f.get('line') for f in row.get('source_features',[])):
+            ids={f['id'] for f in row['source_features'] if f.get('line')}
+            local={name:value for name,value in line_batch['lines'].items() if name in ids}
+            result['source_lines_native']={**line_batch,'lines':local,
+                'passed':line_batch['census']['passed'] and all(v['passed'] for v in local.values())}
+            result['passed']=result['passed'] and result['source_lines_native']['passed']
+            if not result['source_lines_native']['passed']:result['status']='SOURCE_LINE_CONSTRAINT_REQUIRED'
         if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2'):
             from .component_source_features import source_check
             source_basis = source_check(row)
@@ -966,6 +983,12 @@ def next_action(task, state, candidate=None):
             'feature_bindings_hash':identity(contract['feature_bindings']),
             'feature_diagnostics':diagnostics(task,state,candidate,contract),
             'feature_review_required':'Compare every required feature and independently check every original unit for omissions; diagnostics are suspicions, not semantic verdicts.'}
+        from .line_contracts import enabled as evidence_enabled
+        if evidence_enabled(state):
+            from .line_review import prepare as prepare_line_review,retain_prepared_issues
+            feature_extra['line_review']=prepare_line_review(task,state,candidate,contract,ledger)
+            if retain_prepared_issues(task,feature_extra['line_review'],ledger):
+                with writer(task):_save_ledger(task,state,ledger,'line_program_doubts_prepared')
     packet = a._packet(task, state, kind, 'final_visual' if readiness['ready'] else 'final_layout',
                         'Review the actual complete page.' if readiness['ready'] else 'Complete instance placement and actual relation evidence.',
                         extra={'readiness': readiness, 'action_references': [reference(contract)],
@@ -989,6 +1012,11 @@ def program_checks(task,state,candidate,contract,row):
         from .spatial_checks import evaluate as spatial_evaluate
         checks['spatial_native'] = spatial_evaluate(task, state, candidate, contract, row)
     checks['source_fixed_paint']=fixed_style_checks(task,candidate,contract,row,scene)
+    from .line_contracts import enabled as evidence_enabled
+    if evidence_enabled(state):
+        from .line_verification import evaluate as line_evaluate
+        checks['source_lines_native']=line_evaluate(task,state,candidate,contract,render=False,
+            feature_ids={f['id'] for f in row.get('source_features',[]) if f.get('line')})
     if contract.get('workflow_version') in ('1.34.0', '1.35.0', '1.35.1','1.35.2') and any(f.get('metrics') for f in row.get('source_features',[])):
         from .component_source_features import probes
         actual_render(task,state,candidate)
@@ -1014,6 +1042,9 @@ def program_checks(task,state,candidate,contract,row):
 def review(task,request):
     from .workflow_guard import require
     require(task,'review')
+    if request.get('operation')=='refine_render':
+        from .line_review import request_precision
+        return request_precision(task,request)
     from .component_final import observe
     return observe(task,request)
 

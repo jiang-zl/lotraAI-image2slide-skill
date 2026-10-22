@@ -96,6 +96,8 @@ def observe(task, request):
     task, state = a._state(task)
     value = copy.deepcopy(request.get('observation', request))
     validate_observation(value, state['source']['sha256'], state['source_size'])
+    from .line_contracts import validate_source
+    validate_source(value,state)
     for ref in value.get('source_views', []): _resource(task, ref)
     prior = state.get('source_feature_observation')
     contract, ledger = _load(task, state) if state.get('component_workflow') else (None, None)
@@ -124,6 +126,21 @@ def observe(task, request):
             weakened = (set(before.get('requirements',[]))-set(after.get('requirements',[])) or
                         before.get('metrics',[]) != after.get('metrics',[]) or
                         before.get('observability') == 'unresolved' and after.get('observability') != 'unresolved')
+            if before.get('line') != after.get('line'):
+                correction=corrected.get(key,{})
+                if (correction.get('prior_line_hash')!=identity(before.get('line')) or
+                        not correction.get('reason') or not correction.get('source_evidence')):
+                    raise ValueError('LINE_SOURCE_REQUIRED: retain prior line facts with an explicit located prior_line_hash correction')
+                if before.get('line') and after.get('line'):
+                    if any(after['line']['limits'][name]>value for name,value in before['line']['limits'].items()
+                           if type(value) in (int,float)):
+                        raise ValueError('LINE_SOURCE_REQUIRED: source correction cannot widen frozen quality bounds')
+                    pairs=[(before['line']['stroke'][field],after['line']['stroke'][field]) for field in ('width','opacity')]
+                    for old_end,new_end in zip(before['line']['ends'],after['line']['ends']):
+                        pairs.extend((old_end['marker'][field],new_end['marker'][field]) for field in ('width','length'))
+                        pairs.append((old_end['attachment']['distance'],new_end['attachment']['distance']))
+                    if any(b[1]-b[0]>a[1]-a[0]+1e-9 for a,b in pairs):
+                        raise ValueError('LINE_SOURCE_REQUIRED: source correction cannot broaden frozen measurement intervals')
             if weakened and not corrected.get(key,{}).get('source_evidence'):
                 raise ValueError('Retain frozen feature targets; a source correction needs located evidence')
     folder = task/'component-workflow'; folder.mkdir(exist_ok=True)
@@ -187,6 +204,15 @@ def _capabilities(nodes):
             caps.update(('closed_contour','text'))
             cells=sum(len(r) for r in rows)-sum(rs*cs-1 for _,_,rs,cs in c.get('merges',[]))
             if cells>1:caps.add('independent_parts')
+        if kind=='connector':
+            points=c.get('points',[])
+            if len(points)>2:
+                for a,b,d in zip(points,points[1:],points[2:]):
+                    u=[b[i]-a[i] for i in (0,1)];v=[d[i]-b[i] for i in (0,1)]
+                    if abs(u[0]*v[1]-u[1]*v[0])>1e-8:
+                        caps.add('corners');break
+        if kind=='bezier' and (c.get('segments') or len(c.get('points',[]))>=3):
+            caps.add('smooth_contour')
         if kind == 'shape':
             caps.add('closed_contour')
             if c.get('preset') in ('ellipse','roundRect'): caps.add('smooth_contour')
@@ -308,6 +334,8 @@ def bind(task, state, contract, scene):
             if units[f['unit']]['decomposition']['state']=='unresolved'})
     from .spatial_frames import bind as bind_spatial
     bind_spatial(contract, observed, scene)
+    from .line_contracts import compile_contract
+    compile_contract(state,observed,contract,scene)
 
 
 def source_check(row):
