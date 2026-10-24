@@ -53,9 +53,7 @@ def verify(task,directory=None,attachment=None):
     from .line_contracts import enabled as evidence_enabled,require_contract
     if evidence_enabled(state):
         require_contract(state,contract)
-        required={'component_qualification','font_language_and_binding','ownership','native_resources',
-                  'assembly_and_layout','source_placement','actual_render','source_feature_basis',
-                  'source_feature_probes','final_visual','spatial_native','source_lines'}
+        required=required_gates(state)
         if set(final.get('gates',{}))!=required:
             raise ValueError('Final evidence-policy gate set is incomplete or changed')
         from .line_contracts import require_report
@@ -97,3 +95,14 @@ def check(task,directory=None,attachment=None):
         return {'schema':'harness-finish-check-1.37.0','status':'WORKFLOW_NOT_DELIVERABLE','allow_finish':False,
             'reason':str(error),'next_action':'Resume the current next/submit packet, or report the retained external blocker',
             'candidate_delivery_authorized':False}
+
+
+def required_gates(state):
+    """Exact gate identities follow the task's bound policies, not product age."""
+    required={'component_qualification','font_language_and_binding','ownership','native_resources',
+              'assembly_and_layout','source_placement','actual_render','source_feature_basis',
+              'source_feature_probes','final_visual','spatial_native','source_lines'}
+    from .source_preflight import enabled as source_review_enabled
+    if source_review_enabled(state):required.update(('source_observation_support','whole_string_ink'))
+    if state.get('reconstruction_target'):required.add('reconstruction_target')
+    return required

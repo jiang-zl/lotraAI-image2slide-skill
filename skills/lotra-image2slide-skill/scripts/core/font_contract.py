@@ -228,6 +228,9 @@ def packet(task, state, scene):
             'language_candidates':{key:[f['id'] for f in values] for key,values in per_request.items()},
             'font_collection':state['font_collection'],
             'source_glyph_rankings':{r['id']:collection.ranking(task,state,r) for r in selected if collection.role_language(r['role']) in ('zh','en')},
+            'inferred_binding_evidence':{'required':['comparison_ref.path','comparison_ref.sha256'],
+                'take_from':'this packet source_glyph_rankings[request_id]',
+                'rule':'Raster inference requires the current registered ranking reference. proposed_resources are recipe-family hints, not the physical resource lookup used by bind.'},
             'sample_return':'font_samples{request_id:[{character,roi}]}; selection decisions accept font_constraints{request_id:{style_classes?,resource_ids?,reason,evidence}}; prepare before binding',
             'user_font_requests': state['objectives'].get('font_requests', {}),
             'resource_catalogue': {'path': catalogue.relative_to(task).as_posix(), 'sha256': digest(catalogue)},
@@ -252,6 +255,18 @@ def packet(task, state, scene):
             'family_choice':'font_constraints{request_id:{family,comparison_ref,reason,evidence}}; choose a source-supported family from the current comparison. The choice applies to its declared source style group; uncertainty remains approximate.',
             'bind':'font_bindings for the visible request_ids using the current prepared comparison and any prior_binding_hash. Adoption waits for the native save.'}[step]
         result['source_reading']=result['step_return']
+        from . import font_family
+        if font_family.enabled(state):
+            result['family_gate']={'policy':font_family.POLICY,
+                'reference':'references/font-family-gate-v1375.md',
+                'rule':'Use Chinese display names for Chinese choices. One inferred visual family is sufficient; bind a real eligible face and keep it by default. Fine refinement is optional and deferred.'}
+            result['display_candidates']={row['id']:[{'resource_id':face['id'],**font_family.labels(state,row,face)}
+                for face in per_request[row['id']]] for row in selected if collection.role_language(row['role']) in ('zh','en')}
+        if state.get('typography_policy'):
+            from .typography_measurement import propose_samples
+            literals={(obj['id'],loc):literal for obj,loc,leaf,literal,is_math in payloads(scene) if not is_math}
+            result['size_sample_suggestions']={row['id']:propose_samples(task,state,row,literals.get((row['owner'],row['location']),''))
+                for row in selected if collection.role_language(row['role']) in ('zh','en')}
     else:
         from .font_migration import offer
         result['font_policy_migration']=offer(task,state,scene)
@@ -331,6 +346,8 @@ def bind(task, state, scene, values, *, persist=True):
             if status != 'approximate':
                 raise ValueError('Raster-selected font identity remains inferred; do not invent exact font metadata')
             ref = value.get('comparison_ref') or {}
+            if not isinstance(ref,dict) or not ref.get('path') or not ref.get('sha256'):
+                raise ValueError('FONT_COMPARISON_REFERENCE_REQUIRED: '+request['id']+' needs comparison_ref {path,sha256} from current source_glyph_rankings[request_id]; recipe proposed_resources do not resolve this evidence')
             comparison_file = safe_path(task,ref.get('path', ''))
             if not comparison_file.resolve().is_relative_to(Path(task).resolve()) or not comparison_file.is_file() or digest(comparison_file) != ref.get('sha256'):
                 raise ValueError('Inferred font needs a task-local source-bound font-gallery ranking')
@@ -347,7 +364,7 @@ def bind(task, state, scene, values, *, persist=True):
         if missing_glyphs:
             raise ValueError('Bound font is missing glyphs: '+repr(missing_glyphs))
         synthetic = bool(value.get('synthetic_style'))
-        from .font_selection import require_binding
+        from .font_selection import require_binding, adopt_visual_family
         require_binding(state,request,face,origin,synthetic)
         if (not request['bold'] and face['weight']>=600) or (not request['italic'] and face['italic']):
             raise ValueError('A bold/italic-only resource cannot pretend to be the regular upright face')
@@ -377,6 +394,9 @@ def bind(task, state, scene, values, *, persist=True):
                   'synthetic_style': synthetic,'comparison_ref':copy.deepcopy(value.get('comparison_ref')),
                   'source_metadata_ref':copy.deepcopy(value.get('source_metadata_ref')),
                   'environment_key': state['capabilities']['fonts']['environment_key']}
+        if language in ('zh','en'):
+            from .font_family import labels
+            record.update(labels(state,request,face))
         prior = ledger['bindings'].get(request['id'])
         changed=prior and (prior['family'] != record['family'] or request.get('identity_policy')==resolution.POLICY and
             (prior['request_hash']!=record['request_hash'] or prior['resource']['id']!=record['resource']['id'] or
@@ -391,6 +411,10 @@ def bind(task, state, scene, values, *, persist=True):
             ledger['history'].append({'prior':prior,'request':request['id'],'reason':value['revision_reason']})
         accepted[request['id']] = record
         if language in ('zh','en'):archive_faces.append(face)
+    # Adopt implicit one-family decisions only after every submitted comparison
+    # has been checked against the same pre-batch state.
+    for bound in accepted.values():
+        adopt_visual_family(state,bound['request'],bound['resource'],bound['origin'])
     from .font_selection import check_group_bindings
     check_group_bindings(state,{**ledger['bindings'],**accepted})
     collection.archive(state['project'],archive_faces,'Bind source-qualified eligible language fonts')
@@ -403,6 +427,8 @@ def bind(task, state, scene, values, *, persist=True):
 def compile_scene(scene, state=None):
     from .tables import normalize_scene
     scene = normalize_scene(scene)
+    from .typography_units import canonicalize as canonical_typography
+    scene = canonical_typography(scene)
     if state is not None:
         bindings = state.get('font_contract', {}).get('bindings', {})
     else:
@@ -429,8 +455,9 @@ def compile_scene(scene, state=None):
             file_hash=digest(resource['path'])
             if file_hash!=resource['file_sha256']:raise ValueError('Bound font bytes changed')
             verified[key]=resources.describe(resource['path'],resource['face_index'],file_hash)
-        if not resources.matches(verified[key], bound['family']):
+        if not resources.matches_bound(verified[key],resource):
             raise ValueError('Bound font identity changed; refresh resources without changing the source intent')
+    resources.require_embedding_slots(bindings[key] for key in request_rows)
     owner_faces={};resolved_runs={}
     for request in request_rows.values():
         owner_faces.setdefault(request['owner'],{}).setdefault(request['role'],set()).add(bindings[request['id']]['family'])
@@ -444,6 +471,23 @@ def compile_scene(scene, state=None):
         style.pop('font_faces', None)
         choices = {r['role']: bindings[r['id']]['family'] for r in request_rows.values() if r['owner'] == obj['id'] and r['location'] == location}
         if choices:
+            located=[bindings[r['id']] for r in request_rows.values() if r['owner']==obj['id'] and r['location']==location]
+            if not math:
+                role_flags={b['request']['role']:(bool(b['request']['bold'] and
+                             (b['resource'].get('style_link_bold',True) or b['resource']['weight']<600)),
+                        bool(b['request']['italic'] and (b['resource'].get('style_link_italic',True) or not b['resource']['italic']))) for b in located}
+                flags=set(role_flags.values())
+                if len(flags)>1:
+                    style['native_script_styles']={role:{'bold':value[0],'italic':value[1]} for role,value in role_flags.items()}
+                    style.pop('native_bold',None);style.pop('native_italic',None)
+                else:
+                    style.pop('native_script_styles',None)
+                if len(flags)==1:
+                    native_bold,native_italic=next(iter(flags))
+                    for flag,value in (('bold',native_bold),('italic',native_italic)):
+                        effective=resolution.merge_style(obj['style'],style)
+                        if value!=bool(effective.get(flag,False)):style['native_'+flag]=value
+                        else:style.pop('native_'+flag,None)
             style['font_faces'] = choices if math else resolution.resolve_faces(
                 {'font':style.get('font',obj['style'].get('font','DejaVu Sans')),'font_faces':owner_defaults.get(obj['id'],{})},
                 {'font_faces':choices})
@@ -457,7 +501,8 @@ def compile_scene(scene, state=None):
     scene['font_plan'] = {'version': VERSION, 'bindings': {k: copy.deepcopy(bindings[k]) for k in request_rows},
                           'embedding': 'full_editable', 'source_hash': scene['source']['sha256'],
                           'resolved_runs':resolved_runs,'declared_faces':declared_faces,
-                          'source_spans':resolution.source_spans(scene)}
+                          'source_spans':resolution.source_spans(scene),
+                          'native_spans':resolution.source_spans(scene,native=True)}
     if resolution.enabled(state,scene) or resolution.enabled(scene={'font_plan':previous}):
         scene['font_plan']['policy']=resolution.POLICY
         scene['font_plan']['user_font_requests']=copy.deepcopy((state or {}).get('objectives',{}).get('font_requests',previous.get('user_font_requests',{})))
@@ -555,6 +600,8 @@ def current_bindings(scene):
 
 def guard_saved(scene, pptx):
     """Check each frozen owner/location/script against its actual saved runs."""
+    from .typography_units import guard_saved as guard_typography
+    guard_typography(scene,pptx)
     bindings=current_bindings(scene);owners={};saved={};unbound=[];checked=[]
     for binding in bindings:owners.setdefault(binding['request']['owner'],[]).append(binding)
     M='http://schemas.openxmlformats.org/officeDocument/2006/math'
@@ -580,7 +627,7 @@ def guard_saved(scene, pptx):
     if unbound:raise ValueError('FONT_ASSET_BINDING_REQUIRED: expose imported native text/math as independently bound Scene owners before portable build: '+repr(sorted(unbound,key=str)))
     for owner,values in owners.items():
         shape=saved[owner];covered=set()
-        expected_spans=scene.get('font_plan',{}).get('source_spans',{}).get(owner)
+        expected_spans=scene.get('font_plan',{}).get('native_spans',scene.get('font_plan',{}).get('source_spans',{})).get(owner)
         if expected_spans is not None:
             kind=next(o['render_type'] for o in scene['objects'] if o['id']==owner)
             if resolution.saved_spans(shape,kind)!=expected_spans:
@@ -592,7 +639,20 @@ def guard_saved(scene, pptx):
                     pi,ri=map(int,location[1:].split('.r'))
                     paragraph=shape.findall('./{'+P+'}txBody/{'+A+'}p')[pi]
                     runs=[n for n in paragraph if E.QName(n).localname in ('r','m')]
-                    selected=[runs[ri]];actual_literal=literal(selected[0],math)
+                    # Physical script/style subdivision does not change the
+                    # stable logical source run location. Select its exact
+                    # character interval, with no partial native run borrowing.
+                    obj=next(o for o in scene['objects'] if o['id']==owner)
+                    wanted=obj['content'].get('paragraphs',[obj['content'].get('runs',[])])[pi]
+                    lengths=[1 if 'ast' in r else len(r.get('text','')) for r in wanted]
+                    start=sum(lengths[:ri]);end=start+lengths[ri];offset=0;selected=[]
+                    for run in runs:
+                        length=1 if E.QName(run).localname=='m' else len(literal(run))
+                        if offset<end and offset+length>start:
+                            if offset<start or offset+length>end:raise ValueError('native run crosses a frozen logical location')
+                            selected.append(run)
+                        offset+=length
+                    actual_literal=''.join(literal(n,math) for n in selected)
                 else:
                     body=shape
                     if location.startswith('cell.'):

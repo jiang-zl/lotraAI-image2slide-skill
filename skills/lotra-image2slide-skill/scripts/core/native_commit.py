@@ -113,6 +113,14 @@ def _table_cell_field(field):
     return tuple(map(int,match.groups())) if match else None
 
 
+def _field_order(fields):
+    # An explicit text-body grant may change paragraph/run topology. Install
+    # that authorized body before applying its accompanying font/alignment
+    # leaves. Without this grant the existing topology guards remain binding.
+    return (['text_body']+[field for field in fields if field!='text_body']
+            if 'text_body' in fields else list(fields))
+
+
 def _field(target, donor, field):
     selected=_table_cell_field(field)
     if field not in NATIVE_LEAF_FIELDS and selected is None:
@@ -507,7 +515,7 @@ def merge_native(baseline, donor, allowed, output):
                             from .native_scope import resources
                             resources(retained,incoming,parts)
                         else:
-                            for field in allowed[name]:
+                            for field in _field_order(allowed[name]):
                                 if field=='reparent':continue
                                 if field=='paint_order':raise ValueError('Regroup preserves internal sibling paint order')
                                 _field(retained,donor_node,field)
@@ -612,7 +620,7 @@ def merge_native(baseline, donor, allowed, output):
                     if not np.allclose(_group_matrix(_transform(a)),_group_matrix(_transform(b)),atol=1e-9):
                         raise ValueError('Map donor geometry to the edited parent coordinate frame first')
                     a,b=a.getparent(),b.getparent()
-                for field in fields:
+                for field in _field_order(fields):
                     if field=='connector':
                         donor_names={_props(n).get('id'):key for key,n in new_nodes.items()}
                         for cx in new.xpath('.//a:stCxn | .//a:endCxn',namespaces=NS):

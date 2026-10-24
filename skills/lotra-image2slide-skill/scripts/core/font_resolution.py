@@ -51,20 +51,21 @@ def style_feasible(face, request, synthetic=False):
     return bool(synthetic) or (face['weight'] >= 600) == request['bold'] and bool(face['italic']) == request['italic']
 
 
-def style_value(style):
+def style_value(style,native=False):
     """Logical emphasis is independent of native run subdivision and font hint."""
     return {'color': style.get('color', '17324D').upper(),
-            'bold': bool(style.get('bold', False)), 'italic': bool(style.get('italic', False))}
+            'bold': bool(style.get('native_bold',style.get('bold',False)) if native else style.get('bold',False)),
+            'italic': bool(style.get('native_italic',style.get('italic',False)) if native else style.get('italic',False))}
 
 
-def paragraph_spans(runs, style):
+def paragraph_spans(runs, style,native=False):
     text = ''; spans = []
-    for run in runs:
+    for run in (native_runs(runs,style) if native else runs):
         literal = '\ufffc' if 'ast' in run else run.get('text', '')
         if not literal:
             continue
         start = len(text); text += literal
-        value = style_value(merge_style(style, run)) if 'ast' not in run else {'math': True}
+        value = style_value(merge_style(style, run),native) if 'ast' not in run else {'math': True}
         if spans and spans[-1]['style'] == value:
             spans[-1]['end'] = len(text)
         else:
@@ -72,7 +73,27 @@ def paragraph_spans(runs, style):
     return {'text': text, 'spans': spans}
 
 
-def source_spans(scene):
+def native_runs(runs,style):
+    """Split only physical emphasis at script boundaries; logical runs survive."""
+    from .font_contract import script
+    result=[]
+    for run in runs:
+        flags=merge_style(style,run).get('native_script_styles')
+        if not flags or 'ast' in run:
+            result.append(run);continue
+        groups=[]
+        for character in run.get('text',''):
+            role=script(character) if not character.isspace() else None
+            selected=flags.get(role) if role else (groups[-1][1] if groups else next(iter(flags.values())))
+            selected=selected or next(iter(flags.values()))
+            if groups and groups[-1][1]==selected:groups[-1][0]+=character
+            else:groups.append([character,selected])
+        result.extend({**run,'text':text,**{'native_'+k:v for k,v in flags.items()}}
+                      for text,flags in groups)
+    return result
+
+
+def source_spans(scene,native=False):
     result = {}
     for obj in scene['objects']:
         style, content = obj['style'], obj['content']
@@ -80,11 +101,11 @@ def source_spans(scene):
             paragraphs = content.get('paragraphs')
             if paragraphs is None:
                 paragraphs = [content['runs']] if 'runs' in content else [[{'text': line}] for line in content.get('text', '').split('\n')]
-            result[obj['id']] = {'paragraphs': [paragraph_spans(row, style) for row in paragraphs]}
+            result[obj['id']] = {'paragraphs': [paragraph_spans(row, style,native) for row in paragraphs]}
         elif obj['render_type'] == 'table':
             formats = content.get('cell_styles', [[{} for _ in row] for row in content['rows']])
             result[obj['id']] = {'cells': [[
-                [paragraph_spans([{'text': line}], merge_style(style, formats[ri][ci])) for line in literal.split('\n')]
+                [paragraph_spans([{'text': line}], merge_style(style, formats[ri][ci]),native) for line in literal.split('\n')]
                 for ci, literal in enumerate(row)] for ri, row in enumerate(content['rows'])]}
     return result
 

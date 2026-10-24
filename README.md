@@ -2,13 +2,13 @@
 
 
 <!-- workflow-v137:start -->
-1.37.4 remains a portable skill: project-local `start → next → submit` packets,
+1.37.5 remains a portable skill: project-local `start → next → submit` packets,
 incremental original observation/binding, complete quality gates and formal export.
 A checkpoint or native build is not an accepted result. Use `delivery-check` for
 the current task and exact final PPTX bytes. No replacement harness, resident
 service or extra model key is required; an optional checker does not control a
 third-party harness's reply.
-1.37.4 preserves text emphasis, resolves complete native font slots, coordinates source-supported font groups, and makes font preparation and line failures finite and recoverable. Existing Windows commit and source-authority protections remain.
+1.37.5 integrates incident recovery, actual font identities, source-only observation diagnostics, short-branch paint checks, logical text and editable effects, first-render local review, and explicit capture-target mapping. Complete source, render and accepted-delivery gates remain required.
 <!-- workflow-v137:end -->
 
 Prefer a qualified local PowerPoint/WPS backend, with optional LibreOffice fallback. Every final file gets actual export/save checks; user-selected output roots default to the project directory. Runtime 1.14.0 binaries are reused. Physical WPS/macOS qualification requires the corresponding host.
@@ -16,9 +16,11 @@ Prefer a qualified local PowerPoint/WPS backend, with optional LibreOffice fallb
 
 
 
-**Current release: 1.37.4** · Development/default branch: `dev` · Version branch: `1.37.4` · Release tag: `v1.37.4`
+**Current release: 1.37.5** · Development/default branch: `dev` · Version branch: `1.37.5` · Release tag: `v1.37.5`
 
-`dev` and `1.37.4` currently contain the released 1.37.4. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
+Publication uses `dev` and the numeric version branch `1.37.5`, with formal tag `v1.37.5`. Branches use `dev` or `X.Y.Z`; release tags use `vX.Y.Z`, without extra suffixes.
+
+This release has current Windows/Linux regression, installation and authored-task delivery evidence. The official DeepSeek incident run reached an actual native/rendered checkpoint and closed the current arrow diagnosis; whole-artwork acceptance/export were deferred at the human's request. See the release and validation reports for scope and retained failures. Actual public README and bundle-download first/repeat checks are recorded after publication.
 
 
 **Reconstruct scientific figures as layered, editable PowerPoint slides.**
@@ -44,7 +46,7 @@ Codex runs the maintained installer, prepares Python, dependencies, OCR and Math
 Already have the complete ZIP? Supply the file or its absolute local path, then send:
 
 ~~~text
-Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.37.4-bundle.zip.
+Install or update Image2Slide in this project using the supplied lotraAI-image2slide-v1.37.5-bundle.zip.
 ~~~
 
 Runtime resources and private task state stay in the project's `.lotraAI-build` directory. See the [installation guide](docs/installation.md) for manual commands and platform requirements, or the [download guide](docs/download.md) for complete bundles.
@@ -148,7 +150,7 @@ Use $lotra-image2slide-skill to continue rebuilding from this partial PPT, follo
 
 After an interruption, ask the agent to resume the existing task in the same working project. Keep the original and `.lotraAI-build` available. See the [usage guide](docs/usage.md).
 
-## v1.37.4
+## v1.37.5
 
 This release adds source-owned line contracts and independent checks of saved routes, bends, endpoints, markers, stroke patterns, contacts and topology. Every line receives current render evidence and a located visual review; open doubts need enlarged evidence and explicit resolution. Clear cases stop after sufficient normal checks; uncertain cases refine only the affected objects, without selecting by model type or lowering quality requirements. See the [evidence-driven workflow](skills/lotra-image2slide-skill/references/workflow-v1372.md).
 
@@ -168,7 +170,7 @@ Installer generation, final distribution parsing and the Windows/Linux README in
 | [Usage](docs/usage.md) | Image reconstruction, partial-slide import and resuming work |
 | [Examples](docs/examples/README.md) | Originals, reconstruction screenshots and component details |
 | [Workflow](skills/lotra-image2slide-skill/references/workflow-v1352.md) | Retained workflow 1.35.2 reconstruction and reuse rules |
-| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.37.4 main-skill payload |
+| [Skill source](skills/lotra-image2slide-skill/SKILL.md) | The complete v1.37.5 main-skill payload |
 | [Provenance and licensing](NOTICE.md) | Project source, third-party components, and example assets |
 
 For feedback, include the operating system, product version, attempted operation, and relevant diagnostic. Share a reviewed reference image or excerpt when needed. Private task data remains under your control in the working project.

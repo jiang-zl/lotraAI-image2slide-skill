@@ -125,6 +125,19 @@ def audit(task,state=None,candidate=None,persist=True):
            'final_visual':visual}
     from .line_contracts import enabled as evidence_enabled
     if evidence_enabled(state):gates['source_lines']=line_report
+    from .capture_target import verify as verify_target
+    if state.get('reconstruction_target'):
+        try:gates['reconstruction_target']=verify_target(task,state)
+        except ValueError as error:gates['reconstruction_target']={'passed':False,'reason':str(error)}
+    from .source_preflight import enabled as source_review_enabled,require as source_review_gate
+    if source_review_enabled(state):
+        try:
+            source_ref=source_review_gate(task,state,read_json(c._resource(task,contract['source_observation'])))
+            gates['source_observation_support']={'passed':True,'evidence':source_ref,'independently_recomputed':True}
+        except ValueError as error:
+            gates['source_observation_support']={'passed':False,'reason':str(error)}
+        from .text_appearance import evaluate as evaluate_text
+        gates['whole_string_ink']=evaluate_text(task,state,candidate,observation['features'])
     if contract.get('workflow_version') in ('1.35.0', '1.35.1','1.35.2'):
         from .spatial_checks import evaluate as spatial_evaluate
         # Independent final gate recomputes from saved bytes, not local hits.

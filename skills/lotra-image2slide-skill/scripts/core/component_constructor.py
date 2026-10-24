@@ -12,6 +12,12 @@ def construct(task,state,scene,baseline=None,allowed=None,reason=None,transactio
     from .scene import validate
     from .tables import normalize_scene
     scene=normalize_scene(scene)
+    from .typography_units import POLICY as typography_policy,canonicalize as canonical_typography
+    if state.get('typography_policy')==typography_policy:
+        scene=copy.deepcopy(scene);scene['typography_policy']=typography_policy
+        scene=canonical_typography(scene)
+    elif scene.get('typography_policy'):
+        raise ValueError('TYPOGRAPHY_POLICY_MIGRATION_REQUIRED: retain old task typography policy')
     if baseline and scene.get('font_plan'):
         scene=fonts.preserve_unwritten_nodes(scene,read_json(c._resource(task,baseline['scene'])),allowed)
     if baseline:c.guard_changes(task,state,scene,allowed,(reason or {}).get('revision_components',()))
@@ -47,6 +53,23 @@ def construct(task,state,scene,baseline=None,allowed=None,reason=None,transactio
     from .line_preflight import require as require_line_plan
     contract_for_plan,_=c._load(task,state)
     require_line_plan(task,state,scene,contract_for_plan)
+    from .source_typography import require as require_typography, PreflightRequired
+    try:
+        scene=require_typography(task,state,scene,contract_for_plan,allowed)
+    except PreflightRequired as error:
+        # Font auto-binding can complete without ever producing a font packet.
+        # Both that path and resumed explicit binding must expose size recovery.
+        file=task/'scratch'/('typography-pending-'+identity(scene)+'.json');write_json(file,scene)
+        prior=state.get('font_pending_candidate') or {}
+        staged=copy.deepcopy(fonts.pending_state(state).get('font_contract') or
+            {'version':fonts.VERSION,'bindings':{},'history':[]})
+        staged['bindings'].update(copy.deepcopy(scene.get('font_plan',{}).get('bindings',{})))
+        state['font_pending_candidate']={**prior,'scene':a._file(task,file),'baseline':baseline,
+            'allowed':allowed,'reason':reason,'staged_font_contract':staged,
+            'transaction_path':transaction['path'] if transaction else prior.get('transaction_path'),
+            'typography_preflight':error.reference}
+        state.update(stage='font_binding',packet=None);a._save(task,state)
+        return None
     from .component_transactions import begin,phase,saved,release_local,attempt_folder
     tx=transaction or begin(task,state,scene,baseline,allowed,reason)
     if transaction:
@@ -62,6 +85,8 @@ def construct(task,state,scene,baseline=None,allowed=None,reason=None,transactio
     contract,ledger=c._load(task,state)
     affected=set(allowed or (owner for row in contract['components'] for owner in row['owners']))
     display_required=any(row['route']!='fixed_parameters' and affected.intersection(row['owners']) for row in contract['components'])
+    from .component_local_review import enabled as early_review_enabled
+    display_required=display_required or early_review_enabled(contract)
     phase(task,tx,'STAGED',display_required=display_required)
     from .font_embedding import FontCommitPending
     resume=bool(tx.get('font_commit_pending'))

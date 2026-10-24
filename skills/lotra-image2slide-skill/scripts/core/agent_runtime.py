@@ -151,13 +151,17 @@ def _roi(roi, size):
     return roi
 
 
-def start(source, project, *, name=None, objectives=None, configuration=None, pptx=None):
+def start(source, project, *, name=None, objectives=None, configuration=None, pptx=None,target_plan=None):
     from PIL import Image
     project = Path(project).expanduser().resolve()
     if not project.is_dir():
         raise ValueError('Existing project required')
     source = Path(source).expanduser().resolve()
     with Image.open(source) as image:size=list(image.size)
+    from .capture_target import validate as validate_target,freeze as freeze_target
+    target_plan=validate_target(target_plan,size,digest(source),project)
+    if pptx and target_plan['kind']!='source_projection':
+        raise ValueError('PARTIAL_PPT_TARGET_DECISION_REQUIRED: imported native source coordinates cannot be silently rectified; start a separate explicitly mapped task')
     name = name or source.stem + '-' + uuid.uuid4().hex[:8]
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,95}', name):
         raise ValueError('Portable task name required')
@@ -204,12 +208,20 @@ def start(source, project, *, name=None, objectives=None, configuration=None, pp
         (task / folder).mkdir()
     original = task / 'source' / ('original' + source.suffix.lower())
     shutil.copyfile(source, original)
+    if target_plan['kind']=='slide_surface':
+        authority=target_plan['authorization'];authority_file=task/'source/capture-target-authority.txt'
+        shutil.copyfile(safe_path(project,authority['path']),authority_file)
+        target_plan={**target_plan,'authorization':_file(task,authority_file)}
+    target_source,size,target_ref=freeze_target(task,original,target_plan)
     state = {'schema': SCHEMA, 'task_id': name, 'project': str(project), 'created': time.time(),
-             'source': _file(task, original), 'source_stem':source.stem, 'source_size': size, 'objectives': goals,
+             'source': target_source, 'source_stem':source.stem, 'source_size': size, 'reconstruction_target':target_ref,'objectives': goals,
              'capabilities': caps, 'execution_contract':execution_contract.VERSION,
              'execution_policy':__import__(__package__+'.workflow_guard',fromlist=['POLICY']).POLICY,
              'verification_policy':__import__(__package__+'.line_contracts',fromlist=['POLICY']).POLICY,
              'font_workflow_policy':__import__(__package__+'.font_resolution',fromlist=['POLICY']).POLICY,
+              'source_review_policy':__import__(__package__+'.source_preflight',fromlist=['POLICY']).POLICY,
+             'typography_policy':__import__(__package__+'.typography_units',fromlist=['POLICY']).POLICY,
+             'font_family_policy':__import__(__package__+'.font_family',fromlist=['POLICY']).POLICY,
              'stage': 'source_observation', 'analysis': None,
              'methods': {}, 'built': {}, 'scene': None, 'selected': None, 'active_candidate': None,
              'reviews': {}, 'issues': [], 'protected': {}, 'packet': None,
@@ -230,7 +242,7 @@ def start(source, project, *, name=None, objectives=None, configuration=None, pp
             'original': lib.blob(source), 'size': size, 'state': 'immutable_evidence'})
     write_json(task / 'source' / 'profile.json', {'method': 'source-specific priorities',
                'metrics': 'diagnostic, non-compensating semantics and preservation'})
-    write_json(task / 'source' / 'evidence.json', {'source': state['source'], 'size': size})
+    write_json(task / 'source' / 'evidence.json', {'source': state['source'], 'size': size,'reconstruction_target':target_ref,'raw_source':_file(task,original)})
     from .catalog_source import activate
     activate(task,state)
     from .source_recursion import activate as activate_recursion
@@ -630,6 +642,11 @@ def _packet(task, state, kind, target, objective, roi=None, extra=None):
     baseline = state['selected']['pptx']['sha256'] if state['selected'] else None
     packet_id = kind + '-' + str(state['revision']) + '-' + uuid.uuid4().hex[:10]
     extra=copy.deepcopy(extra or {})
+    if (state.get('source_review_policy')=='source-review-1.37.5' and
+            kind in ('component_contract_source','component_local_work','component_recovery_work')):
+        references=extra.setdefault('action_references',[])
+        for reference in ('references/workflow-v1375.md','references/font-workflow-v1374.md'):
+            if reference not in references:references.append(reference)
     if 'source' in extra:
         source=extra.pop('source')
         if source==state['source']:extra['source_image']=source
@@ -638,6 +655,7 @@ def _packet(task, state, kind, target, objective, roi=None, extra=None):
     packet = {'packet_id': packet_id, 'kind': kind, 'target': target,
               'objective': objective, 'baseline': baseline, 'source': state['source']['sha256'],
               'original_view':{**state['source'],'roi':[0,0,*state['source_size']]},
+              'reconstruction_target':state.get('reconstruction_target'),
               'revision': state['revision'], 'views': _preview(task, state,
               None if kind in ('source_inventory','font_binding') else state['active_candidate'] or state['selected'],
               roi or [0,0,*state['source_size']], packet_id), **(extra or {})}
@@ -1145,6 +1163,17 @@ def _pending_font_work(task,state):
     if pending.get('staged_font_contract'):
         scene=font_contract.bind_scene(task,working,scene)
         reason.setdefault('post_save',{}).setdefault('state_updates',{})['font_contract']=copy.deepcopy(working['font_contract'])
+    if state.get('typography_policy'):
+        from . import source_typography
+        from .component_workflow import _load as load_components
+        contract,_=load_components(task,state)
+        try:
+            scene=source_typography.require(task,working,scene,contract,pending.get('allowed'))
+        except source_typography.PreflightRequired as error:
+            details=source_typography.recovery(task,state,scene,error)
+            packet=_packet(task,state,'typography_source','original_font_sizes',
+                'Resolve the retained original-only size preflight before native construction. Confirm isolated continuous phrases in the frozen owner; use the bound physical face and finite model. Preserve all staged font choices, source facts and quality bounds.',extra=details)
+            return {'status':'WORK_PACKET','task':str(task),'packet':packet}
     with finite_writer(task):
         _candidate(task,state,scene,baseline=pending['baseline'],allowed=pending['allowed'],reason=reason,
                    transaction=read_json(_path(task,pending['transaction_path'])) if pending.get('transaction_path') else None)
@@ -1154,6 +1183,8 @@ def _pending_font_work(task,state):
 
 def next_packet(task, configuration=None):
     task, state = _state(task)
+    from .capture_target import verify as verify_target
+    verify_target(task,state)
     prior_route=state['capabilities'].get('fingerprint')
     if state.get('analysis'):
         try:semantic_composition.validate_relations(state['analysis'].get('scene_relations',[]),'analysis.scene_relations')
@@ -1195,6 +1226,10 @@ def next_packet(task, configuration=None):
     if state['selected'] and digest(_path(task, state['selected']['pptx']['path'])) != state['selected']['pptx']['sha256']:
         return {'status': 'USER_FILE_CHANGED', 'action': 'sync the edited PPTX before continuing'}
     candidate=state.get('active_candidate') or state.get('selected')
+    from .component_transactions import recovery_packet
+    recovery=recovery_packet(task,state,candidate)
+    if recovery:
+        return {'status':'WORK_PACKET','task':str(task),'packet':recovery}
     if not candidate and state.get('objectives',{}).get('component_first') and not state.get('font_pending_candidate'):
         from .workflow_guard import enabled as controlled
         from .component_workflow import implementation as component_implementation
@@ -2235,6 +2270,10 @@ def _submit_current(task,state,packet,result):
             candidate['font_delivery']={'binding':font_contract.guard_saved(scene,original),'embedding':embedded}
             candidate['pptx']=_file(task,original);candidate['snapshot']=Library(state['project'], scope=library_scope(state)).blob(original)
             state['scene']=candidate['scene'];state['stage']='host_render'
+        elif kind == 'typography_source':
+            from .source_typography import receive_recovery
+            receipt=receive_recovery(task,state,packet,result)
+            state['typography_submission_receipt']=receipt
         elif kind == 'font_binding':
             pending=state['font_pending_candidate'];ref=pending['scene']
             if digest(_path(task,ref['path']))!=ref['sha256']:raise ValueError('Pending source font scene changed')

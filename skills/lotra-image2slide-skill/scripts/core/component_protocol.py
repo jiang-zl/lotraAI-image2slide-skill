@@ -323,18 +323,21 @@ def impact(contract, changed):
 def ready_for_final(contract, ledger, state=None):
     required = [row['id'] for row in contract['components']]
     pending = [name for name in required if ledger.get('components', {}).get(name, {}).get('status') != 'QUALIFIED']
+    from .component_local_review import enabled as early_review_enabled,current as appearance_current
+    appearance_pending=[row['id'] for row in contract['components'] if early_review_enabled(contract) and
+                        not appearance_current(row,ledger.get('components',{}).get(row['id'],{}))]
     relation_pending = [r['id'] for r in contract.get('relations', [])
                         if ledger.get('relations', {}).get(r['id'], {}).get('status') != 'QUALIFIED']
     obligations = bool(ledger.get('pending_decision') or ledger.get('structural_grant') or
         (state or {}).get('spatial_source_decision') or (state or {}).get('source_observation_rebind_required') or
         (ledger.get('repair_batch') or {}).get('status') in ('PLAN_REQUIRED','DIAGNOSIS_REQUIRED','SOURCE_DECISION_REQUIRED'))
     return {'ready': bool(required) and len(required)==len(set(required)) and set(ledger.get('components',{}))==set(required) and
-                    not obligations and not pending and not relation_pending and ledger.get('layout_ready') is True and
+                    not obligations and not pending and not appearance_pending and not relation_pending and ledger.get('layout_ready') is True and
                     not any(r.get('spatial_repair_schedule') for r in ledger.get('components',{}).values()) and
                     not ledger.get('pending_transaction') and not ledger.get('user_reconciliation') and
                     not ledger.get('source_observation_dirty') and
                     (ledger.get('repair_batch') or {}).get('status')!='PLAN_REQUIRED',
-            'components_pending': pending, 'relations_pending': relation_pending, 'decision_pending':obligations,
+            'components_pending': pending, 'appearance_pending':appearance_pending,'relations_pending': relation_pending, 'decision_pending':obligations,
             'layout_ready': ledger.get('layout_ready') is True}
 
 

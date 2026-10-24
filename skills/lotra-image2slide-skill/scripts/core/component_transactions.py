@@ -7,6 +7,48 @@ from .common import identity,read_json,write_json,digest,safe_path,writer
 PHASES=('PLANNED','STAGED','NATIVE_SAVED','DISPLAY_PENDING','LOCAL_RESULT_READY','ADOPTED','CLOSED')
 
 
+def recovery_packet(task,state,candidate=None):
+    """Route an existing journal before stale packets or fresh construction.
+
+    A journal may legitimately wait for its own font input or saved render.
+    Those dependencies continue; an unrelated pending font plan cannot start
+    another transaction or make the registered recovery unreachable.
+    """
+    if not state.get('component_workflow') or not state.get('objectives',{}).get('component_first'):
+        return None
+    from . import component_workflow as c,agent_runtime as a
+    contract,ledger=c._load(task,state);pending=ledger.get('pending_transaction')
+    if not pending:return None
+    tx=read_json(safe_path(task,pending['path'])) if pending.get('path') else {}
+    font=state.get('font_pending_candidate') or {}
+    current=candidate or c._candidate(state) or {}
+    saved=(tx.get('candidate') or {}).get('pptx',{}).get('sha256')
+    current_hash=current.get('pptx',{}).get('sha256')
+    ready=bool(tx.get('ready_marker') and safe_path(task,tx['ready_marker']).is_file())
+    if (font and font.get('transaction_path')==pending.get('path') and
+            tx.get('phase') in ('PLANNED','STAGED') and not ready and not tx.get('font_commit_pending')):
+        return None
+    if saved and saved==current_hash:
+        if (state.get('stage')=='font_delivery' and
+                current.get('font_delivery',{}).get('embedding',{}).get('status')=='FONT_EMBEDDING_PROVIDER_REQUIRED'):
+            return None
+        if state.get('stage')=='host_render' and not (current.get('render') and current.get('preview')):
+            return None
+    prior=state.get('packet') or {}
+    if (prior.get('kind')=='component_recovery_work' and prior.get('transaction')==pending and
+            prior.get('component_implementation')==c.implementation() and prior.get('revision')==state.get('revision')):
+        return prior
+    actions=['resume']
+    if not ready and not saved:actions.append('retain_and_redecide')
+    if current.get('font_delivery',{}).get('embedding',{}).get('status')=='FONT_EMBEDDING_PROVIDER_REQUIRED':
+        actions.append('retain_font_candidate_and_redecide')
+    return a._packet(task,state,'component_recovery_work','transaction',
+        'Resume this registered journal before another native action. Retain all staged files, source decisions and font receipts.',
+        extra={'transaction':pending,'recovery_stage':tx.get('phase','LEGACY_INSPECTION'),
+               'allowed_recovery_actions':actions,'action':'component-workflow recover',
+               'action_references':[c.reference(contract)],'whole_audit_allowed':False})
+
+
 from .component_fields import differences
 
 
@@ -156,6 +198,26 @@ def recover(task,request=None):
         c._resource(task,request['evidence'])
         for name in tx.get('local_components',[]):
             if name in ledger['components']:ledger['components'][name]['status']='SOURCE_DECISION_REQUIRED'
+        font=state.get('font_pending_candidate')
+        if font:
+            # Older font pauses can precede begin(), so they have no journal
+            # path. Match their exact baseline, owner fields and resource group
+            # rather than abandoning an unrelated pending font operation.
+            same=(font.get('transaction_path')==pending['path'] or
+                  not font.get('transaction_path') and font.get('baseline')==tx.get('baseline') and
+                  font.get('allowed')==tx.get('allowed') and
+                  (font.get('reason') or {}).get('kind')==(tx.get('reason') or {}).get('kind') and
+                  (font.get('reason') or {}).get('components')==(tx.get('reason') or {}).get('components'))
+            if same:
+                tx['retained_font_dependency']=copy.deepcopy(font)
+                state.pop('font_pending_candidate',None)
+        structural=ledger.get('structural_grant')
+        if (structural and tx.get('post_save',{}).get('consume_structural_grant') and
+                set(structural.get('components',[]))<=set(tx.get('local_components',[])) and
+                structural.get('contract')==tx.get('contract')):
+            tx['retained_structural_grant']=copy.deepcopy(structural)
+            ledger.pop('structural_grant',None)
+        state.update(stage='review',packet=None)
         phase(task,tx,'CLOSED',outcome='INCOMPLETE_ATTEMPTS_RETAINED',closure_evidence=request['evidence'])
         ledger['pending_transaction']=None
         with writer(task):c._save_ledger(task,state,ledger,'incomplete_transaction_retained',{'id':tx['id']})

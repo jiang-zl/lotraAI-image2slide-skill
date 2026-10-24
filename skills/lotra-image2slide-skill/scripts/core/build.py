@@ -59,7 +59,11 @@ def inline_text_runs(ast, font='Cambria Math'):
 
 
 def text_body(shape,content,style):
+    from .text_layout import validate as validate_layout,DIRECTIONS
+    validate_layout(content)
     frame=shape.text_frame
+    if content.get('text_layout'):
+        frame._txBody.bodyPr.set('vert',DIRECTIONS[content['text_layout'].get('direction','horizontal')])
     frame.margin_left=frame.margin_right=frame.margin_top=frame.margin_bottom=0
     frame.word_wrap=style.get('wrap',False)
     frame.auto_size=MSO_AUTO_SIZE.NONE
@@ -102,7 +106,8 @@ def text_body(shape,content,style):
             simple=inline_text_runs(item['ast'],math_face) if 'ast' in item and native_math else None
             expanded.extend([{**{k:v for k,v in item.items() if k!='ast'},**r,'_lotra_math_run':True,'_lotra_math_span':span_index} for r in simple] if simple is not None else [item])
             if 'ast' in item:span_index+=1
-        for item in expanded:
+        from .font_resolution import native_runs
+        for item in native_runs(expanded,style):
             size=item.get('font_size',style.get('font_size',16))*item.get('font_scale',1)
             faces=resolve_faces(style,item)
             if 'ast' in item:
@@ -126,7 +131,8 @@ def text_body(shape,content,style):
                     face=rpr.find('a:'+script,NS)
                     if face is None:face=child(rpr,'a:'+script)
                     face.set('typeface',faces.get(script,primary))
-                r.font.bold=item.get('bold',style.get('bold',False));r.font.italic=item.get('italic',style.get('italic',False))
+                r.font.bold=item.get('native_bold',style.get('native_bold',item.get('bold',style.get('bold',False))))
+                r.font.italic=item.get('native_italic',style.get('native_italic',item.get('italic',style.get('italic',False))))
                 r.font.color.rgb=RGBColor.from_string(item.get('color',style.get('color','17324D')))
                 if style.get('text_outline_width_pt'):
                     width=style['text_outline_width_pt']
@@ -153,6 +159,8 @@ def text_body(shape,content,style):
 
 
 def shape_style(shape,style,kind):
+    from .material_effects import apply as apply_material
+    apply_material(shape,style)
     if kind not in ('shape','bezier','path','connector'):return
     effect=shape._element.find('p:style/a:effectRef',NS)
     if effect is not None and not style.get('shadow',False):effect.set('idx','0')
@@ -371,6 +379,7 @@ def build(scene, base, output,*,resume=False,plan_only=False):
                 elif mode=='office_math':
                     insert_math(s, c["ast"], st.get("font_size", 20), equation_font,st.get('color'),font_policy=st.get('math_font_policy','native_math'))
                     s.text_frame.auto_size=MSO_AUTO_SIZE.NONE
+                    s.text_frame.vertical_anchor={'top':MSO_ANCHOR.TOP,'middle':MSO_ANCHOR.MIDDLE,'bottom':MSO_ANCHOR.BOTTOM}[st.get('valign','top')]
                     s.text_frame.paragraphs[0].alignment={'left':PP_ALIGN.LEFT,'center':PP_ALIGN.CENTER,'right':PP_ALIGN.RIGHT}[st.get('align','center')]
                     para=s._element.find('p:txBody/a:p/a14:m/m:oMathPara',NS)
                     pr=el('m:oMathParaPr');jc=child(pr,'m:jc');jc.set('{'+NS['m']+'}val',st.get('align','center'));para.insert(0,pr)
@@ -476,6 +485,14 @@ def build(scene, base, output,*,resume=False,plan_only=False):
                         faces=resolve_faces(cs)
                         primary=faces.get('latin',faces.get('ea',faces.get('cs',cs.get('font','DejaVu Sans'))))
                         paragraph.font.name=primary
+                        if cs.get('native_script_styles'):
+                            from .font_resolution import native_runs
+                            text=paragraph.text;paragraph.clear()
+                            for item in native_runs([{'text':text}],cs):
+                                native_run=paragraph.add_run();native_run.text=item['text']
+                                native_run.font.bold=item['native_bold'];native_run.font.italic=item['native_italic']
+                                native_run.font.size=Centipoints(round(cs.get('font_size',14)*100))
+                                native_run.font.color.rgb=RGBColor.from_string(cs.get('color','17324D'))
                         for run in paragraph.runs:
                             props=run._r.get_or_add_rPr()
                             for script in ('latin','ea','cs'):
@@ -484,8 +501,8 @@ def build(scene, base, output,*,resume=False,plan_only=False):
                                 face.set('typeface',faces.get(script,primary))
                         paragraph.font.size=Centipoints(round(cs.get("font_size",14)*100))
                         paragraph.font.color.rgb=RGBColor.from_string(cs.get("color","17324D"))
-                        paragraph.font.bold=cs.get('bold',False)
-                        paragraph.font.italic=cs.get('italic',False)
+                        paragraph.font.bold=cs.get('native_bold',cs.get('bold',False))
+                        paragraph.font.italic=cs.get('native_italic',cs.get('italic',False))
                         paragraph.alignment={'left':PP_ALIGN.LEFT,'center':PP_ALIGN.CENTER,'right':PP_ALIGN.RIGHT}[cs.get('align','left')]
                     props=cell._tc.get_or_add_tcPr()
                     for edge_index,edge in enumerate(("lnL","lnR","lnT","lnB")):
@@ -502,6 +519,31 @@ def build(scene, base, output,*,resume=False,plan_only=False):
         mark_geometry_contract(s,o)
         if st.get('rotation'):s.rotation=st['rotation']
         shape_style(s,st,kind)
+        if scene.get('typography_policy') and kind in ('text','equation','table'):
+            # Inspect the just-written native body, before saving/embedding/PDF.
+            from .native_core_checks import style_checks
+            failures=[row for row in style_checks(o,s._element) if row['status']!='PASS']
+            if failures:
+                raise ValueError('TYPOGRAPHY_NATIVE_WRITE_REQUIRED: '+o['id']+' '+failures[0]['check_id'])
+            from .typography_units import guard_written_math
+            guard_written_math(o,s._element)
+            if kind=='text':
+                has_math=any('ast' in run for paragraph in c.get('paragraphs',[c.get('runs',[])]) for run in paragraph)
+                if has_math:
+                    paragraphs=c.get('paragraphs',[c.get('runs',[])])
+                    expected='\n'.join(''.join(run.get('text','') for run in paragraph if 'ast' not in run) for paragraph in paragraphs)
+                    actual='\n'.join(''.join(run.find('a:t',NS).text or '' for run in paragraph.findall('a:r',NS) if run.find('a:t',NS) is not None)
+                                     for paragraph in s._element.findall('p:txBody/a:p',NS))
+                else:
+                    from .text_layout import saved_text,expected_text
+                    expected=expected_text(c);actual=saved_text(s._element,c)
+                if actual!=expected:
+                    raise ValueError('TYPOGRAPHY_NATIVE_LITERAL_REQUIRED: '+o['id'])
+            elif kind=='table':
+                for ri,row in enumerate(c['rows']):
+                    for ci,literal in enumerate(row):
+                        if s.table.cell(ri,ci).text!=str(literal):
+                            raise ValueError('TYPOGRAPHY_NATIVE_CELL_LITERAL_REQUIRED: '+o['id']+'/'+str(ri)+'.'+str(ci))
         if kind in ('path','bezier') and (c.get('arrow') or c.get('start_arrow')):
             if kind=='path' and any(part.get('closed') for part in c.get('contours',[])):
                 raise ValueError('A routed line arrow requires an open native contour')

@@ -248,9 +248,13 @@ def check(scene, base, pptx, owners=None, phase=None, validated=False):
                       and actual is not None and len(actual)==len(wanted) and error<.1)
                 add(id,'shared_trunk_native_routes',good,{'actual_prefix':actual,'expected_prefix':wanted,'max_error_px':error if error!=float('inf') else None})
         elif kind == "text":
-            actual = "\n".join("".join(p.xpath(".//a:t/text()", namespaces=NS)) for p in n.findall("p:txBody/a:p", NS))
+            from .text_layout import saved_text,expected_text
+            try:actual = saved_text(n,o['content'])
+            except ValueError as error:
+                add(id,'text_layout_mapping',False,{'reason':str(error)})
+                actual=None
             c=o['content'];paragraphs=c.get('paragraphs',[c.get('runs',[])])
-            wanted=c.get('text','\n'.join(''.join(r.get('text','') for r in p) for p in paragraphs))
+            wanted=expected_text(c)
             add(id, "text_exact", actual == wanted, {"actual": actual, "expected": wanted})
             wanted_math=[r['ast'] for p in paragraphs for r in p if 'ast' in r]
             zones=n.xpath('p:txBody/a:p/a14:m/m:oMath | p:txBody/a:p/a14:m/m:oMathPara/m:oMath',namespaces=NS)

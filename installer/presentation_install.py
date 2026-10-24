@@ -59,7 +59,7 @@ p=Path(sys.argv[2]);root=Path(sys.argv[3]);fixture(root/'Fixture.pptx')
 caps=capabilities(p,requested='libreoffice')
 if caps.get('status')!='READY':raise RuntimeError(str(caps))
 r=render(root/'Fixture.pptx',root/'render',caps)
-s=save_reopen(root/'Fixture.pptx',root/'save',caps['executable'])
+s=save_reopen(root/'Fixture.pptx',root/'save',caps['executable'],renderer=caps)
 write_json(root/'Qualification.json',{'status':'PASS','backend':'LibreOffice','render_sha256':digest(root/'render/render.json'),'save_reopen':s,'scope':'this host fixture; Office editing remains UNVERIFIED'})
 '''
     with (folder/'Helper.log').open('wb') as log:

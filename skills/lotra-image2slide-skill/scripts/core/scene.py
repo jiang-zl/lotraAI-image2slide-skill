@@ -24,6 +24,8 @@ def validate(scene, base=None, verify_resources=True):
         raise ValueError("Duplicate object identity")
     if not objects:
         raise ValueError("Empty Scene cannot be validated as a reconstruction")
+    from .typography_units import validate as validate_typography
+    validate_typography(scene)
     if scene.get('frame_plan') and base is not None:
         from .frame_plan import load as load_frames, validate as validate_frames
         validate_frames(load_frames(base,scene['frame_plan']),base,scene=scene)
@@ -68,6 +70,8 @@ def validate(scene, base=None, verify_resources=True):
             math_node(o["content"]["ast"])
         if o['render_type']=='text':
             c=o['content']
+            from .text_layout import validate as validate_text_layout
+            validate_text_layout(c)
             if not any(k in c for k in ('text','runs','paragraphs')):raise ValueError('Text content required')
             for paragraph in c.get('paragraphs',[c.get('runs',[])]):
                 for run in paragraph:
@@ -92,6 +96,8 @@ def validate(scene, base=None, verify_resources=True):
             if o['content']['preset'] not in ('rect','roundRect','ellipse'):raise ValueError('Unsupported ported shape')
             if any(len(p)!=2 or not all(math.isfinite(v) for v in p) for p in o['content']['connection_sites']):raise ValueError('Invalid custom connection site')
         if o['render_type']=='shape':
+            from .material_effects import validate as validate_material
+            validate_material(o['style'])
             from .presets import validate as validate_preset
             validate_preset(o['content']['preset'],o['content'].get('adjustments',[]))
         if o["render_type"]=="table":

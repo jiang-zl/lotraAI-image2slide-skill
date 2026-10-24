@@ -7,12 +7,40 @@ imports the OMML structure; its own formula serialization is kept intact.
 """
 from copy import deepcopy
 from pathlib import Path
+import shutil
+import hashlib
 from zipfile import ZipFile, ZIP_DEFLATED
 from lxml import etree as E
 from .mathml import NS
 from .common import digest, write_json
 
 VERSION='native-math-editor-1.31'
+
+
+def native_math_branches(root):
+    """Resolve only source OMML choices supported by the fixed native adapter."""
+    records=[]
+    for alternate in reversed(root.findall('.//mc:AlternateContent',NS)):
+        choices=[n for n in alternate.findall('mc:Choice',NS) if n.find('.//m:oMath',NS) is not None]
+        if not choices:
+            if alternate.find('.//m:oMath',NS) is not None:
+                raise ValueError('CAPABILITY_BLOCKED: fallback-only native Math needs an explicit compatibility decision')
+            continue
+        if len(choices)!=1 or alternate.find('mc:Fallback//m:oMath',NS) is not None:
+            raise ValueError('CAPABILITY_BLOCKED: ambiguous native Math compatibility branches')
+        choice=choices[0];requires=choice.get('Requires','').split()
+        if not requires or any(choice.nsmap.get(prefix)!=NS['a14'] for prefix in requires):
+            raise ValueError('CAPABILITY_BLOCKED: native Math choice requires an unsupported or unbound namespace')
+        objects=choice.findall('.//m:oMath',NS)
+        records.append({'requires_namespaces':[choice.nsmap[prefix] for prefix in requires],
+            'native_math_objects':len(objects),'source_choice_sha256':hashlib.sha256(E.tostring(choice)).hexdigest(),
+            'scope':'Supported source OMML primary branch in private rendering copy; fallback is not native Math evidence'})
+        parent=alternate.getparent();index=parent.index(alternate)
+        children=list(choice)
+        if not children:raise ValueError('Native Math compatibility choice is empty')
+        for offset,child in enumerate(children):parent.insert(index+offset,deepcopy(child))
+        parent.remove(alternate)
+    return records
 
 
 def _style(zone):
@@ -26,13 +54,39 @@ def _style(zone):
     return {'size':sizes.pop(),'font':fonts.pop(),'color':next(iter(colors),'17324D')}
 
 
-def prepare(pptx, output):
+def prepare(pptx, output, native_math_import=False):
     """Read every math zone from the actual ZIP, then create one transient input."""
     output=Path(output);groups=[];parts={}
+    if native_math_import:
+        # Preserve the saved native formula and imported style. Only the
+        # supported Math compatibility branch may be normalized for import.
+        from .native_font_aliases import family_plan
+        changes={};branch_records=[];zones=[]
+        with ZipFile(pptx) as source:
+            for name in source.namelist():
+                if not name.startswith('ppt/slides/slide') or not name.endswith('.xml'):continue
+                root=E.fromstring(source.read(name));resolved=native_math_branches(root)
+                if resolved:
+                    changes[name]=E.tostring(root,xml_declaration=True,encoding='UTF-8',standalone=True)
+                    branch_records.append({'part':name,'choices':resolved})
+                zones.extend(root.findall('.//m:oMath',NS))
+            metadata={'expected_math_objects':len(zones),
+                'without_explicit_run_style':sum(not zone.findall('.//m:r/a:rPr',NS) for zone in zones),
+                'compatibility_branches':branch_records,'raw_application_branch_selection':'NOT_QUALIFIED_BY_ADAPTER_RENDER'}
+        target=output/'editor-input.pptx'
+        if changes:
+            with ZipFile(pptx) as source,ZipFile(target,'w',ZIP_DEFLATED) as destination:
+                for info in source.infolist():destination.writestr(info,changes.get(info.filename,source.read(info.filename)))
+        else:shutil.copyfile(pptx,target)
+        plan={'version':VERSION,'canonical_pptx_hash':digest(pptx),'editor_input_hash':digest(target),'groups':[],
+            'font_aliases':family_plan(target),'native_saved_math':metadata,
+            'math_style_scope':'APPLICATION_SAVED_NATIVE_IMPORT_NO_SOURCE_STYLE_CLAIM'}
+        write_json(output/'editor-plan.json',plan);return target,plan
     with ZipFile(pptx) as src:
         slides=sorted(n for n in src.namelist() if n.startswith('ppt/slides/slide') and n.endswith('.xml'))
         for slide_name in slides:
             root=E.fromstring(src.read(slide_name))
+            native_math_branches(root)
             fresh_id=max([int(p.get('id','0')) for p in root.findall('.//p:cNvPr',NS)]+[1])+1
             for shape in list(root.findall('.//p:sp',NS)):
                 if shape.find('.//m:oMath',NS) is None:continue
@@ -84,6 +138,9 @@ def prepare(pptx, output):
         target=output/'editor-input.pptx'
         with ZipFile(target,'w',ZIP_DEFLATED) as dst:
             for info in src.infolist():dst.writestr(info,parts.get(info.filename,src.read(info.filename)))
-    plan={'version':VERSION,'canonical_pptx_hash':digest(pptx),'editor_input_hash':digest(target),'groups':groups}
+    from .native_font_aliases import family_plan
+    plan={'version':VERSION,'canonical_pptx_hash':digest(pptx),'editor_input_hash':digest(target),'groups':groups,
+          'font_aliases':family_plan(target),
+          'math_style_scope':'APPLICATION_SAVED_NATIVE_IMPORT_NO_SOURCE_STYLE_CLAIM' if native_math_import else 'EXPLICIT_SOURCE_STYLE_REQUIRED'}
     write_json(output/'editor-plan.json',plan)
     return target,plan

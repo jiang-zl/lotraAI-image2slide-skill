@@ -69,7 +69,8 @@ def _observation(value,state):
     return {'schema':'source-features-1.35.1','source_hash':state['source']['sha256'],'canvas':list(state['source_size']),
         'basis':'unchanged_original','observer':value['outline']['observer'],
         'observations':'\n'.join([value['outline']['observations']]+[s for s in value.get('observations',[]) if s]),
-        'units':value['units'],'features':value['features'],'spatial':value['spatial'],'source_views':value.get('source_views',[])}
+        'units':value['units'],'features':value['features'],'spatial':value['spatial'],'source_views':value.get('source_views',[]),
+        'layout_review':value.get('layout_review',value['outline'].get('layout_review',{}))}
 
 
 def seal_state(task,state,kind):
@@ -188,8 +189,10 @@ def submit(task,request):
         if operation=='source_chunk':
             if value['source_sealed'] and not correction:raise ValueError('Original observation is sealed; use the explicit correction flow')
             patch=request['observation']
-            if set(patch)-{'units','features','spatial','observations','source_views'}:raise ValueError('Source chunks contain original data only')
-            if not any(patch.get(k) for k in ('units','features','spatial')):raise ValueError('Empty source chunk')
+            if set(patch)-{'units','features','spatial','observations','source_views','layout_review'}:raise ValueError('Source chunks contain original data only')
+            if not any(patch.get(k) for k in ('units','features','spatial','layout_review')):raise ValueError('Empty source chunk')
+            if patch.get('layout_review'):
+                value['layout_review']=_merge(value.get('layout_review',{}),patch['layout_review'],corrections=corrections,section='layout_review')
             known={u['id']:u for u in value['outline']['units']}
             units=patch.get('units',[])
             if len(units)>32 or len(patch.get('features',[]))>128:raise ValueError('Use at most 32 units / 128 features per chunk')
@@ -271,6 +274,15 @@ def submit(task,request):
         scene.setdefault('canvas',{'width':state['source_size'][0],'height':state['source_size'][1],
             'unit':'px','target_width_inches':request.get('target_width_inches',10)})
         scene.setdefault('relations',[]);scene.setdefault('prototypes',[])
+        if state.get('typography_policy'):
+            from .typography_units import POLICY as typography_policy,canonicalize
+            if state['typography_policy'] != typography_policy:
+                raise ValueError('Unsupported bound typography policy')
+            scene['typography_policy']=typography_policy
+            scene=canonicalize(scene)
+            if any(obj['render_type'] in ('text','equation','table') for obj in scene['objects']):
+                from .typography_measurement import context as measurement_context
+                measurement_context(task,state,scene,scene)
         contract=copy.deepcopy(value['contract'])
         contract.update(schema='component-protocol-1.32.0',workflow_version='1.35.2',design_revision=8,
             source_hash=state['source']['sha256'],source_inventory=copy.deepcopy(value['units']))
@@ -303,15 +315,32 @@ def template(task,state,packet):
         if phase=='source_outline':
             request['outline']={'source_hash':state['source']['sha256'],'canvas':list(state['source_size']),
                 'observer':'host_model','complete_scope':True,'observations':'','units':[]}
+            if state.get('source_review_policy'):
+                request['outline']['layout_review']={domain:{'decision':'','source_evidence':''} for domain in ('alignment','containment','connections')}
         elif phase=='source_chunk':
             request.update(chunk_id='source-'+str(value['generation']+1),observation={'units':[],'features':[],
                 'spatial':{'frames':[],'landmarks':[],'relations':[],'footprints':[]},'observations':''})
         packet['incremental']={'operation':phase,'allowed_operations':[phase,'source_chunk'] if phase=='source_seal' else [phase],
             'coverage':visible_counts(value),'checkpoint':state.get('incremental_contract'),
             'scope':'Persist complete source evidence in bounded chunks; partial progress is never acceptance.'}
+        if state.get('source_review_policy'):
+            packet['source_observation_requirements']={'policy':state['source_review_policy'],
+                'reconstruction_target':state.get('reconstruction_target'),
+                'text_appearance':'Every text and Math feature, including each populated table cell, needs complete aggregate original ink colours, colour_tolerance <= .25, isolation/source_evidence and pre-frozen source-pixel limits for width, height, ink-bottom baseline, observable spacing and optional position. Both actual ink-center axes are compared at their original location; default position limit is the minimum frozen width/height/baseline limit. Preserve intentional source offsets. Native centered frames cannot substitute for painted aggregate checks.',
+                'layout_review':'Declare alignment/containment/connections as declared, intentional_irregular or not_applicable, with original evidence.',
+                'appearance_review':'Every unit with surfaces/colour regions records fill/depth/corners as present, absent, not_applicable or uncertain with source_evidence. Present depth names its source feature_ids.',
+                'geometry':'Use form:rect|round_rect on observed rectangular silhouettes for original-only boundary diagnostics. Source lines receive original pixel-support and short-terminal preflight before sealing.',
+                'failure':'Correct located original observations with prior row hashes; a count or frozen native plan never proves their truth.'}
     elif kind=='component_contract_source' and target=='component_contract' and not state.get('component_workflow'):
         value=load(task,state);pending=counts(value)['pending_features']
         phase='bind_chunk' if pending else 'bind_seal';request={'operation':phase}
+        if state.get('typography_policy'):
+            packet['typography_requirements']={'policy':state['typography_policy'],
+                'units':'Declare scene.typography_units.font_size:pt (or explicit source_px); program converts once and rounds to 0.5 pt, decimal half-up. Geometry remains source_px.',
+                'measurement':'A slide_surface target supplies its verified rectified mapping. Otherwise declare scene.typography_measurement:{kind:fronto_parallel|projected_appearance,evidence:{path,sha256},source_uncertainty_px:0.5}; the source observation records measurement_kind. Geometry, output physical size and original evidence remain frozen.',
+                'source_size':'Use current isolated original font_samples or owner.typography_samples[location] with source_hash, observer, source_evidence and 1..12 character/roi or single-line text/roi samples, at most 32 characters each. Confirm cached OCR suggestions on original views. An optional evidenced size_group declares equal source sizes; it requires a common rectified/fronto-parallel plane. The program compares at most 17 half-point sizes at fixed physical scale and retains ambiguity.',
+                'preflight':'All changed text/Math/table requests must pass source-size screening before transaction/native construction. Ambiguous samples return a bounded diagnostic, never a fabricated font size.',
+                'native':'Read back written runs/cells/Math attributes before rendering; source appearance and final actual-render gates remain separate.'}
         if phase=='bind_chunk':request.update(chunk_id='binding-'+str(value['generation']+1),binding={
             'scene':{'objects':[]},'contract':{'components':[],'feature_bindings':[],'spatial_bindings':[],'spatial_footprint_bindings':[]}})
         packet['incremental']={'operation':phase,'allowed_operations':([phase,'bind_chunk'] if phase=='bind_seal' else [phase])+['source_correction'],
@@ -334,10 +363,17 @@ def template(task,state,packet):
             request.setdefault('source_hash',state['source']['sha256'])
             candidate=state.get('active_candidate') or state.get('selected')
             if candidate:request.setdefault('pptx_hash',candidate['pptx']['sha256'])
+            if packet.get('submit_operation')=='review_local':
+                request['evidence']={'path':'','sha256':''}
+                packet['local_appearance_requirements']={'preview_hash':candidate.get('preview',{}).get('sha256'),
+                    'source_observation':state.get('source_feature_observation'),
+                    'return':'evidence with current source_hash/pptx_hash/preview_hash/component, observer, observations, verdict, feature_basis and every required feature_check; include source spatial checks when applicable',
+                    'rule':'Native parameter consistency is already qualified. Compare actual original/current render now; reuse and final layout wait for this local closure.'}
             if packet.get('submit_operation')=='source_or_measurement_decision':
                 packet['source_feature_correction']={'prior_observation':state.get('source_feature_observation'),
                     'return':'component_request.source_correction{prior_observation,features:[complete corrected rows],corrections:{features/ID:{prior_hash,reason,source_evidence}}}; include revision_reason, source_corrections for weakened/line facts and any prior_line_hash. Only this component subtree is authorized. Full original validation, history, bounds and explicit rebind remain mandatory.'}
     result={'packet_id':packet['packet_id']}
+    if kind=='typography_source':result['typography_changes']=[]
     if kind=='font_binding' and packet.get('required_step'):
         field={'source_style':'font_constraints','resource_decision':'font_constraints',
                'glyph_samples':'font_samples','family_choice':'font_constraints','bind':'font_bindings'}[packet['required_step']]
@@ -345,6 +381,9 @@ def template(task,state,packet):
     if kind.startswith('component_'):result['component_request']=request
     if kind=='component_local_work':
         result['operation']=packet.get('submit_operation') or packet.get('component_action',{}).get('operation')
+        # One canonical field in new replies; retained old templates with a
+        # matching inner field remain accepted by the dispatcher.
+        result['component_request'].pop('operation',None)
     folder=task/'packets';folder.mkdir(exist_ok=True)
     file=folder/('Submit-template-'+packet['packet_id']+'.json')
     write_json(file,result)

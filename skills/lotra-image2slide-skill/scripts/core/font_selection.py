@@ -25,7 +25,14 @@ def group(state, request):
 
 
 def apply_group(state, request, faces, extend=False):
-    selected = group(state, request).get('family')
+    current = group(state, request)
+    selected = current.get('family')
+    from . import font_family
+    if selected and font_family.enabled(state):
+        # The deferred comparison stays within the already observed visual family.
+        from .font_resources import matches
+        return [face for face in faces if font_family.family_key(state, request, face) == selected
+                and (not current.get('fine_family') or matches(face, current['fine_family']))]
     if not selected or extend:
         return faces
     from .font_resources import matches
@@ -51,7 +58,8 @@ def required_step(state, request):
     sample = state.get('font_samples', {}).get(request['id'], {})
     if sample.get('source_hash') != state['source']['sha256'] or sample.get('request_hash') != request_key(request):
         return 'glyph_samples'
-    if not group(state, request).get('family') and len({f['family'] for f in faces}) > 1:
+    from .font_family import family_key
+    if not group(state, request).get('family') and len({family_key(state, request, face) for face in faces}) > 1:
         return 'family_choice'
     return 'bind'
 
@@ -85,16 +93,31 @@ def validate_style(task, state, request, value, faces, observed, comparison_stat
         if (ranking.get('source_hash') != state['source']['sha256'] or ranking.get('request_hash') != request_key(request)
                 or ranking.get('selection_context') != collection.selection_context(comparison_state or state,request,ranking.get('extended',False))):
             raise ValueError('Family choice comparison is stale')
-        eligible_ids = {face['id'] for face in faces if face['family'] == selected}
+        from . import font_family
+        if font_family.enabled(state):
+            selected = font_family.selected_key(state, request, faces, selected)
+        eligible_ids = {face['id'] for face in faces if font_family.family_key(state, request, face) == selected}
         if not eligible_ids or not any(row['resource_id'] in eligible_ids for row in ranking['candidates']):
             raise ValueError('Family choice must retain a currently ranked eligible resource')
         if current.get('family') and current['family'] != selected:
             raise ValueError('Retain the adopted style group; an evidenced new group identity is needed for its revision')
         for member in current['members'].values():
-            if not any(face['family']==selected for face in collection.eligible(state,member,extend=True,ignore_family=True)):
+            if not any(font_family.family_key(state,member,face)==selected
+                       for face in collection.eligible(state,member,extend=True,ignore_family=True)):
                 raise ValueError('Selected family has no feasible face for another source style-group member')
         current.update(family=selected, evidence=copy.deepcopy(value['evidence']),
                        comparison_ref=copy.deepcopy(ref), reason=value['reason'], certainty='approximate')
+        if font_family.enabled(state):
+            current.update(family_policy=font_family.POLICY, decision_level='visual_family')
+            current.update(font_family.refinement(state, request, value, current, ranking, faces, observed))
+            if current.get('fine_family'):
+                from .font_resources import matches
+                for member in current['members'].values():
+                    if not any(matches(face,current['fine_family'])
+                               for face in collection.eligible(state,member,extend=True,ignore_family=True)):
+                        raise ValueError('Fine family has no feasible face for another source style-group member')
+    elif value.get('fine_family'):
+        raise ValueError('Fine refinement must retain an explicit visual-family decision and current comparison')
     current['members'][request['id']] = copy.deepcopy(request)
     result.pop('family',None)
     return result, current
@@ -113,6 +136,21 @@ def require_binding(state, request, face, origin, synthetic):
         raise ValueError('FONT_SYNTHETIC_DECISION_REQUIRED: preserve the explicit source style decision')
 
 
+def adopt_visual_family(state, request, face, origin):
+    from . import font_family
+    if origin != 'raster_inference' or not font_family.enabled(state):
+        return
+    key = constraint(state, request).get('group_id')
+    if not key:
+        return
+    current = state['font_groups'][key]
+    selected = font_family.family_key(state, request, face)
+    if current.get('family') and current['family'] != selected:
+        raise ValueError('FONT_GROUP_CONFLICT: retain the adopted visual family')
+    current.update(family=selected, family_policy=font_family.POLICY,
+                   decision_level='visual_family')
+
+
 def check_group_bindings(state, bindings):
     families = {}
     for bound in bindings.values():
@@ -128,9 +166,13 @@ def check_group_bindings(state, bindings):
         if bound.get('origin')=='raster_inference':
             try:require_binding(state,request,bound['resource'],bound['origin'],bound.get('synthetic_style',False))
             except ValueError:continue
-        families.setdefault(key,set()).add(bound['family'])
+        from . import font_family
+        family = font_family.family_key(state, request, bound['resource']) if font_family.enabled(state) else bound['family']
+        families.setdefault(key,set()).add(family)
     if any(len(values)>1 for values in families.values()):
         raise ValueError('FONT_GROUP_CONFLICT: preserve a source-supported family across the complete style group')
+    from .font_resources import require_embedding_slots
+    require_embedding_slots(bindings.values())
 
 
 def batch(rows, step, state):

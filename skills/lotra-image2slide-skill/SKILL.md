@@ -3,7 +3,7 @@ name: lotra-image2slide-skill
 description: Reconstruct scientific images, optionally continuing a one-shot partial PPT, as faithful native editable slides through the registered task loop and verified final export. Use source-bound features, qualified components, actual renders and complete final review.
 ---
 
-# lotraAI Image2Slide v1.37.4
+# lotraAI Image2Slide v1.37.5
 
 Use this self-contained skill's project-local programs with the current model
 and reasoning. Read `.lotraAI-build/Active-skill.json` for the selected entry and
@@ -49,6 +49,13 @@ receipts. Observe source style groups before glyph/family selection. Preserve
 logical text colour/emphasis intervals; font selection cannot merge away red
 text. Ordinary font hints do not replace exact user or source-metadata authority.
 
+New tasks also bind `font-family-gate-1.37.5`: compare finite Chinese/English
+collections separately and use Chinese display names for Chinese choices.
+Read [visual-family first rules](references/font-family-gate-v1375.md) when
+selecting or reviewing fonts. An inferred 雅黑 group admits its eligible variants
+at the first gate; retain the chosen real resource unless the one deferred
+review has strong located evidence for a bounded fine-family refinement.
+
 Follow packet-selected construction, component/mother/instance qualification,
 layout, one font review, whole visual review and independent final audit.
 `workflow-control TASK advance` uses the same finite action generator; required
@@ -56,6 +63,27 @@ semantic/font/host decisions return to the packet. Raw `build` is developer
 construction tooling. Product writes require a current task grant. A context or
 time limit means checkpoint/resume; an actual backend failure retains a blocker.
 Neither authorizes reduced coverage, Scene-direct delivery or false completion.
+
+Product 1.37.5 adds journal-first recovery, original-only support diagnostics,
+whole-string text ink and editable material checks, explicit short-branch paint
+ownership, and first-render local closure before reuse/layout. New tasks bind
+`source-review-1.37.5`; read [incident and capture rules](references/workflow-v1375.md).
+Observe a semantic content contour before starting: use a source-bound
+`semantic_region` target when the slide/figure content is clear, and retain the
+whole original when it is ambiguous. The optional projective `slide_surface`
+target separately requires aspect authority and raw-to-target mapping.
+Never silently snap or redesign. Old bound tasks
+retain their source policy, original failures, doubts and budgets.
+
+New tasks also bind `typography-preflight-1.37.5`. Read
+[target and pre-render typography](references/typography-before-render-v1375.md)
+before binding text, table text or Math. Declare units; native sizes use pt and
+decimal half-up rounding to 0.5 pt. A dedicated source-glyph/physical-font model
+screens sizes before construction. Inspect written native content/styles before
+rendering, including both alignment axes, paragraph/frame insets and every table
+cell. Actual painted text/Math aggregates must preserve their source positions
+and intentional offsets; a centered native frame alone is insufficient.
+Actual backend appearance remains independently required.
 
 Only formal `export TASK --output-root DIRECTORY` produces accepted user output:
 `Final_editable.pptx` and `Report.md`, with proof kept private. Run `delivery-check
@@ -97,6 +125,9 @@ bests, locks, correct fields, finite budgets and scoped dependency invalidation.
 Original basis, native projection and actual saved appearance remain separate.
 Diagnose invalid measurements before repairs; do not widen failed targets.
 Caches, missing checks and user exclusions never supply PASS.
+Review original and actual ink colours separately from geometry. A palette-based
+foreground mask or passing text bounds cannot resolve a located colour doubt;
+retain it through source correction, rebinding and final review.
 
 After components/layout, complete one language-restricted font review, current
 whole visual review and independent original-to-output omission checks for every
@@ -123,7 +154,7 @@ PowerPoint/WPS, then declared LibreOffice fallback. Native open/edit/save/reopen
 checks use owned copies. Physical WPS/macOS claims require that host's evidence.
 Installation, native usability, actual rendering and artwork acceptance differ.
 
-Product 1.37.4 adds font-workflow-1.37.4 for source style groups, complete slot plans and recoverable font steps; it retains verification policy `evidence-checks-1.37.2` and retains execution policy `workflow-execution-1.37.0`. Source workflow
+Product 1.37.5 adds source-review-1.37.5 and explicit capture-target-1.37.5 while retaining font-workflow-1.37.4; it retains verification policy `evidence-checks-1.37.2` and retains execution policy `workflow-execution-1.37.0`. Source workflow
 1.35.2, source-features/spatial 1.35.1, design_revision 8 and runtime resources
 1.14.0 remain independent. Old tasks keep their bindings until explicit migration.
 No performance/token savings or external-art acceptance follows from fixtures,

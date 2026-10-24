@@ -149,14 +149,35 @@ def style_checks(obj, node):
         add(label+'.font_size', props is not None and int(props.get('sz',0)) == round(size*100))
         if props is None:return
         for flag in ('bold','italic'):
-            add(label+'.'+flag, (props.get('b' if flag=='bold' else 'i','0') in ('1','true')) == bool(expected.get(flag,False)))
+            add(label+'.'+flag, (props.get('b' if flag=='bold' else 'i','0') in ('1','true')) == bool(expected.get('native_'+flag,expected.get(flag,False))))
         colour = props.find('a:solidFill/a:srgbClr', NS)
         add(label+'.color', colour is not None and colour.get('val') == expected.get('color','17324D'))
         faces = resolve_faces(expected)
         for script in ('latin','ea','cs'):
             face = props.find('a:'+script, NS)
             add(label+'.font_'+script, face is not None and face.get('typeface') == faces[script])
+    if kind in ('text','equation'):
+        body = node.find('p:txBody/a:bodyPr', NS)
+        add('text_vertical_alignment', body is not None and body.get('anchor','t') ==
+            {'top':'t','middle':'ctr','bottom':'b'}[style.get('valign','top')])
+        add('text_frame_margins', body is not None and all(body.get(key) == '0' for key in ('lIns','rIns','tIns','bIns')))
+        add('text_no_autoshrink', body is not None and body.find('a:normAutofit',NS) is None)
+        paragraphs = node.findall('p:txBody/a:p', NS)
+        for pi, paragraph in enumerate(paragraphs):
+            props = paragraph.find('a:pPr',NS)
+            add('p%d.horizontal_alignment'%pi, props is not None and props.get('algn','l') ==
+                {'left':'l','center':'ctr','right':'r'}[style.get('align','center' if kind=='equation' else 'left')])
+            layout = content.get('paragraph_layout',[{}]*len(paragraphs))[pi] if kind=='text' else {}
+            add('p%d.horizontal_insets'%pi, props is not None and all(int(props.get(native,'0')) == round(layout.get(field,0)*12700)
+                for field,native in (('left_indent_pt','marL'),('right_indent_pt','marR'))))
+        if kind=='equation':
+            justifications = node.findall('.//m:oMathPara/m:oMathParaPr/m:jc',NS)
+            add('native_math_alignment', bool(justifications) and all(jc.get('{'+NS['m']+'}val') == style.get('align','center') for jc in justifications))
     if kind == 'text':
+        if content.get('text_layout'):
+            from .text_layout import DIRECTIONS
+            body=node.find('p:txBody/a:bodyPr',NS)
+            add('text_direction',body is not None and body.get('vert','horz')==DIRECTIONS[content['text_layout'].get('direction','horizontal')])
         paragraphs = content.get('paragraphs') or [content.get('runs') or [{'text':content.get('text','')}]]
         actual_paragraphs = node.findall('p:txBody/a:p', NS)
         # Plain text containing newlines is serialized as multiple paragraphs.
@@ -165,12 +186,11 @@ def style_checks(obj, node):
         add('paragraph_count', len(paragraphs) == len(actual_paragraphs))
         for pi, (wanted, paragraph) in enumerate(zip(paragraphs,actual_paragraphs)):
             native = paragraph.findall('a:r', NS)
-            ordinary = [r for r in wanted if 'ast' not in r]
+            from .font_resolution import native_runs
+            ordinary = native_runs([r for r in wanted if 'ast' not in r],style)
             add('run_count.'+str(pi), len(native) == len(ordinary))
             for ri,(want,run) in enumerate(zip(ordinary,native)):
                 run_check(run.find('a:rPr',NS), merge_style(style,want), 'p%d.r%d'%(pi,ri))
-        body = node.find('p:txBody/a:bodyPr', NS)
-        add('text_no_autoshrink', body is not None and body.find('a:normAutofit',NS) is None)
     elif kind == 'table':
         native_rows = node.findall('a:graphic/a:graphicData/a:tbl/a:tr',NS)
         columns=node.findall('a:graphic/a:graphicData/a:tbl/a:tblGrid/a:gridCol',NS)
@@ -190,13 +210,23 @@ def style_checks(obj, node):
                 merged = deepcopy(props) if props is not None else E.Element('{'+NS['a']+'}rPr')
                 for face in cell.findall('a:txBody/a:p/a:r/a:rPr/*',NS):
                     if E.QName(face).localname in ('latin','ea','cs'):merged.append(deepcopy(face))
-                run_check(merged, selected, 'cell.%d.%d'%(ri,ci))
+                if selected.get('native_script_styles'):
+                    from .font_resolution import native_runs
+                    for pi,paragraph in enumerate(cell.findall('a:txBody/a:p',NS)):
+                        logical=''.join(n.text or '' for n in paragraph.iter('{'+NS['a']+'}t'))
+                        expected=native_runs([{'text':logical}],selected);actual=paragraph.findall('a:r',NS)
+                        add('cell.%d.%d.runs.%d'%(ri,ci,pi),len(expected)==len(actual))
+                        for index,(wanted,saved) in enumerate(zip(expected,actual)):
+                            run_check(saved.find('a:rPr',NS),merge_style(selected,wanted),'cell.%d.%d.p%d.r%d'%(ri,ci,pi,index))
+                else:run_check(merged, selected, 'cell.%d.%d'%(ri,ci))
                 fill = cell.find('a:tcPr/a:solidFill/a:srgbClr',NS)
                 add('cell.%d.%d.fill'%(ri,ci), fill is not None and fill.get('val') == selected.get('fill','FFFFFF'))
-                pp=cell.find('a:txBody/a:p/a:pPr',NS)
+                paragraphs=cell.findall('a:txBody/a:p',NS)
                 cp=cell.find('a:tcPr',NS)
-                add('cell.%d.%d.alignment'%(ri,ci),pp is not None and pp.get('algn','l')=={'left':'l','center':'ctr','right':'r'}[selected.get('align','left')]
+                add('cell.%d.%d.alignment'%(ri,ci),bool(paragraphs) and all(p.find('a:pPr',NS) is not None and p.find('a:pPr',NS).get('algn','l')=={'left':'l','center':'ctr','right':'r'}[selected.get('align','left')] for p in paragraphs)
                     and cp is not None and cp.get('anchor','ctr')=={'top':'t','middle':'ctr','bottom':'b'}[selected.get('valign','middle')])
+                add('cell.%d.%d.padding'%(ri,ci),cp is not None and all(int(cp.get(key,'-1'))==round(selected.get('padding',0)*12700)
+                    for key in ('marL','marR','marT','marB')))
     if kind=='equation' or kind=='text' and any('ast' in r for para in content.get('paragraphs',[content.get('runs',[])]) for r in para):
         from .mathml import math_zone
         asts=[(content['ast'],style)] if kind=='equation' else [(r['ast'],{**style,**r}) for para in content.get('paragraphs',[content.get('runs',[])]) for r in para if 'ast' in r]
@@ -255,6 +285,21 @@ def style_checks(obj, node):
         wanted=content.get('viewport',{}).get('native_crop',[0,0,0,0])
         actual=[int(crop.get(k,'0'))/100000 if crop is not None else 0 for k in ('l','t','r','b')]
         add('native_photo_crop',all(abs(a-b)<=.00001 for a,b in zip(actual,wanted)))
+    if style.get('shadow_effect'):
+        import math
+        expected=style['shadow_effect'];shadow=node.find('p:spPr/a:effectLst/a:outerShdw',NS)
+        dx,dy=expected['offset_pt']
+        wanted={'blurRad':round(expected['blur_pt']*12700),'dist':round(math.hypot(dx,dy)*12700),
+                'dir':round((math.degrees(math.atan2(dy,dx))%360)*60000)}
+        add('native_shadow_geometry',shadow is not None and all(int(shadow.get(key,'-1'))==value for key,value in wanted.items()))
+        colour=shadow.find('a:srgbClr',NS) if shadow is not None else None
+        alpha=colour.find('a:alpha',NS) if colour is not None else None
+        add('native_shadow_colour',colour is not None and colour.get('val')==expected['colour'].upper())
+        add('native_shadow_opacity',alpha is not None and int(alpha.get('val','-1'))==round(expected['opacity']*100000))
+        add('native_shadow_rotation',shadow is not None and shadow.get('rotWithShape','1')==('1' if expected.get('rotate_with_shape',True) else '0'))
+    if 'soft_edge_pt' in style:
+        soft=node.find('p:spPr/a:effectLst/a:softEdge',NS)
+        add('native_soft_edge',soft is not None and int(soft.get('rad','-1'))==round(style['soft_edge_pt']*12700))
     return rows
 
 

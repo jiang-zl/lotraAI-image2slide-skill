@@ -29,11 +29,22 @@ def validate(content):
     height,width=len(rows),len(rows[0]);occupied=set()
     styles=content.get('cell_styles')
     if styles is not None:
-        allowed={'font','font_size','bold','italic','color','align','valign','fill','padding','line_width','stroke','font_faces'}
+        allowed={'font','font_size','bold','italic','color','align','valign','fill','padding','line_width','stroke','font_faces',
+                 'native_bold','native_italic','native_script_styles'}
         if len(styles)!=height or any(len(row)!=width for row in styles):raise ValueError('Cell formatting needs the exact source table grid')
         for row in styles:
             for style in row:
                 if not isinstance(style,dict) or set(style)-allowed:raise ValueError('Unknown source cell formatting field')
+                # Font compilation retains logical emphasis while selecting
+                # the physical regular/bold/italic slot for each script. The
+                # compiled cell still passes this same saved-native schema.
+                for flag in ('native_bold','native_italic'):
+                    if flag in style and type(style[flag]) is not bool:raise ValueError('Native cell emphasis must be boolean')
+                physical=style.get('native_script_styles',{})
+                if (not isinstance(physical,dict) or set(physical)-{'latin','ea','cs'} or
+                        any(not isinstance(flags,dict) or set(flags)!={'bold','italic'} or
+                            any(type(v) is not bool for v in flags.values()) for flags in physical.values())):
+                    raise ValueError('Native cell script styles need exact boolean physical slots')
                 if style.get('align','left') not in ('left','center','right') or style.get('valign','middle') not in ('top','middle','bottom'):raise ValueError('Explicit source cell alignment required')
                 for key in ('font_size','padding','line_width'):
                     if key in style and (not isinstance(style[key],(int,float)) or not math.isfinite(style[key]) or style[key]<0):raise ValueError('Finite bounded cell typography required')

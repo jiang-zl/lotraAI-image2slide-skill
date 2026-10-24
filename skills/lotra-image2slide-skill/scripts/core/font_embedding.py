@@ -72,7 +72,8 @@ def eot(face):
     if digest(face['path']) != face['file_sha256']:
         raise ValueError('Bound font file changed; resolve its identity before export')
     current = describe(face['path'], face['face_index'], face['file_sha256'])
-    if not matches(current,face['family']):
+    from .font_resources import matches_bound
+    if not matches_bound(current,face):
         raise ValueError('Font resource metadata cannot alias another typeface')
     if not current['editable_embedding']:
         raise ValueError('Font does not permit editable embedding: '+current['family'])
@@ -88,11 +89,13 @@ def eot(face):
         data = io.BytesIO()
         font.save(data)
         sfnt = data.getvalue()
+        from .font_retention import saved_checksum_adjustment
+        adjustment=saved_checksum_adjustment(sfnt)
         ranges = [int(getattr(os2, 'ulUnicodeRange'+str(i), 0)) for i in range(1, 5)]
         codepages = [int(getattr(os2, 'ulCodePageRange'+str(i), 0)) for i in range(1, 3)]
         header = struct.pack('<IIII10sBBIHH7I4IH', 0, len(sfnt), 0x00020001, 0,
             panose, 1, int(current['italic']), current['weight'], current['fs_type'], 0x504C,
-            *ranges, *codepages, int(font['head'].checkSumAdjustment), 0, 0, 0, 0, 0)
+            *ranges, *codepages, adjustment, 0, 0, 0, 0, 0)
         strings = b''
         for index, names in enumerate(((1,), (2,), (5,), (4,))):
             text = (font_names(font, names) or [''])[0].encode('utf-16le')
@@ -106,6 +109,8 @@ def eot(face):
 
 
 def embed(pptx, bindings, max_font_bytes=64*1024*1024):
+    from .font_resources import require_embedding_slots,embedding_slot
+    require_embedding_slots(bindings)
     """Only font parts/relationships/settings change; all slide XML is retained."""
     faces = {b['resource']['id']: b['resource'] for b in bindings}
     if not faces:
@@ -122,7 +127,7 @@ def embed(pptx, bindings, max_font_bytes=64*1024*1024):
             pending.append({'resource_id':key,'family':face['family'],'reason':'existing compatible Office/font embedding provider required'})
             continue
         cache_root=next((p for p in Path(face['path']).parents if p.name=='.lotraAI-build'),None)
-        cache=(cache_root/'toolchain/fontdata'/('eot-v2-'+key+'.fntdata')) if cache_root else None
+        cache=(cache_root/'toolchain/fontdata'/('eot-v3-saved-head-'+key+'.fntdata')) if cache_root else None
         receipt=cache.with_suffix('.json') if cache else None
         record=read_json(receipt) if receipt and receipt.is_file() else {}
         if (cache and cache.is_file() and digest(face['path'])==face['file_sha256']
@@ -170,8 +175,7 @@ def embed(pptx, bindings, max_font_bytes=64*1024*1024):
         if entry is None:
             entry = E.SubElement(embedded, '{'+P+'}embeddedFont')
             E.SubElement(entry, '{'+P+'}font', typeface=family)
-        slot = ('bold' if face['weight'] >= 600 else '')+('Italic' if face['italic'] and face['weight'] >= 600 else 'italic' if face['italic'] else '')
-        slot = slot or 'regular'
+        slot = embedding_slot(face)
         node = entry.find('{'+P+'}'+slot)
         if node is None:
             node = E.SubElement(entry, '{'+P+'}'+slot)
@@ -215,7 +219,8 @@ def transfer_provider(original,provider,bindings,max_font_bytes=64*1024*1024):
         return _finish_commit(original,temporary,marker,record,bindings,max_font_bytes)
     input_hash=digest(original)
     expected={b['family'] for b in bindings}
-    def slot(face):return 'boldItalic' if face['italic'] and face['weight']>=600 else 'italic' if face['italic'] else 'bold' if face['weight']>=600 else 'regular'
+    from .font_resources import embedding_slot as slot,require_embedding_slots
+    require_embedding_slots(bindings)
     expected_slots={(b['family'],slot(b['resource'])) for b in bindings}
     with ZipFile(provider) as donor,ZipFile(original) as source:
         present=E.fromstring(donor.read('ppt/presentation.xml'))

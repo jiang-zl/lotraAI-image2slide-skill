@@ -51,6 +51,7 @@ def capabilities(project, configuration=None,requested=None):
     if 'LibreOffice' not in version:
         raise ValueError('Configured executable did not identify LibreOffice')
     result = {'status': 'READY', 'policy': VERSION, 'backend': 'LibreOffice',
+              'project':str(project),
               'executable': str(Path(exe).resolve()), 'executable_sha256': digest(exe),
               'version': version, 'platform': platform.system(),
               'fontconfig': configured.get('fontconfig'),
@@ -136,7 +137,7 @@ def render_key(pptx, caps, scene, width):
                      'width': width, 'canvas': scene['canvas'], 'policy': VERSION,
                      'renderer_code': [digest(Path(__file__).with_name(f)) for f in
                                        ('render.py','portable_editor.py','math_editor.py','uno_editor_client.py',
-                                        'editor_backend.py','uno_host_worker.py')]})
+                                        'editor_backend.py','uno_host_worker.py','native_font_aliases.py')]})
 
 
 def shared_render(task, pptx, caps, scene, width=1440, independent=False):

@@ -1,32 +1,17 @@
 """Verify either direct EOT or provider resources against the exact full face."""
 import io
 import posixpath
-import struct
 from lxml import etree as E
 from .common import digest
-from .font_resources import font_names, name_key
+from .font_resources import font_names, name_key, embedding_slot
+from .native_font_aliases import decode_sfnt as sfnt, saved_checksum_adjustment
 
 P = 'http://schemas.openxmlformats.org/presentationml/2006/main'
 R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 
 
 def slot(face):
-    return ('boldItalic' if face['italic'] and face['weight'] >= 600 else
-            'italic' if face['italic'] else 'bold' if face['weight'] >= 600 else 'regular')
-
-
-def sfnt(data, content_type):
-    if content_type == 'application/x-font-ttf':
-        return data
-    if content_type != 'application/x-fontdata' or len(data) < 82:
-        raise ValueError('Unsupported embedded font representation')
-    total, size, version, flags = struct.unpack_from('<4I', data)
-    rights, magic = struct.unpack_from('<HH', data, 32)
-    if total != len(data) or magic != 0x504C or flags & 5:
-        raise ValueError('A complete uncompressed, non-subset EOT resource is required')
-    if rights & 0x200 or not (rights & 8 or rights & 0xE == 0) or not 0 < size <= len(data)-82:
-        raise ValueError('Embedded font payload/rights are incompatible with editable delivery')
-    return data[-size:]
+    return embedding_slot(face)
 
 
 def verify_face(data, content_type, face):

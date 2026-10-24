@@ -46,6 +46,7 @@ def correct_features(task,state,contract,request,scope):
     token=_CORRECTION.set(Path(task).resolve())
     try:result=observe(task,revised)
     finally:_CORRECTION.reset(token)
+    if result.get('status')=='SOURCE_PREFLIGHT_REVIEW_REQUIRED':return result
     return {**result,'status':'FOCUSED_SOURCE_CORRECTION_REBIND_REQUIRED','native_write':False,'acceptance':False}
 
 
@@ -130,6 +131,21 @@ def observe(task, request):
     validate_observation(value, state['source']['sha256'], state['source_size'])
     from .line_contracts import validate_source
     validate_source(value,state)
+    from .source_preflight import require as require_source_support,DecisionRequired,queue_retained_failure,guard_correction
+    prior=state.get('source_feature_observation')
+    if prior:guard_correction(task,state,read_json(_resource(task,prior)),value,request)
+    try:preflight=require_source_support(task,state,value)
+    except DecisionRequired:
+        # A newer producer may discover an unrelated missing source obligation
+        # in a previously sealed observation. Its current source decision must
+        # precede this proposal, without silently accepting either observation.
+        if prior and state.get('component_workflow') and not state.get('spatial_source_decision'):
+            try:require_source_support(task,state,read_json(_resource(task,prior)))
+            except DecisionRequired as retained:
+                contract,_=_load(task,state)
+                return queue_retained_failure(task,state,contract,retained)
+        raise
+    if preflight:state['source_preflight']=preflight
     for ref in value.get('source_views', []): _resource(task, ref)
     prior = state.get('source_feature_observation')
     contract, ledger = _load(task, state) if state.get('component_workflow') else (None, None)
@@ -155,8 +171,13 @@ def observe(task, request):
             raise ValueError('Each removed/demoted feature needs a located original-domain correction')
         for key in old_features.keys() & new_features.keys():
             before, after = old_features[key], new_features[key]
+            if before.get('text_appearance'):
+                old_limits=before['text_appearance']['limits'];new_limits=after.get('text_appearance',{}).get('limits',{})
+                if set(new_limits)!=set(old_limits) or any(new_limits[k]>v for k,v in old_limits.items()):
+                    raise ValueError('TEXT_SOURCE_REQUIRED: source correction cannot remove or widen frozen whole-string quality bounds')
             weakened = (set(before.get('requirements',[]))-set(after.get('requirements',[])) or
                         before.get('metrics',[]) != after.get('metrics',[]) or
+                        before.get('text_appearance') != after.get('text_appearance') or
                         before.get('observability') == 'unresolved' and after.get('observability') != 'unresolved')
             if before.get('line') != after.get('line'):
                 correction=corrected.get(key,{})

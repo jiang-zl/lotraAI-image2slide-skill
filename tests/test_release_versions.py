@@ -76,5 +76,32 @@ class ReleaseVersions(unittest.TestCase):
     def test_final_check_requires_actual_distributions(self):
         with self.assertRaisesRegex(ValueError,'Final gate needs'):gate.validate(self.source,self.runtime,final=True)
 
+    def bundle_documents(self,install=None,report=None):
+        stream=io.BytesIO()
+        with zipfile.ZipFile(stream,'w') as archive:
+            if install is not None:archive.writestr('INSTALL.md',install)
+            if report is not None:archive.writestr('docs/Release-report.md',report)
+        return zipfile.ZipFile(io.BytesIO(stream.getvalue()))
+
+    def test_current_bundle_documents_keep_independent_runtime(self):
+        with self.bundle_documents('# lotraAI Image2Slide v'+self.version+'\n-BundleRoot --bundle-root\nRuntime 1.14.0',
+                                   '# lotraAI Image2Slide '+self.version+'\nWorkflow 1.35.2') as archive:
+            proof=gate.Gate(self.version);gate.validate_bundle_documents(archive,proof)
+        self.assertEqual(len(proof.checks),4)
+
+    def test_old_bundle_install_heading_rejected(self):
+        with self.bundle_documents('# lotraAI Image2Slide v1.33.0\n-BundleRoot --bundle-root',
+                                   '# lotraAI Image2Slide '+self.version) as archive:
+            with self.assertRaisesRegex(ValueError,'document/INSTALL.md'):gate.validate_bundle_documents(archive,gate.Gate(self.version))
+
+    def test_old_bundle_release_report_rejected(self):
+        with self.bundle_documents('# lotraAI Image2Slide v'+self.version+'\n-BundleRoot --bundle-root',
+                                   '# lotraAI Image2Slide 1.33.0') as archive:
+            with self.assertRaisesRegex(ValueError,'document/docs/Release-report.md'):gate.validate_bundle_documents(archive,gate.Gate(self.version))
+
+    def test_missing_bundle_install_instructions_rejected(self):
+        with self.bundle_documents(report='# lotraAI Image2Slide '+self.version) as archive:
+            with self.assertRaisesRegex(ValueError,'document/INSTALL.md'):gate.validate_bundle_documents(archive,gate.Gate(self.version))
+
 
 if __name__=='__main__':unittest.main()

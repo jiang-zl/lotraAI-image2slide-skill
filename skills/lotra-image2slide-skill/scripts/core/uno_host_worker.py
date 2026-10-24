@@ -39,6 +39,9 @@ def run(*unused):
         client_file = profile/'user/Scripts/python/lotra_client.py'
         if digest(client_file) != request['client_sha256']:
             raise ValueError('Hosted Math client differs from the prepared code')
+        helper=client_file.with_name('native_font_aliases.py')
+        if digest(helper)!=request['font_alias_helper_sha256']:
+            raise ValueError('Hosted native font alias helper differs from the prepared code')
         expected = {'editor-input.pptx', 'editor-plan.json'} if operation == 'export' else set()
         if set(request.get('inputs', {})) != expected:
             raise ValueError('Unexpected hosted Math inputs')
@@ -53,6 +56,8 @@ def run(*unused):
         client = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(client)
         client.main(None, str(directory), context=context, probe=operation == 'probe', terminate=False)
+        if digest(helper)!=request['font_alias_helper_sha256']:
+            raise ValueError('Hosted native font alias helper changed during execution')
         result['status'] = 'PASS'
     except Exception as error:
         result.update(reason=str(error), error_type=type(error).__name__, traceback=traceback.format_exc()[-8000:])

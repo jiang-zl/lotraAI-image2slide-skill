@@ -5,6 +5,12 @@ The current packet is the executable contract. Use its visible `request_ids`,
 `batch_id`, `required_step`, template and submit command. Read detailed requests,
 comparisons and group members through the returned hash-bound references.
 
+Tasks additionally bound to `font-family-gate-1.37.5` use
+[visual-family first selection](font-family-gate-v1375.md): finite language
+collections, Chinese display names, a coarse 雅黑 decision before optional
+high-confidence fine refinement. That policy supplements the exact-family
+decision described below; old task bindings retain their original behavior.
+
 ## Finite preparation
 
 Each packet names one missing step. Submit one payload type, limited to its IDs:

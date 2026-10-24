@@ -55,6 +55,10 @@ def packet(task,state,contract,ledger,candidate):
           'source_style_groups':copy.deepcopy(state.get('font_groups',{})),
           'return':'phase=prepare with font_samples or font_constraints if needed; then phase=complete, evidence, changes[{request_id,comparison_ref}], source_hash, pptx_hash',
           'rule':'Review once after parts and layout. Only a better eligible same-language font can replace a binding. Exact user requests and user locks are preserved; archive selected new fonts before native mutation.'}
+    from . import font_family
+    if font_family.enabled(state):
+        plan['family_gate']={'policy':font_family.POLICY,
+            'rule':'Keep the adopted visual family and actual face by default. A fine-family refinement requires high-confidence located diagnostic glyph evidence through font_constraints; a close numeric rank alone is insufficient.'}
     ledger['font_review_plan']=plan
     return plan
 
@@ -133,7 +137,8 @@ def submit(task,request):
     allowed={owner:['style.font'] for owner in owners}
     # Build a detached binding plan; no active task binding changes before the native journal.
     keys=('project','source','objectives','capabilities','font_contract','font_samples','font_rankings',
-          'font_constraints','font_groups','font_workflow_policy','font_intent_overrides','component_workflow','source_font_metadata')
+          'font_constraints','font_groups','font_workflow_policy','font_family_policy',
+          'font_intent_overrides','component_workflow','source_font_metadata')
     working={key:copy.deepcopy(state[key]) for key in keys if key in state}
     working['font_pending_candidate']={'allowed':allowed}
     fonts.bind(task,working,scene,values,persist=False)

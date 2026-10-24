@@ -359,7 +359,14 @@ def validate_delivery(pptx,audits,caps,*,destination=None):
         if not executable:raise ValueError('Final file has no usable save/reopen backend')
         from .libreoffice_backend import save_reopen
         final=audits/'libreoffice-delivery';actual=work or final
-        proof=save_reopen(pptx,actual,executable)
+        renderer=None
+        if caps.get('project'):
+            from .portable_runtime import capabilities as portable_capabilities
+            renderer=portable_capabilities(caps['project'],requested='libreoffice')
+            if (renderer.get('status')!='READY' or renderer.get('backend')!='LibreOffice' or
+                    Path(renderer.get('executable','')).resolve()!=Path(executable).resolve()):
+                raise ValueError('Final save/reopen renderer differs from the declared project backend')
+        proof=save_reopen(pptx,actual,executable,renderer=renderer) if renderer is not None else save_reopen(pptx,actual,executable)
         retain(actual,final)
         return {'status':'ALTERNATIVE_SAVE_REOPEN_PASS','backend':'LibreOffice','input_sha256':digest(pptx),
             'target_powerpoint':'UNVERIFIED','proof':proof,'tested_destination_root':str(chosen.parent) if chosen else str(audits),

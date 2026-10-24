@@ -38,18 +38,25 @@ def available(contract,ledger,candidate):
         record=ledger['components'][row['id']]; status=record['status']; route=row['route']
         invalid_state=status not in COMMON_STATES|ROUTE_STATES.get(route,set()) or route not in ROUTE_STATES
         if status=='SPATIAL_REPAIR_WAITING':continue
-        if status=='QUALIFIED': continue
+        from .component_local_review import enabled as early_review_enabled,current as appearance_current
+        appearance_pending=status=='QUALIFIED' and early_review_enabled(contract) and not appearance_current(row,record)
+        if status=='QUALIFIED' and not appearance_pending: continue
         children=[r['id'] for r in rows.values() if r.get('parent')==row['id']]
         repairing=row['id'] in repairs
         # Finish the retained source-apply scope before offering a different repair batch.
         if status in ('REPAIR_REQUIRED','SOURCE_DECISION_APPLY_REQUIRED') and not repairing:continue
         if repairing and row['id']!=repairs[0]:continue
         if not invalid_state and not repairing and status not in DECISIONS and status not in ('USER_INTENT_REQUIRED','MEASUREMENT_INVALID','MEASUREMENT_REQUIRED'):
-            if route=='assembly' and any(ledger['components'][key]['status']!='QUALIFIED' for key in children): continue
-            if row.get('mother') and ledger['components'][row['mother']]['status']!='QUALIFIED': continue
+            if route=='assembly' and any(ledger['components'][key]['status']!='QUALIFIED' or
+                early_review_enabled(contract) and not appearance_current(rows[key],ledger['components'][key]) for key in children): continue
+            if row.get('mother'):
+                mother=ledger['components'][row['mother']]
+                if mother['status']!='QUALIFIED' or early_review_enabled(contract) and not appearance_current(rows[row['mother']],mother):continue
         stage='assembly' if route=='assembly' else 'instance' if route=='instance' else 'fit'
         operation='qualify'; automatic=False; write_set=[]
-        if invalid_state:
+        if appearance_pending:
+            operation='review_local';stage='fit'
+        elif invalid_state:
             operation='diagnostic_stop';stage='source'
         elif status in ('REPAIR_REQUIRED','SOURCE_DECISION_APPLY_REQUIRED'):
             operation='edit';stage='structure'

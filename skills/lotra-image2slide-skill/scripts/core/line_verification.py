@@ -204,7 +204,7 @@ def paint_cell_bound(first,second,origins,pixel_sizes,tolerance,*,bidirectional=
     return check
 
 
-def marker_pixels(row,original,actual,geometry,*,deep=False):
+def marker_pixels(row,original,actual,geometry,*,deep=False,joint_result=None):
     source=row['source'];limits=source['limits'];sx=actual.shape[1]/original.shape[1];sy=actual.shape[0]/original.shape[0]
     checks=[]
     for index,end in enumerate(source['ends']):
@@ -227,12 +227,36 @@ def marker_pixels(row,original,actual,geometry,*,deep=False):
         a=_mask(original[y:b,x:r],paint,limits['colour'])
         left,top,right,bottom=math.floor(x*sx),math.floor(y*sy),math.ceil(r*sx),math.ceil(b*sy)
         c=_mask(actual[top:bottom,left:right],paint,limits['colour'])
+        ownership=None
+        if not custom:
+            from .terminal_paint import partition,support
+            domain=partition(source,index)
+            if domain is None or domain.get('decision'):
+                if joint_result is not None:
+                    checks.append({**joint_result,'end':index,'terminal_joint_obligation':True});continue
+                checks.append(invalid('MEASUREMENT_DECISION_REQUIRED: terminal junction/route ownership needs a qualified local producer',
+                                      end=index,ownership=domain));continue
+            a,source_owner=support(a,(x,y),(1.,1.),**domain)
+            c,render_owner=support(c,(left/sx,top/sy),(1/sx,1/sy),**domain)
+            if a is None:
+                checks.append(invalid('SOURCE_TERMINAL_SUPPORT_REQUIRED: '+source_owner['reason'],end=index,ownership=source_owner));continue
+            if c is None:
+                if render_owner['reason']=='NO_TERMINAL_ANCHOR_SUPPORT':
+                    checks.append(result(False,reason='Actual terminal has no paint at the source anchor',end=index,ownership=render_owner))
+                else:checks.append(invalid('MEASUREMENT_DECISION_REQUIRED: '+render_owner['reason'],end=index,ownership=render_owner))
+                continue
+            ownership={'source':source_owner,'render':render_owner,'observation_window_is_not_owner_mask':True}
         if not a.any() or not c.any():
             checks.append(invalid('Marker source/render colour support is absent',end=index));continue
         ya,xa=np.nonzero(a);yc,xc=np.nonzero(c)
         points_a=np.column_stack((xa+x+.5,ya+y+.5));points_c=np.column_stack(((xc+left+.5)/sx,(yc+top+.5)/sy))
         from scipy.spatial import cKDTree
-        distance=max(float(cKDTree(points_a).query(points_c)[0].max()),float(cKDTree(points_c).query(points_a)[0].max()))
+        ca,ca_index=cKDTree(points_a).query(points_c);ac,ac_index=cKDTree(points_c).query(points_a)
+        distance=max(float(ca.max()),float(ac.max()))
+        if ca.max()>=ac.max():
+            site=int(np.argmax(ca));witness={'direction':'render_to_original','render':points_c[site].tolist(),'original':points_a[ca_index[site]].tolist()}
+        else:
+            site=int(np.argmax(ac));witness={'direction':'original_to_render','original':points_a[site].tolist(),'render':points_c[ac_index[site]].tolist()}
         error=math.sqrt(2)/2+math.sqrt((1/sx)**2+(1/sy)**2)/2
         # The complete local painted comparison includes both wings, hollow
         # interiors and neighboring contact context; native checks supply type,
@@ -243,13 +267,15 @@ def marker_pixels(row,original,actual,geometry,*,deep=False):
             refined.update(end=index,roi=[x,y,r-x,b-y],prior_inconclusive=check)
             check=refined
         check['scope']='fixed original/render terminal crop, including contact context; never plan-derived text'
+        check['center_distance_witness']={**witness,'distance_source_px':distance,'owner_supported':bool(ownership) or bool(custom)}
+        if ownership:check['ownership']=ownership
         check['crop_basis']={**crop_basis,'source_marker_width':marker['width'],'source_marker_length':marker['length'],
                              'source_tolerance':limits['marker'],'contact_guard_source_px':2}
         checks.append(check)
     return _summary(checks)
 
 
-def render_check(row,geometry,original,actual,*,deep=False):
+def render_check(row,geometry,original,actual,*,deep=False,rows=None,geometries=None):
     """Measure all source segments; low support/ambiguity is explicit INVALID.
 
     The normal route uses direct colour corridors. Refinement uses the same
@@ -381,7 +407,16 @@ def render_check(row,geometry,original,actual,*,deep=False):
                 refined['prior_inconclusive']=paired;paired=refined
             width_result={**_summary([width_result,paired]),'declared_interval':width_result,'paired_original':paired}
     else:width_result=invalid('No visible source shaft away from markers; requires a qualified local producer')
-    marker_result=marker_pixels(row,original,actual,geometry,deep=deep)
+    joint_result=None
+    from .terminal_paint import partition,joint
+    needs_joint=not chosen or any(partition(source,index).get('decision') for index,end in enumerate(source['ends'])
+                                  if end['marker']['type']!='none' and partition(source,index) is not None)
+    if needs_joint and rows is not None and geometries is not None:
+        joint_result=joint(row,rows,geometries,original,actual)
+        # A joint painted-envelope check is explicitly a different producer;
+        # no invalid isolated-width claim or old FAIL is relabeled as PASS.
+        if not chosen:width_result={**joint_result,'isolated_shaft_width_applicable':False}
+    marker_result=marker_pixels(row,original,actual,geometry,deep=deep,joint_result=joint_result)
     checks=_summary(segments+[width_result,marker_result]);checks.update(method='refined_line_pixels' if deep else 'normal_line_pixels',
         depth='deep' if deep else 'normal',segments=segments,width=width_result,roi=[x,y,r-x,b-y],
         markers=marker_result,actual_scale=[sx,sy],source_sampling_step=.25 if deep else .75,source_alignment='fixed_no_candidate_alignment')
@@ -533,12 +568,12 @@ def evaluate(task,state,candidate,contract,*,render=True,feature_ids=None):
             values['visibility']=invalid('Native/source failure must be resolved before render refinement')
         else:
             try:
-                normal=render_check(row,geometries[row['id']],images[0],images[1])
+                normal=render_check(row,geometries[row['id']],images[0],images[1],rows=spec['lines'],geometries=geometries)
                 methods[row['id']]['render_method']=normal['method'] if 'method' in normal else 'normal_line_pixels'
                 # A valid FAIL is never erased by a weaker alternative. Only an
                 # inconclusive producer is eligible for bounded refinement.
                 if not normal['valid'] and not has_valid_failure(normal):
-                    refined=render_check(row,geometries[row['id']],images[0],images[1],deep=True)
+                    refined=render_check(row,geometries[row['id']],images[0],images[1],deep=True,rows=spec['lines'],geometries=geometries)
                     refined['prior_inconclusive']=normal;normal=refined
                     methods[row['id']]['render_method']='refined_line_pixels'
                 hidden=geometries[row['id']]['visibility_native']

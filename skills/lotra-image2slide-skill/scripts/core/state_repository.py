@@ -70,6 +70,22 @@ class LazyList(list):
         return value
     def __iter__(self):
         for index in range(len(self)): yield self[index]
+    def __reversed__(self):
+        for index in range(len(self)-1,-1,-1): yield self[index]
+    def __add__(self,other):
+        if not isinstance(other,list):return NotImplemented
+        return list(self)+list(other)
+    def __radd__(self,other):
+        if not isinstance(other,list):return NotImplemented
+        return list(other)+list(self)
+    def __mul__(self,count):return list(self)*count
+    __rmul__=__mul__
+    def __iadd__(self,other):
+        self.extend(list(other));return self
+    def __contains__(self,value):return any(item==value for item in self)
+    def copy(self):return list(self)
+    def count(self,value):return list(self).count(value)
+    def index(self,value,*bounds):return list(self).index(value,*bounds)
     def pop(self,index=-1):
         value=self[index]; list.__delitem__(self,index); return value
     def sort(self,*args,**kwargs):

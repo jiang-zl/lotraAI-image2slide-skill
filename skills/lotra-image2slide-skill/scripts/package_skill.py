@@ -21,7 +21,7 @@ from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 NAME = "lotra-image2slide-skill"
-VERSION = "1.37.4"
+VERSION = "1.37.5"
 SOURCE = Path(__file__).resolve().parents[1]
 MANIFEST = "MANIFEST.json"
 RECEIPT = ".lotraai-image2slide-install.json"

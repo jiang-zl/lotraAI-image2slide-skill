@@ -152,7 +152,7 @@ def eligible(state, request, extend=False, constrained=True, ignore_family=False
                       if names & {resources.name_key(n) for n in families}),None)
         face.update(style_class=profile or face.get('style_class','unknown'),
                     style_class_basis='curated_family_profile' if profile else 'font_metadata')
-    unfiltered=result
+    unfiltered=result;comparison_baseline=[]
     if constraint.get('source_hash')==state['source']['sha256'] and constraint.get('request_hash')==request_key(request):
         classes=constraint.get('style_classes');ids=constraint.get('resource_ids')
         if classes:result=[f for f in result if f.get('style_class','unknown') in classes]
@@ -160,13 +160,24 @@ def eligible(state, request, extend=False, constrained=True, ignore_family=False
         # The final comparison must also measure its current legal baseline.
         baseline=state.get('font_contract',{}).get('bindings',{}).get(request['id'],{}).get('resource',{}).get('id') if extend else None
         if baseline and baseline not in {f['id'] for f in result}:
-            result+= [f for f in unfiltered if f['id']==baseline]
+            comparison_baseline=[f for f in unfiltered if f['id']==baseline]
     if constrained and not ignore_family:result=apply_group(state,request,result,extend)
     from .font_contract import requested_family
     demanded=requested_family(state,request)
-    if demanded:result=[face for face in result if resources.matches(face,demanded)]
+    if demanded:
+        result=[face for face in result if resources.matches(face,demanded)]
+        comparison_baseline=[face for face in comparison_baseline if resources.matches(face,demanded)]
     genuine=[face for face in result if style_feasible(face,request)]
-    return genuine or result
+    selected=genuine or result
+    from . import font_family
+    if font_family.enabled(state) and lang == 'zh':
+        # Language classification is independent of the localized display name.
+        # Missing display metadata never introduces an English-language fallback.
+        selected=[face for face in selected if font_family.display_name(face,lang)]
+        comparison_baseline=[face for face in comparison_baseline if font_family.display_name(face,lang)]
+    # An old comparison-only face must not suppress an explicitly scoped
+    # synthetic candidate by making a different family look feasible.
+    return selected+[face for face in comparison_baseline if face['id'] not in {f['id'] for f in selected}]
 
 
 def store_constraints(task,state,scene,values):
@@ -207,6 +218,7 @@ def store_constraints(task,state,scene,values):
 
 def selection_context(state,request,extend=False):
     from .font_selection import group
+    from .font_family import context as family_context
     current_group=group(state,request)
     return identity({'source':state['source']['sha256'],'request':request_key(request),'policy':policy(),
         'implementation':[digest(Path(__file__).with_name(name+'.py')) for name in ('font_collection','font_resolution','font_selection')],
@@ -215,7 +227,8 @@ def selection_context(state,request,extend=False):
         'faces':sorted(f['id'] for f in eligible(state,request,extend)),
         'samples':state.get('font_samples',{}).get(request['id']),
         'constraint':state.get('font_constraints',{}).get(request['id']),
-        'source_style_group':current_group,
+        'source_style_group':current_group,'visual_family_policy':family_context(state),
+        'adopted_physical_binding':state.get('font_contract',{}).get('bindings',{}).get(request['id']) if family_context(state) else None,
         'group_samples':{key:state.get('font_samples',{}).get(key) for key in current_group.get('members',{})}})
 
 
@@ -303,21 +316,39 @@ def ranking(task,state,request,extend=False):
             distance=max(float(distance_transform_edt(~b)[a].mean()),float(distance_transform_edt(~a)[b].mean()))/96
             values.append([distance,float(np.logical_xor(expected,actual).sum()/max(1,np.logical_or(expected,actual).sum())),abs(actual_ratio/ratio-1)])
         merit=[max(v[i] for v in values) for i in range(3)]+[sum(v[1] for v in values)/len(values)]
-        results.append({'resource_id':face['id'],'family':face['family'],'merit':merit,'glyphs':values})
+        from .font_family import labels
+        results.append({'resource_id':face['id'],'family':face['family'],'merit':merit,'glyphs':values,
+                        **labels(state,request,face)})
     by_id={face['id']:face for face in choices}
     results.sort(key=lambda v:(v['merit'],not resources.matches(by_id[v['resource_id']],request.get('proposed_family','')),v['resource_id']))
     if not results:return None
     from .font_selection import group
-    adopted=group(state,request).get('family')
+    from . import font_family
+    adopted_group=group(state,request);adopted=adopted_group.get('family')
     selected=next((value for value in results if value['family']==adopted),results[0]) if adopted else results[0]
+    if font_family.enabled(state):
+        candidates=[row for row in results if (not adopted or row['visual_family']==adopted)
+                    and (not adopted_group.get('fine_family') or
+                         resources.matches(by_id[row['resource_id']],adopted_group['fine_family']))]
+        if not candidates:raise ValueError('Adopted visual family has no current eligible candidate')
+        selected=candidates[0]
+        baseline=state.get('font_contract',{}).get('bindings',{}).get(request['id'],{}).get('resource',{}).get('id')
+        if not adopted_group.get('fine_family'):
+            # Close numerical scores do not automatically replace an adopted face.
+            selected=next((row for row in candidates if row['resource_id']==baseline),selected)
     value={'schema':'language-font-ranking-1','source_hash':state['source']['sha256'],'request_id':request['id'],
            'request_hash':request_key(request),'language':role_language(request['role']),'policy_hash':identity(policy()),
            'collection_revision':load(state['project']).get('revision'),'extended':extend,'samples':samples,'selection_context':input_key,
            'candidates':results,'selected_resource':selected['resource_id'],'selected_style':{'font':selected['family']},
            'scope':'Normalized isolated glyph shape screening only; fixed size/position and final native appearance remain independent',
            'identity_uncertainty':{'certainty':'approximate','noise_separation_calibrated':False,
-                'family_candidates':list(dict.fromkeys(v['family'] for v in results)),
+                'family_candidates':list(dict.fromkeys(v.get('visual_family',v['family']) for v in results)),
                 'rule':'Use an evidenced source style-group family decision when several eligible families remain; the first numeric face is a screening recommendation, not exact source identity.'}}
+    if font_family.enabled(state):
+        value['family_gate']={'policy':font_family.POLICY,'decision_level':'visual_family',
+            'selected_visual_family':selected['visual_family'],
+            'display_family':selected['display_family'],'eligible_resource_ids':[row['resource_id'] for row in results],
+            'refinement':'Keep the adopted physical face by default. Optional fine_family needs the deferred comparison and two distinct located diagnostic glyphs in high-confidence source evidence; at most one refinement per source style group.'}
     file=Path(task)/'source'/('Font-ranking-'+identity(value)+'.json');write_json(file,value)
     ref={'path':file.relative_to(task).as_posix(),'sha256':digest(file)}
     state.setdefault('font_rankings',{}).setdefault(request_key(request),{})['extended' if extend else 'initial']=ref

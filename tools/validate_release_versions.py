@@ -71,6 +71,19 @@ def validate_skill_members(archive,gate,label):
     return manifest
 
 
+def validate_bundle_documents(archive,gate):
+    """Current bundle instructions cannot silently retain an older product head."""
+    expected={'INSTALL.md':'# lotraAI Image2Slide v'+gate.version,
+              'docs/Release-report.md':'# lotraAI Image2Slide '+gate.version}
+    for name,heading in expected.items():
+        try:text=archive.read(name).decode('utf-8-sig')
+        except (KeyError,UnicodeDecodeError):raise ValueError('Release consistency mismatch: complete-zip/document/'+name) from None
+        gate.equal('complete-zip/document/'+name,text.splitlines()[0] if text else '',heading)
+    instructions=archive.read('INSTALL.md').decode('utf-8-sig')
+    for argument in ('-BundleRoot','--bundle-root'):
+        gate.contains('complete-zip/document/INSTALL.md/'+argument,instructions,argument)
+
+
 def validate(source,runtime=None,assets=None,bundle=None,final=False):
     source=Path(source);runtime=Path(runtime) if runtime else None
     assets=Path(assets) if assets else None;bundle=Path(bundle) if bundle else None
@@ -172,6 +185,7 @@ def validate(source,runtime=None,assets=None,bundle=None,final=False):
         if not assets:raise ValueError('Complete ZIP check also needs loose assets')
         gate.equal('complete-zip/identity',record(bundle),{k:manifest['bundle'][k] for k in ('bytes','sha256')})
         with zipfile.ZipFile(bundle) as archive:
+            validate_bundle_documents(archive,gate)
             for name in ('Bundle-manifest.json','Differential-manifest.json','Update-manifest.json','MANIFEST.json','.lotraai-image2slide-install.json'):
                 gate.product('complete-zip/'+name,json.loads(archive.read(name))['version'])
             root_manifest=archive.read('Bundle-manifest.json')

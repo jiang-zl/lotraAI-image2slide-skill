@@ -28,12 +28,15 @@ def implementation():
              'native_core_inspect','boundary_geometry','neighbor_geometry','native_snapshot',
              'font_contract','font_embedding','geometry','mathml','presets','semantic_curves',
              'render','host_render','office_bridge','tool_router','native_commit',
+             'portable_runtime','portable_editor','math_editor','editor_backend','uno_editor_client','uno_host_worker','native_font_aliases',
              'agent_runtime','quality_loop','workflow_control','execution_contract','build',
              'curve_functions','problem_control','knowledge_flow','component_source_features','native_surfaces','surface_metrics',
              'spatial_frames','spatial_checks','spatial_constructors','spatial_observation',
              'spatial_footprints','spatial_fit','spatial_repair','presentation_backend','office_compatibility','export_destination','libreoffice_backend',
               'workflow_guard','incremental_contract','workflow_delivery','retry_context','appearance_metrics','line_contracts','line_geometry','line_verification','line_review',
-              'font_resolution','font_selection','font_migration','line_preflight')
+              'font_resolution','font_selection','font_migration','line_preflight','terminal_paint',
+              'source_preflight','text_layout','material_effects','text_appearance','component_local_review','capture_target','branch_plan',
+              'typography_units','source_typography','source_font_size','typography_measurement','font_family')
     files={name:digest(ROOT/'scripts/core'/(name+'.py')) for name in names}
     for name in ('config/component-workflow.json','config/font-collections.json','schemas/component-contract.schema.json','scripts/sci_rebuild.py','scripts/check_before_finish.py'):
         files[name]=digest(ROOT/name)
@@ -144,7 +147,16 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
     raw_scene = read_json(_resource(task, request['source_scene']))
     from .knowledge_flow import expand
     scene = normalize_scene(expand(task, state, copy.deepcopy(raw_scene), request))
+    if state.get('typography_policy'):
+        from .typography_units import canonicalize as canonical_typography
+        scene['typography_policy']=state['typography_policy']
+        scene=canonical_typography(scene)
+    elif scene.get('typography_policy'):
+        raise ValueError('TYPOGRAPHY_POLICY_MIGRATION_REQUIRED: retain existing task typography')
     contract = copy.deepcopy(request['contract'])
+    for field in ('source_review_policy','reconstruction_target','typography_policy'):
+        if field in contract and contract[field]!=state.get(field):
+            raise ValueError('SOURCE_POLICY_MIGRATION_REQUIRED: task-owned '+field+' cannot be changed by a binding')
     previous, _ = _load(task, state) if state.get('component_workflow') else (None, None)
     # Old contracts keep their policy until an explicit migration request.
     contract.setdefault('workflow_version', (previous or {}).get('workflow_version', '1.35.2'))
@@ -220,6 +232,15 @@ def bind(task, request, *, prepare_only=False, native_apply=None):
     contract['authority'] = request['authority']
     _resource(task, contract['authority'])
     contract['policy'] = policy()
+    if state.get('source_review_policy'):contract['source_review_policy']=state['source_review_policy']
+    elif contract.get('source_review_policy'):
+        raise ValueError('SOURCE_POLICY_MIGRATION_REQUIRED: old bound tasks retain their source/review policy')
+    if state.get('typography_policy'):contract['typography_policy']=state['typography_policy']
+    elif contract.get('typography_policy'):
+        raise ValueError('TYPOGRAPHY_POLICY_MIGRATION_REQUIRED: old tasks retain their typography policy')
+    if state.get('reconstruction_target'):
+        from .capture_target import verify as verify_target
+        verify_target(task,state);contract['reconstruction_target']=state['reconstruction_target']
     if prepare_only:return {'contract':contract,'source_scene':scene}
     if recompiled_owners and native_apply is None and _candidate(state):
         # A corrected common frame must produce a concrete scoped native plan,
@@ -657,7 +678,8 @@ def evaluate(task, request=None):
             result['source_basis'] = source_basis
             result['qualification_channels'] = {'source_basis':source_basis['passed'],
                 'native_consistency':result.get('native_checks',{}).get('status')=='PASS' if row['route']=='local_fit' else result.get('passed',False),
-                'appearance':'DEFERRED_TO_ASSEMBLY_AND_FINAL' if row['route']=='fixed_parameters' else result.get('passed',False)}
+                'appearance':'LOCAL_REVIEW_PENDING' if contract.get('source_review_policy')=='source-review-1.37.5' else
+                    'DEFERRED_TO_ASSEMBLY_AND_FINAL' if row['route']=='fixed_parameters' else result.get('passed',False)}
             result['passed'] = result['passed'] and source_basis['passed']
             if not source_basis['passed']:
                 blockers.append({'status':source_basis['status'],'channel':'source_basis'})
@@ -848,10 +870,12 @@ def next_action(task, state, candidate=None):
         exhausted=[name for name in state['spatial_source_decision']['components'] if remaining(task,state,rows[name],'source_reads')==0]
         if exhausted:
             return {'status':'ORIGINAL_PROBLEM_UNRESOLVED','components':exhausted,
-                    'best_retained':True,'acceptance':False,'reason':'Located shared-frame source-read budget exhausted',
+                    'best_retained':True,'acceptance':False,'reason':'Located original-decision source-read budget exhausted',
                     'spatial_source_decision':state['spatial_source_decision']}
-        packet=a._packet(task,state,'component_contract_source','source_features',
-            'Resolve the located common-frame/projection interpretation against the unchanged original. Submit a complete retained observation with revision_reason and spatial_corrections; preserve independent targets and bounds, then rebind every actual consumer.',
+        preflight=state['spatial_source_decision'].get('kind')=='source_preflight'
+        objective=('Resolve the retained original-only preflight failures in the exact evidence resource. Submit the complete retained observation, prior_observation, revision_reason and corrections for each changed units/ID, features/ID or layout_review/DOMAIN row with prior_hash, reason and source_evidence. Only diagnosed rows/domains may change; preserve unrelated facts, all quality bounds and prior failures, then explicitly rebind before native work.' if preflight else
+            'Resolve the located common-frame/projection interpretation against the unchanged original. Submit a complete retained observation with revision_reason and spatial_corrections; preserve independent targets and bounds, then rebind every actual consumer.')
+        packet=a._packet(task,state,'component_contract_source','source_features',objective,
             extra={'source_hash':state['source']['sha256'],'source':state['source'],
                    'source_observation':state.get('source_feature_observation'),
                    'spatial_source_decision':state['spatial_source_decision'],
@@ -891,6 +915,8 @@ def next_action(task, state, candidate=None):
                   'knowledge_menu':state.get('knowledge_menu'),
                   'recipe_selection':'Optional recipe_bindings expands selected data-only constructors before Scene validation; all generated owners require current source contract ownership.',
                   'source_observation':state.get('source_feature_observation'),
+                  'original_diagnostics':state.get('source_preflight'),
+                  'reconstruction_target':state.get('reconstruction_target'),
                   'action_references': [reference(contract),'references/workflow-v133.md']}
         packet = a._packet(task, state, 'component_contract_source', 'component_contract',
                             'Bind the component-first source contract before local qualification.', extra=extra)
@@ -924,6 +950,11 @@ def next_action(task, state, candidate=None):
         return {'status':'WORK_PACKET','packet':packet}
     refresh(task, state, contract, ledger, candidate)
     write_json(safe_path(task, state['component_workflow']['ledger_path']), ledger)
+    from .component_local_review import enabled as early_review_enabled
+    if early_review_enabled(contract) and not (candidate.get('preview') and candidate.get('render')):
+        state.update(active_candidate=candidate,stage='host_render',packet=None)
+        with writer(task):a._save(task,state)
+        return a._host_render_work(task,state)
     if contract.get('workflow_version') in ('1.35.1','1.35.2'):
         from .spatial_repair import advance as advance_repair_phases
         scene=read_json(_resource(task,candidate['scene']))
@@ -1211,8 +1242,11 @@ def submit_result(task,result,packet):
         from .component_fonts import submit
         return submit(task,request)
     if kind=='component_local_work':
-        operation=result.get('operation')
-        if operation not in ('evaluate','fit','qualify','instantiate','reproject','source_prepare','rollback','source_or_measurement_decision','commit','edit'): raise ValueError('Choose the actual local operation')
+        outer_operation=result.get('operation');inner_operation=request.get('operation')
+        if outer_operation and inner_operation and outer_operation!=inner_operation:
+            raise ValueError('OPERATION_CONFLICT: operation and component_request.operation must agree; no changes applied')
+        operation=outer_operation or inner_operation
+        if operation not in ('evaluate','fit','qualify','review_local','instantiate','reproject','source_prepare','rollback','source_or_measurement_decision','commit','edit'): raise ValueError('Choose the actual local operation')
         expected_operation=packet.get('submit_operation') or packet.get('component_action',{}).get('operation')
         if expected_operation and operation not in (expected_operation,'source_or_measurement_decision'):
             raise ValueError('Submit the packet-selected operation; alternative writes require a focused source decision')
@@ -1299,6 +1333,9 @@ def dispatch(task, operation, request=None):
     if operation=='source_prepare':
         from .constructor_registry import source_prepare
         return source_prepare(task,request)
+    if operation=='review_local':
+        from .component_local_review import submit
+        return submit(task,request)
     if operation in ('recover','rollback'):
         from .component_transactions import recover,rollback
         return (recover if operation=='recover' else rollback)(task,request or {})

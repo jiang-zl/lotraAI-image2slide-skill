@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-24",
+  "baseline_product": "1.37.4",
+  "target_product": "1.37.5",
+  "authority": "direct_human_message",
+  "instruction": "跳过DeepSeek，只做设计上的改进，不做验证了",
+  "active_scope": "DESIGN_SOURCE_AND_DOCUMENTATION_ONLY",
+  "deepseek": "CANCELLED_BY_USER",
+  "further_validation": "CANCELLED_BY_USER",
+  "original_artwork": "NOT_ACCEPTED",
+  "known_colour_doubt": "RETAINED_UNRESOLVED",
+  "earlier_e11_evidence": "RETAINED_HISTORICAL_BYTE_BOUND_SCOPE_ONLY",
+  "additional_colour_review_rules": "IMPLEMENTED_IN_SKILL_INSTRUCTIONS_UNVALIDATED",
+  "semantic_target": "CONTENT_CONTOUR_ENVELOPE_OR_FULL_IMAGE_FALLBACK_CODE_UNVALIDATED",
+  "typography_policy": "typography-preflight-1.37.5",
+  "typography_units_and_rounding": "EXPLICIT_PX_PT_MAPPING_HALF_POINT_DECIMAL_HALF_UP_CODE_UNVALIDATED",
+  "font_size_model": "DEDICATED_SOURCE_GLYPH_PHYSICAL_FONT_GEOMETRY_MODEL_NOT_NEW_NEURAL_NETWORK_UNVALIDATED",
+  "before_render_checks": "SOURCE_SIZE_FRAME_SCREEN_AND_WRITTEN_NATIVE_ATTRIBUTES_CODE_UNVALIDATED",
+  "current_installation": "CUSTOM_1.37.4_PRESERVED",
+  "public_release": "PENDING_USER_SCOPE_SELECTION",
+  "replacement_goal_created": false
+}

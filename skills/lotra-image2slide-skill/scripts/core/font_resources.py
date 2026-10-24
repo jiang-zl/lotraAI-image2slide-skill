@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from .common import digest, identity, read_json, write_json
 
-VERSION = 'font-resources-1'
+VERSION = 'font-resources-1.37.5'
 
 
 def name_key(value):
@@ -40,7 +40,8 @@ def describe(path, index=0, file_hash=None):
     path = Path(path).resolve()
     font = TTFont(path, fontNumber=index, lazy=True)
     try:
-        families = font_names(font, (16, 1))
+        families = font_names(font, (1,)) or font_names(font, (16,))
+        typographic = font_names(font, (16,)) or families
         if not families:
             raise ValueError('Font has no family identity')
         os2 = font.get('OS/2')
@@ -51,7 +52,11 @@ def describe(path, index=0, file_hash=None):
         serif=getattr(panose,'bSerifStyle',0)
         style_class='sans' if serif in (11,12,13) else 'serif' if 2<=serif<=10 else 'unknown'
         return {'path': str(path), 'file_sha256': file_hash or digest(path), 'face_index': index,
-                'family': families[0], 'aliases': families, 'subfamily': (font_names(font, (17, 2)) or ['Regular'])[0],
+                'family': families[0], 'aliases': families, 'subfamily': (font_names(font, (2,)) or ['Regular'])[0],
+                'typographic_family':typographic[0], 'typographic_aliases':typographic,
+                'typographic_subfamily':(font_names(font,(17,2)) or ['Regular'])[0],
+                'naming_policy':'font-names-1.37.5',
+                'style_link_bold':bool(selection & 32), 'style_link_italic':bool(selection & 1),
                 'postscript_name': (font_names(font, (6,)) or [None])[0],
                 'version': (font_names(font, (5,)) or [None])[0],
                 'weight': int(getattr(os2, 'usWeightClass', 400)), 'italic': bool(selection & 1),
@@ -65,6 +70,29 @@ def describe(path, index=0, file_hash=None):
 
 def matches(face, family):
     return name_key(family) in {name_key(n) for n in face['aliases']}
+
+
+def matches_bound(current,bound):
+    """Keep frozen legacy identities readable; new choices use real name ID 1."""
+    return matches(current,bound['family']) or (not bound.get('naming_policy') and
+        name_key(bound['family']) in {name_key(n) for n in current.get('typographic_aliases',[])})
+
+
+def embedding_slot(face):
+    bold=face.get('style_link_bold',face['weight']>=600)
+    italic=face.get('style_link_italic',face['italic'])
+    return 'boldItalic' if bold and italic else 'italic' if italic else 'bold' if bold else 'regular'
+
+
+def require_embedding_slots(bindings):
+    slots={}
+    for bound in bindings:
+        face=bound['resource'];key=(face['family'],embedding_slot(face))
+        identity=(face['file_sha256'],face['face_index'])
+        if key in slots and slots[key]!=identity:
+            raise ValueError('FONT_SLOT_CONFLICT: distinct resources occupy '+repr(key)+'; resolve before native construction')
+        slots[key]=identity
+    return slots
 
 
 @lru_cache(maxsize=32)

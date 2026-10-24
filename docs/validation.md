@@ -1,4 +1,11 @@
-# 1.37.4 installation validation
+# 1.37.5 installation validation
+
+Current closeout scope (2026-10-24): the user cancelled DeepSeek and all further
+validation. Final design/instruction changes are unvalidated. The table below
+describes normal evidence categories, not a declaration that this candidate has
+completed every category. Earlier e11 receipts retain their original byte-bound
+scope. The incident artwork remains unaccepted and public README/download checks
+are incomplete. See [actual scope and historical results](v1.37.5/Validation-report.md).
 
 Use current byte-bound receipts; historical checks do not qualify changed code.
 The release remains a portable skill and requires no different harness or model.

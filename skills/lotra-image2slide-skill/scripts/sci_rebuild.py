@@ -265,6 +265,7 @@ def parser():
     agent_start.add_argument('--project',type=Path,required=True);agent_start.add_argument('--name')
     agent_start.add_argument('--objectives',type=Path);agent_start.add_argument('--configuration',type=Path)
     agent_start.add_argument('--pptx',type=Path,help='Optional one-shot partial PPT input paired with the reference image')
+    agent_start.add_argument('--target-plan',type=Path,help='Explicit raw-bound source_projection or authorized slide_surface mapping; default preserves the full original')
     agent_next=sub.add_parser('next');agent_next.add_argument('task',type=Path);agent_next.add_argument('--configuration',type=Path)
     agent_submit=sub.add_parser('submit');agent_submit.add_argument('task',type=Path);agent_submit.add_argument('result',type=Path)
     agent_export=sub.add_parser('export');agent_export.add_argument('task',type=Path);agent_export.add_argument('--out',type=Path)
@@ -629,7 +630,8 @@ def _dispatch_impl(args,p):
         from core import agent_runtime
         if args.command=='start':
             result=agent_runtime.start(args.source,args.project,name=args.name,
-                    objectives=read_json(args.objectives) if args.objectives else None,configuration=args.configuration,pptx=args.pptx)
+                    objectives=read_json(args.objectives) if args.objectives else None,configuration=args.configuration,pptx=args.pptx,
+                    target_plan=read_json(args.target_plan) if args.target_plan else None)
         elif args.command=='next':result=agent_runtime.next_packet(args.task,args.configuration)
         elif args.command=='submit':result=agent_runtime.submit(args.task,read_json(args.result))
         elif args.command=='export':result=agent_runtime.export(args.task,args.out,output_root=args.output_root,new_export=args.new_export)

@@ -109,3 +109,87 @@ Workflow 1.35.2, design 8, execution 1.37.0, evidence 1.37.2, Math 1.35.3 and ru
 1.14.0 retain their separate identities. Both repositories use dev and 1.37.4;
 the source tag is v1.37.4. Publication is not external-artwork acceptance.
 <!-- lotraAI-v1374-font-policy:end -->
+
+## 1.37.5 design/source candidate and current human scope
+
+This isolated checkout prepares product 1.37.5 from the formal 1.37.4 baseline.
+A/B/C changes are implemented; use the candidate SKILL.md and workflow-v1375.md.
+It has not been publicly released and does not replace the customized installed
+1.37.4 skill. Execution 1.37.0, evidence 1.37.2, font workflow 1.37.4, source
+workflow 1.35.2, design 8, Math policy 1.35.3 and runtime 1.14.0 stay independent.
+
+The human explicitly cancelled DeepSeek and all further validation on 2026-10-24:
+“跳过DeepSeek，只做设计上的改进，不做验证了”. Complete design/source/docs only;
+do not resume the original, require quota restoration, or run additional tests,
+installations, reconstruction, rendering or validation. Earlier e11 records keep
+their historical byte-bound scope; final instruction changes are unvalidated.
+Original-art acceptance, unresolved colour doubts and missing public checks are
+not PASS. See docs/v1.37.5/Release-report.md and Validation-report.md. Public
+release scope is pending the user's choice. This scoped cancellation does not
+weaken normal product source/render/delivery gates for future artwork tasks.
+
+Text foreground extraction and geometric PASS do not establish colour fidelity
+or complete source ink coverage. Retain located colour doubts through prior-hash
+correction, rebinding and final review. Preserve original failures, independent
+bests, finite budgets, old task policies, user/private data and global skills.
+
+The human subsequently authorized code for semantic content contours with a
+full-image fallback, explicit text/Math unit conversion, decimal half-up 0.5 pt
+sizes, a dedicated source-glyph/physical-font size model, and checks before
+rendering. New tasks bind typography-preflight-1.37.5; old tasks are not migrated.
+These additions are implemented but NOT_EXECUTED/UNVALIDATED. No new neural
+font-size model, global model install, provider key or runtime binary is claimed.
+Read references/typography-before-render-v1375.md in the skill for actual scope.
+Earlier e11 tests/packages do not qualify the changed source. Continue the human's
+no-validation/no-DeepSeek instruction; publication remains pending its own scope.
+
+The human also approved finite language-restricted font matching with Chinese
+display names and visual-family first decisions: an inferred 雅黑 group admits
+its eligible variants before optional high-confidence vendor/variant refinement.
+New tasks bind font-family-gate-1.37.5; retain exact physical resources and source
+authority. Default deferred review keeps the adopted face. A fine refinement
+needs a current extended comparison and two distinct located diagnostic glyphs,
+with at most one per source style group. The added source/docs are unvalidated;
+do not run tests, font inference, reconstruction or DeepSeek to qualify them.
+
+## Resumed goal: stability preview before DeepSeek, 2026-10-24
+
+The human now explicitly resumes the same goal: “好，恢复goal吧，稳定了给我看看，
+再投入deepseek做原事故验收”. This supersedes the no-validation paragraphs above
+for development, focused/full regressions, local model/geometry/font checks,
+actual native rendering and a reviewable stability preview. Complete the
+photographic-plane/physical-scale/finite-size-fit chain and validate the latest
+source. Reuse prepared runtime/resources; preserve the installed 1.37.4, private
+data, historical failures and previous evidence identities. Do not start DeepSeek
+or claim original-artwork acceptance before the user has seen the stable preview.
+Public release remains the overall 1.37.5 objective after the remaining gates;
+do not publish this intermediate preview or relabel old e11 evidence as current.
+
+The same resumed scope includes the human's centering concern. Before native
+mutation retain frozen source alignment intent; after writing check both native
+axes and every paragraph/cell inset. Actual complete text/Math ink and explicit
+original row/glyph groups must preserve both source position axes and intentional
+offsets. A centered frame is not optical centering or final artwork acceptance.
+Current scoped stability evidence is under validation/stability-r1 in the
+development directory; see docs/v1.37.5/Resume-stability-20261024.md. The next
+human checkpoint is viewing these technical previews before DeepSeek.
+
+## Human acceptance and release resumption, 2026-10-24
+
+The human has reviewed the stable preview and now explicitly authorizes the
+remaining necessary work plus DeepSeek harness/model incident acceptance and
+completion of the same 1.37.5 release goal. This supersedes the earlier cancelled
+DeepSeek scope and the pre-DeepSeek viewing checkpoint. Preserve all historical
+receipts, old tasks and failures. Exercise the new typography/family policies in
+a new registered task in an owned isolated project; use the official installed
+DeepSeek harness with existing deepseek-flash/max account settings. Previous
+full-access rerun authorization persists. Do not replace DeepSeek reconstruction
+with GPT-authored native output. Current-agent source/code diagnosis and
+independent final original review remain separate and explicitly attributed.
+
+Complete current supported-backend saved/native/render/delivery gates, final
+version/distribution and Windows/Linux first/repeat installation checks, then
+publication and public-byte verification. Unchanged immutable resources remain
+independent. No physical WPS/macOS PASS without its host, no new training or
+provider key, no global skills/configuration changes, no modified quality bounds
+to clear a valid failure. Main 1.37.4 installation and originals stay preserved.
